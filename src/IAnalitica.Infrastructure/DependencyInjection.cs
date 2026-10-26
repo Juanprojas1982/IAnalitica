@@ -1,6 +1,9 @@
 using IAnalitica.Application.Abstracciones;
+using IAnalitica.Application.Ingesta;
 using IAnalitica.Infrastructure.Empresas;
 using IAnalitica.Infrastructure.Identity;
+using IAnalitica.Infrastructure.Ingesta;
+using Microsoft.Data.SqlClient;
 using IAnalitica.Infrastructure.Persistencia;
 using IAnalitica.Infrastructure.Seguridad;
 using Microsoft.AspNetCore.Identity;
@@ -54,6 +57,8 @@ public static class DependencyInjection
 
         services.AddOpenIddict().AddCore(o => o.UseEntityFrameworkCore().UseDbContext<AnaliticaDbContext>());
 
+        services.AddScoped<IRepositorioCargas, RepositorioCargas>();
+        services.AddScoped<IRepositorioApiClientes, RepositorioApiClientes>();
         services.AddScoped<IRepositorioEmpresas, RepositorioEmpresas>();
         services.AddScoped<IGestorUsuarios, GestorUsuarios>();
         services.AddScoped<IGestionUsuariosEmpresa, GestionUsuariosEmpresa>();
@@ -66,6 +71,25 @@ public static class DependencyInjection
         services.AddMemoryCache();
         services.AddSingleton<ICacheConsultas, CacheConsultasMemoria>();
         services.AddSingleton<IGeneradorSecretos, GeneradorSecretos>();
+        return services;
+    }
+
+    /// <summary>
+    /// Procesamiento de cargas del worker (24 §8): cola SQL, despachador y manejadores. <paramref name="cadenaEtl"/> es la conexión con
+    /// un usuario de <c>rol_etl</c>; la cola vive en la misma base ($0 adicional, D23).
+    /// </summary>
+    public static IServiceCollection AddProcesamiento(this IServiceCollection services, string cadenaEtl)
+    {
+        services.AddSingleton<IFabricaConexionesEtl>(new FabricaConexionesEtl(cadenaEtl));
+        services.AddSingleton<IColaTrabajos>(sp =>
+        {
+            var fabrica = sp.GetRequiredService<IFabricaConexionesEtl>();
+            return new ColaTrabajosSql(fabrica.AbrirAsync);
+        });
+        services.AddSingleton<ProcesadorCargas>();
+        services.AddSingleton<IManejadorTrabajo, ManejadorProcesarCarga>();
+        services.AddSingleton<IManejadorTrabajo, ManejadorCalcularCartera>();
+        services.AddSingleton<DespachadorTrabajos>();
         return services;
     }
 }

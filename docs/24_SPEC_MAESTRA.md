@@ -435,7 +435,7 @@ Problem Details (RFC 9457) con los códigos de la spec 05 §7.
 | P6 | Fórmulas de categorización del riesgo de la ESE | ESE piloto | Simulador (fase 2) |
 | P7 | Reglas de distribución de costos por piloto | Cada piloto | F5 |
 | P8 | Dominio y marca de IAnalitica | Dueño | Landing |
-| P9 | Agregar al contrato 05 las entidades `configuracion` (FOTO), `tarifas-suministros`, `catalogo-medicamentos`, `ordenes-externas`, `presupuesto-publico` y `contratos-publicos`, con sus tablas destino (farmacia no tiene hechos definidos) | Diseño (Opus) | F1 (`configuracion`), F4 y ESE |
+| P9 | (F2: `GET /v1/estado` y sus códigos de error ya están en el contrato 05 rev. 1.1.) Agregar al contrato 05 las entidades `configuracion` (FOTO), `tarifas-suministros`, `catalogo-medicamentos`, `ordenes-externas`, `presupuesto-publico` y `contratos-publicos`, con sus tablas destino (farmacia no tiene hechos definidos) | Diseño (Opus) | F1 (`configuracion`), F4 y ESE |
 | P10 | Confirmar la matriz rol × permiso (§4.1, D37) | Dueño | Nada (se corrige con un script nuevo) |
 | P11 | Planes comerciales de IA y su cupo (hoy solo `PILOTO` con cupo 0) | Dueño | Abrir la IA a clientes (fase 2) |
 
