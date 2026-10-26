@@ -1,0 +1,107 @@
+@page "/precios"
+@attribute [Authorize(Policy = "dash.farmacia")]
+@using IAnalitica.Application.Auditoria
+@using IAnalitica.Application.Mediacion
+@inject ISender Enviar
+
+<PageTitle>Cumplimiento de precios · IAnalitica</PageTitle>
+<h1>Cumplimiento de precios máximos</h1>
+<p class="text-muted">
+    Compara las tarifas de medicamentos de SaludIPS con el precio máximo de venta vigente. Es una advertencia: la decisión sobre la tarifa es del operador.
+    Los hallazgos «por verificar» dependen de unidades de presentación que aún no han sido validadas por un químico farmacéutico.
+</p>
+
+@if (!string.IsNullOrEmpty(Error)) { <div class="alert alert-warning" role="alert">@Error</div> }
+@if (Ok == "1") { <div class="alert alert-success" role="status">Hallazgo actualizado.</div> }
+
+@if (lista is null) { }
+else if (aviso is not null) { <div class="alert alert-info" role="status">@aviso</div> }
+else
+{
+    <form method="get" action="/precios" class="mb-3">
+        <label><input type="checkbox" name="cerrados" value="1" checked="@Cerrados" onchange="this.form.submit()" /> Mostrar también los corregidos, aceptados y falsos positivos</label>
+        <noscript><button class="btn btn-sm btn-outline-secondary" type="submit">Actualizar</button></noscript>
+    </form>
+
+    @if (lista.Count == 0)
+    {
+        <p>No hay hallazgos de precios pendientes.</p>
+    }
+    @foreach (var h in lista)
+    {
+        <article class="hallazgo sev-@h.Severidad.ToLowerInvariant()">
+            <header>
+                <span class="sev">@TextoSeveridad(h.Severidad)</span>
+                <strong>@Titulo(h.Regla)</strong>
+                <small class="text-muted">@h.Regla · @h.Estado.ToLowerInvariant().Replace('_', ' ')</small>
+                @if (!h.FactorValidado) { <small class="badge text-bg-secondary" title="Las unidades de la tarifa y del precio máximo no están validadas.">por verificar</small> }
+            </header>
+            <p class="entidad">@h.NombreEntidad</p>
+            <dl>
+                @if (h.Cum is not null) { <dt>CUM</dt><dd>@h.Cum</dd> }
+                @if (h.ValorObservado is { } o) { <dt>@(h.Regla == "R5" ? "Tarifa" : "Tarifa configurada")</dt><dd>$ @o.ToString("N2", Cultura)</dd> }
+                @if (h.ValorLimite is { } l) { <dt>@(h.Regla == "R5" ? "Costo registrado" : "Precio máximo por unidad")</dt><dd>$ @l.ToString("N2", Cultura)</dd> }
+                @if (h.ExcesoUnitario is { } e) { <dt>@(h.Regla == "R5" ? "Pérdida por unidad" : "Exceso por unidad")</dt><dd>$ @e.ToString("N2", Cultura)</dd> }
+                @if (h.UnidadesAfectadas is { } u) { <dt>Unidades (30 días)</dt><dd>@u.ToString("N0", Cultura)</dd> }
+                @if (h.MontoEnRiesgo is { } m) { <dt>Monto en riesgo</dt><dd>$ @m.ToString("N0", Cultura)</dd> }
+                @if (h.CircularNumero is not null) { <dt>Circular</dt><dd>@h.CircularNumero @(h.CircularVigenteDesde is { } d ? "· vigente desde " + d.ToString("yyyy-MM-dd") : "")</dd> }
+                @if (h.Detalle is not null) { <dt>Detalle</dt><dd>@h.Detalle</dd> }
+                @if (h.Justificacion is not null) { <dt>Justificación</dt><dd>@h.Justificacion</dd> }
+            </dl>
+            <AuthorizeView Policy="hallazgos.gestionar" Context="gestor">
+                @if (EstadosHallazgo.EstaAbierto(h.Estado))
+                {
+                    <details>
+                        <summary>Aceptar o marcar como falso positivo</summary>
+                        <form method="post" action="/auditor/precios/@h.HallazgoId/estado">
+                            <AntiforgeryToken />
+                            <input type="hidden" name="cerrados" value="@(Cerrados ? "1" : "0")" />
+                            <label>Justificación (obligatoria, mínimo 10 caracteres)
+                                <textarea name="justificacion" maxlength="500" rows="2" required minlength="10" class="form-control"></textarea>
+                            </label>
+                            <button class="btn btn-sm btn-outline-primary" type="submit" name="accion" value="ACEPTAR">Aceptar el riesgo</button>
+                            <button class="btn btn-sm btn-outline-secondary" type="submit" name="accion" value="FALSO_POSITIVO">Es un falso positivo</button>
+                        </form>
+                    </details>
+                }
+                else if (h.Estado is EstadosHallazgo.Aceptado or EstadosHallazgo.FalsoPositivo)
+                {
+                    <form method="post" action="/auditor/precios/@h.HallazgoId/estado">
+                        <AntiforgeryToken />
+                        <input type="hidden" name="cerrados" value="1" />
+                        <button class="btn btn-sm btn-outline-primary" type="submit" name="accion" value="REABRIR">Reabrir</button>
+                    </form>
+                }
+            </AuthorizeView>
+        </article>
+    }
+}
+
+@code {
+    [SupplyParameterFromQuery(Name = "error")] public string? Error { get; set; }
+    [SupplyParameterFromQuery(Name = "ok")] public string? Ok { get; set; }
+    [SupplyParameterFromQuery(Name = "cerrados")] public string? CerradosParam { get; set; }
+
+    private static readonly System.Globalization.CultureInfo Cultura = System.Globalization.CultureInfo.GetCultureInfo("es-CO");
+    private IReadOnlyList<HallazgoTarifarioVista>? lista;
+    private string? aviso;
+    private bool Cerrados => CerradosParam == "1";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var r = await Enviar.Send(new ObtenerCumplimientoPreciosQuery(Cerrados));
+        if (r.EsExitoso) lista = r.Valor;
+        else { aviso = r.Errores[0].Mensaje; lista = []; }
+    }
+
+    private static string TextoSeveridad(string s) => s switch { "CRITICA" => "Crítica", "ALTA" => "Alta", "MEDIA" => "Media", _ => "Baja" };
+
+    private static string Titulo(string regla) => regla switch
+    {
+        "R1" => "Tarifa por encima del precio máximo",
+        "R2" => "La tarifa quedará por encima del precio máximo de una circular futura",
+        "R5" => "Tarifa por debajo del costo",
+        "R6" => "CUM inválido o con registro sanitario vencido",
+        _ => regla,
+    };
+}

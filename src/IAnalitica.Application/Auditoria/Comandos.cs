@@ -37,13 +37,31 @@ public sealed class ObtenerSaludConfiguracionHandler(ISesionUsuario sesion, IMod
     }
 }
 
+// ---------- Cumplimiento de precios ----------
+[RequierePermiso("dash.farmacia")]
+public sealed record ObtenerCumplimientoPreciosQuery(bool IncluirCerrados = false) : IRequest<Result<IReadOnlyList<HallazgoTarifarioVista>>>;
+
+public sealed class ObtenerCumplimientoPreciosHandler(ISesionUsuario sesion, IModulosEmpresa modulos, IRepositorioHallazgos hallazgos)
+    : IRequestHandler<ObtenerCumplimientoPreciosQuery, Result<IReadOnlyList<HallazgoTarifarioVista>>>
+{
+    public const string Modulo = "FARMACIA";
+
+    public async Task<Result<IReadOnlyList<HallazgoTarifarioVista>>> Handle(ObtenerCumplimientoPreciosQuery request, CancellationToken ct)
+    {
+        if (sesion.EmpresaId is not { } empresaId) return Result<IReadOnlyList<HallazgoTarifarioVista>>.Falla(Error.NoAutorizado("Debe iniciar sesión."));
+        if (!await modulos.EstaActivoAsync(empresaId, Modulo, ct).ConfigureAwait(false))
+            return Result<IReadOnlyList<HallazgoTarifarioVista>>.Falla(Error.Conflicto("MODULO_INACTIVO", "El módulo de farmacia no está activo para su empresa."));
+        return Result<IReadOnlyList<HallazgoTarifarioVista>>.Ok(await hallazgos.ObtenerTarifariosAsync(request.IncluirCerrados, ct).ConfigureAwait(false));
+    }
+}
+
 // ---------- Aceptar, marcar falso positivo o reabrir ----------
 /// <summary>
 /// ACEPTAR (riesgo asumido) y FALSO_POSITIVO exigen justificación y suprimen el hallazgo: el auditor no lo vuelve a crear.
 /// REABRIR devuelve un hallazgo suprimido a ABIERTO. Todo cambio queda en aud.CambioAdministrativo.
 /// </summary>
 [RequierePermiso("hallazgos.gestionar")]
-public sealed record CambiarEstadoHallazgoCommand(long HallazgoId, string Accion, string? Justificacion) : IRequest<Result>;
+public sealed record CambiarEstadoHallazgoCommand(long HallazgoId, string Accion, string? Justificacion, OrigenHallazgo Origen = OrigenHallazgo.Configuracion) : IRequest<Result>;
 
 public sealed class CambiarEstadoHallazgoValidator : AbstractValidator<CambiarEstadoHallazgoCommand>
 {
@@ -63,7 +81,7 @@ public sealed class CambiarEstadoHallazgoHandler(ISesionUsuario sesion, IReposit
     public async Task<Result> Handle(CambiarEstadoHallazgoCommand request, CancellationToken ct)
     {
         if (sesion.UsuarioId is not { } usuarioId || sesion.EmpresaId is not { } empresaId) return Result.Falla(Error.NoAutorizado("Debe iniciar sesión."));
-        var h = await hallazgos.ObtenerHallazgoAsync(request.HallazgoId, ct).ConfigureAwait(false);   // la RLS limita a la empresa
+        var h = await hallazgos.ObtenerEstadoAsync(request.Origen, request.HallazgoId, ct).ConfigureAwait(false);   // la RLS limita a la empresa
         if (h is null) return Result.Falla(Error.NoEncontrado("El hallazgo no existe."));
 
         var (nuevo, permitidos) = request.Accion switch
@@ -73,10 +91,10 @@ public sealed class CambiarEstadoHallazgoHandler(ISesionUsuario sesion, IReposit
             _ => (EstadosHallazgo.Abierto, new[] { EstadosHallazgo.Aceptado, EstadosHallazgo.FalsoPositivo }),
         };
         var justificacion = request.Accion == AccionesHallazgo.Reabrir ? null : request.Justificacion!.Trim();
-        if (!permitidos.Contains(h.Estado) || !await hallazgos.CambiarEstadoAsync(h.HallazgoId, nuevo, justificacion, usuarioId, permitidos, ct).ConfigureAwait(false))
+        if (!permitidos.Contains(h.Estado) || !await hallazgos.CambiarEstadoAsync(request.Origen, h.HallazgoId, nuevo, justificacion, usuarioId, permitidos, ct).ConfigureAwait(false))
             return Result.Falla(Error.Conflicto(CodigosAuditoria.EstadoNoPermitido, $"El hallazgo está «{h.Estado}»: no se puede aplicar «{request.Accion}»."));
 
-        await auditoria.RegistrarAsync(new CambioAdministrativo(empresaId, usuarioId, "fact.HallazgoConfiguracion", $"{h.Codigo}:{h.ClaveEntidad}", request.Accion,
+        await auditoria.RegistrarAsync(new CambioAdministrativo(empresaId, usuarioId, request.Origen == OrigenHallazgo.Tarifario ? "fact.HallazgoTarifario" : "fact.HallazgoConfiguracion", $"{h.Codigo}:{h.ClaveEntidad}", request.Accion,
             JsonSerializer.Serialize(new { estado = h.Estado }), JsonSerializer.Serialize(new { estado = nuevo }), justificacion), ct).ConfigureAwait(false);
         return Result.Ok();
     }

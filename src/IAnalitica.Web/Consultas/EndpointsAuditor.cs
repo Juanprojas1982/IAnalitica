@@ -19,5 +19,14 @@ internal static class EndpointsAuditor
             var cerrados = f["cerrados"] == "1" ? "&cerrados=1" : "";
             return Results.Redirect(r.EsExitoso ? "/auditor?ok=1" + cerrados : "/auditor?error=" + Uri.EscapeDataString(r.Errores[0].Mensaje) + cerrados);
         });
+
+        g.MapPost("/precios/{id:long}/estado", async (long id, HttpContext http, IAntiforgery af, ISender enviar, CancellationToken ct) =>
+        {
+            await af.ValidateRequestAsync(http);
+            var f = await http.Request.ReadFormAsync(ct);
+            var r = await enviar.Send(new CambiarEstadoHallazgoCommand(id, f["accion"].ToString().ToUpperInvariant(), f["justificacion"].ToString(), OrigenHallazgo.Tarifario), ct);
+            var cerrados = f["cerrados"] == "1" ? "&cerrados=1" : "";
+            return Results.Redirect(r.EsExitoso ? "/precios?ok=1" + cerrados : "/precios?error=" + Uri.EscapeDataString(r.Errores[0].Mensaje) + cerrados);
+        });
     }
 }

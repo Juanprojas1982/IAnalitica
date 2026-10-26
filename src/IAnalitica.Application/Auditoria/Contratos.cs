@@ -22,11 +22,24 @@ public sealed record SaludConfiguracion(DateOnly? Fecha, IReadOnlyList<IndiceAre
     public IndiceArea? Total => Areas.FirstOrDefault(a => a.Area == "TOTAL");
 }
 
-/// <summary>Hallazgos del auditor con el contexto del usuario (RLS por empresa).</summary>
+/// <summary>De qué lista es un hallazgo: el auditor de configuración o el validador de precios máximos.</summary>
+public enum OrigenHallazgo { Configuracion, Tarifario }
+
+/// <summary>Lo mínimo de un hallazgo para decidir un cambio de estado y auditarlo.</summary>
+public sealed record EstadoDeHallazgo(long HallazgoId, string Codigo, string ClaveEntidad, string Estado);
+
+/// <summary>Un hallazgo del validador de precios (R1, R2, R5, R6). <see cref="FactorValidado"/> = false se muestra como «por verificar».</summary>
+public sealed record HallazgoTarifarioVista(
+    long HallazgoId, string Regla, string Severidad, string Estado, string ClaveEntidad, string? NombreEntidad, string? Cum,
+    decimal? ValorObservado, decimal? ValorLimite, decimal? ExcesoUnitario, decimal? UnidadesAfectadas, decimal? MontoEnRiesgo,
+    string? CircularNumero, DateTime? CircularVigenteDesde, bool FactorValidado, string? Detalle, string? Justificacion, DateTime DetectadoEn);
+
+/// <summary>Hallazgos con el contexto del usuario (RLS por empresa).</summary>
 public interface IRepositorioHallazgos
 {
     Task<SaludConfiguracion> ObtenerAsync(bool incluirCerrados, CancellationToken ct);
-    Task<HallazgoVista?> ObtenerHallazgoAsync(long hallazgoId, CancellationToken ct);
+    Task<IReadOnlyList<HallazgoTarifarioVista>> ObtenerTarifariosAsync(bool incluirCerrados, CancellationToken ct);
+    Task<EstadoDeHallazgo?> ObtenerEstadoAsync(OrigenHallazgo origen, long hallazgoId, CancellationToken ct);
     /// <returns>false si el hallazgo cambió de estado mientras tanto (no estaba en <paramref name="estadosPermitidos"/>).</returns>
-    Task<bool> CambiarEstadoAsync(long hallazgoId, string estadoNuevo, string? justificacion, int usuarioId, IReadOnlyCollection<string> estadosPermitidos, CancellationToken ct);
+    Task<bool> CambiarEstadoAsync(OrigenHallazgo origen, long hallazgoId, string estadoNuevo, string? justificacion, int usuarioId, IReadOnlyCollection<string> estadosPermitidos, CancellationToken ct);
 }

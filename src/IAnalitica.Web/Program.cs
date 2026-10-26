@@ -34,6 +34,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddInfrastructure(cadena);
 builder.Services.AddApplication(ModuloFinanciero.Ensamblado, ModuloIngreso.Ensamblado, ModuloOperacion.Ensamblado,
     ModuloFarmacia.Ensamblado, ModuloEse.Ensamblado, ModuloAuditor.Ensamblado);
+builder.Services.Configure<IAnalitica.Application.Regulacion.MapeoPreciosMaximos>(builder.Configuration.GetSection("Regulacion:PreciosMaximos:Mapeo"));
 builder.Services.Configure<IAnalitica.Application.Reportes.LimitesReportes>(builder.Configuration.GetSection("Reportes:Limites"));
 builder.Services.Configure<IAnalitica.Infrastructure.Reportes.OpcionesAlmacenReportes>(builder.Configuration.GetSection("Reportes:Almacen"));
 builder.Services.AddCapaSemantica(new[] { ModuloFinanciero.Modulo }.Concat(ModuloIngreso.Modulos));
@@ -68,6 +69,8 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy("admin.usuarios", p => p.RequireClaim(Reclamos.Permiso, "admin.usuarios"))
     .AddPolicy("reportes.exportar", p => p.RequireClaim(Reclamos.Permiso, "reportes.exportar"))
     .AddPolicy("dash.auditor_config", p => p.RequireClaim(Reclamos.Permiso, "dash.auditor_config"))
+    .AddPolicy("admin.catalogos", p => p.RequireClaim(Reclamos.Permiso, "admin.catalogos"))
+    .AddPolicy("dash.farmacia", p => p.RequireClaim(Reclamos.Permiso, "dash.farmacia"))
     .AddPolicy("hallazgos.gestionar", p => p.RequireClaim(Reclamos.Permiso, "hallazgos.gestionar"));
 builder.Services.AddCascadingAuthenticationState();
 
@@ -130,6 +133,7 @@ usuarios.MapPost("/{id:int}/restablecer", async (int id, ISender enviar, IAntifo
 app.MapConsultasQ();
 app.MapReportes();
 app.MapAuditor();
+app.MapRegulacion();
 
 app.MapRazorComponents<App>();
 

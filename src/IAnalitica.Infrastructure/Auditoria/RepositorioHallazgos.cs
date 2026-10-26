@@ -36,18 +36,36 @@ internal sealed class RepositorioHallazgos(IFabricaConexiones conexiones) : IRep
         return new SaludConfiguracion(ultima is null ? null : DateOnly.FromDateTime(ultima.Value), areas, lista);
     }
 
-    public async Task<HallazgoVista?> ObtenerHallazgoAsync(long hallazgoId, CancellationToken ct)
+    public async Task<IReadOnlyList<HallazgoTarifarioVista>> ObtenerTarifariosAsync(bool incluirCerrados, CancellationToken ct)
     {
         await using var cn = await conexiones.AbrirAsync(ct).ConfigureAwait(false);
-        return await cn.QueryFirstOrDefaultAsync<HallazgoVista>(new CommandDefinition($"{Seleccion} WHERE h.HallazgoId = @hallazgoId", new { hallazgoId }, cancellationToken: ct)).ConfigureAwait(false);
+        return (await cn.QueryAsync<HallazgoTarifarioVista>(new CommandDefinition("""
+            SELECT h.HallazgoId, h.Regla, h.Severidad, h.Estado, h.ClaveEntidad, h.NombreEntidad, h.Cum, h.ValorObservado, h.ValorLimite, h.ExcesoUnitario, h.UnidadesAfectadas, h.MontoEnRiesgo,
+                   c.Numero AS CircularNumero, c.VigenteDesde AS CircularVigenteDesde, h.FactorValidado, h.Detalle, h.Justificacion, h.DetectadoEn
+            FROM fact.HallazgoTarifario h LEFT JOIN reg.Circular c ON c.CircularId = h.CircularId
+            WHERE (@incluirCerrados = 1 OR h.Estado IN ('NUEVO','ABIERTO'))
+            ORDER BY CASE h.Severidad WHEN 'CRITICA' THEN 0 WHEN 'ALTA' THEN 1 WHEN 'MEDIA' THEN 2 ELSE 3 END,
+                     CASE WHEN h.Estado IN ('NUEVO','ABIERTO') THEN 0 ELSE 1 END, h.MontoEnRiesgo DESC, h.ExcesoUnitario DESC, h.HallazgoId
+            """, new { incluirCerrados }, cancellationToken: ct)).ConfigureAwait(false)).ToList();
     }
 
-    public async Task<bool> CambiarEstadoAsync(long hallazgoId, string estadoNuevo, string? justificacion, int usuarioId, IReadOnlyCollection<string> estadosPermitidos, CancellationToken ct)
+    // El nombre de la tabla sale de este enum, nunca de texto externo
+    private static string Tabla(OrigenHallazgo o) => o == OrigenHallazgo.Tarifario ? "fact.HallazgoTarifario" : "fact.HallazgoConfiguracion";
+
+    public async Task<EstadoDeHallazgo?> ObtenerEstadoAsync(OrigenHallazgo origen, long hallazgoId, CancellationToken ct)
+    {
+        await using var cn = await conexiones.AbrirAsync(ct).ConfigureAwait(false);
+        var codigo = origen == OrigenHallazgo.Tarifario ? "Regla" : "Codigo";
+        return await cn.QueryFirstOrDefaultAsync<EstadoDeHallazgo>(new CommandDefinition(
+            $"SELECT HallazgoId, {codigo} AS Codigo, ClaveEntidad, Estado FROM {Tabla(origen)} WHERE HallazgoId = @hallazgoId", new { hallazgoId }, cancellationToken: ct)).ConfigureAwait(false);
+    }
+
+    public async Task<bool> CambiarEstadoAsync(OrigenHallazgo origen, long hallazgoId, string estadoNuevo, string? justificacion, int usuarioId, IReadOnlyCollection<string> estadosPermitidos, CancellationToken ct)
     {
         await using var cn = await conexiones.AbrirAsync(ct).ConfigureAwait(false);
         var cerrando = estadoNuevo is EstadosHallazgo.Aceptado or EstadosHallazgo.FalsoPositivo;
-        var n = await cn.ExecuteAsync(new CommandDefinition("""
-            UPDATE fact.HallazgoConfiguracion
+        var n = await cn.ExecuteAsync(new CommandDefinition($"""
+            UPDATE {Tabla(origen)}
             SET Estado = @estadoNuevo, Justificacion = @justificacion,
                 CerradoEn = CASE WHEN @cerrando = 1 THEN SYSUTCDATETIME() END, CerradoPor = CASE WHEN @cerrando = 1 THEN @usuarioId END
             WHERE HallazgoId = @hallazgoId AND Estado IN @estadosPermitidos

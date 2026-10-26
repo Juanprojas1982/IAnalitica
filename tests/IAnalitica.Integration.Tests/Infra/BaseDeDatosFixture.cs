@@ -61,7 +61,7 @@ public sealed class BaseDeDatosFixture : IAsyncLifetime
 
     public string ClaveInicialSuperadmin { get; private set; } = "";
 
-    public ServiceProvider Construir(string cadena, ISesionUsuario? sesion)
+    public ServiceProvider Construir(string cadena, ISesionUsuario? sesion, Action<IServiceCollection>? ajustar = null)
     {
         var s = new ServiceCollection();
         s.AddLogging();
@@ -70,6 +70,7 @@ public sealed class BaseDeDatosFixture : IAsyncLifetime
         if (sesion is not null) s.AddSingleton(sesion);
         s.AddCapaSemantica(new[] { ModuloFinanciero.Modulo }.Concat(ModuloIngreso.Modulos));
         s.AddApplication(typeof(IAnalitica.Application.Empresas.CrearEmpresaCommand).Assembly);
+        ajustar?.Invoke(s);
         return s.BuildServiceProvider(validateScopes: true);
     }
 

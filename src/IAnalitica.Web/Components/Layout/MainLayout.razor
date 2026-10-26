@@ -13,8 +13,14 @@
                 <AuthorizeView Policy="dash.auditor_config" Context="auditor">
                     <li class="nav-item"><a class="nav-link" href="/auditor">Salud de la configuración</a></li>
                 </AuthorizeView>
+                <AuthorizeView Policy="dash.farmacia" Context="farmacia">
+                    <li class="nav-item"><a class="nav-link" href="/precios">Cumplimiento de precios</a></li>
+                </AuthorizeView>
                 <AuthorizeView Policy="admin.empresas" Context="superadmin">
                     <li class="nav-item"><a class="nav-link" href="/admin/empresas/nueva">Nueva empresa</a></li>
+                </AuthorizeView>
+                <AuthorizeView Policy="admin.catalogos" Context="catalogos">
+                    <li class="nav-item"><a class="nav-link" href="/admin/regulacion">Regulación</a></li>
                 </AuthorizeView>
                 <AuthorizeView Policy="admin.usuarios" Context="admin">
                     <li class="nav-item"><a class="nav-link" href="/admin/usuarios">Usuarios</a></li>
