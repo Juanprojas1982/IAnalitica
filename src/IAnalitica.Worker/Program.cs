@@ -28,6 +28,7 @@ builder.Services.AddApplication(ModuloFinanciero.Ensamblado, ModuloIngreso.Ensam
     ModuloFarmacia.Ensamblado, ModuloEse.Ensamblado, ModuloAuditor.Ensamblado);
 builder.Services.AddCapaSemantica(new[] { ModuloFinanciero.Modulo }.Concat(ModuloIngreso.Modulos));
 builder.Services.AddProcesamiento(cadenaEtl);
+builder.Services.AddReglasAuditor(ModuloAuditor.Reglas());
 builder.Services.AddGeneracionReportes();
 builder.Services.Configure<LimitesReportes>(builder.Configuration.GetSection("Reportes:Limites"));
 builder.Services.Configure<OpcionesAlmacenReportes>(builder.Configuration.GetSection("Reportes:Almacen"));

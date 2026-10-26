@@ -2,6 +2,8 @@ using IAnalitica.Application.Abstracciones;
 using IAnalitica.Application.Ingesta;
 using IAnalitica.Infrastructure.Empresas;
 using IAnalitica.Infrastructure.Identity;
+using IAnalitica.Domain.Auditoria;
+using IAnalitica.Infrastructure.Auditoria;
 using IAnalitica.Infrastructure.Ingesta;
 using IAnalitica.Infrastructure.Semantica;
 using IAnalitica.Application.Semantica;
@@ -109,10 +111,19 @@ public static class DependencyInjection
         services.AddSingleton<ProcesadorCargas>();
         services.AddSingleton<IManejadorTrabajo, ManejadorProcesarCarga>();
         services.AddSingleton<IManejadorTrabajo, ManejadorCalcularCartera>();
+        services.AddSingleton<MotorAuditoria>();
+        services.AddSingleton<IManejadorTrabajo, ManejadorAuditarConfig>();
         services.AddSingleton<DespachadorTrabajos>();
         services.TryAddSingleton<IAlmacenReportes, AlmacenReportesDisco>();
         services.AddOptions<OpcionesAlmacenReportes>();
         services.AddSingleton<ExpiradorReportes>();
+        return services;
+    }
+
+    /// <summary>Reglas del auditor de configuración (las aporta el módulo; el motor no las conoce).</summary>
+    public static IServiceCollection AddReglasAuditor(this IServiceCollection services, IEnumerable<IReglaConfiguracion> reglas)
+    {
+        foreach (var r in reglas) services.AddSingleton(r);
         return services;
     }
 

@@ -248,7 +248,7 @@ public class ApiIngestaTests(BaseDeDatosFixture bd) : IAsyncLifetime
         var casos = new (object Cuerpo, string Codigo)[]
         {
             (new { entidad = "recibos", modo = "VENTANA", ventanaDesde = "2026-01-01", ventanaHasta = "2026-01-31" }, "ENTIDAD_NO_SOPORTADA"),
-            (new { entidad = "configuracion", modo = "FOTO", corte = "2026-01-01" }, "ENTIDAD_NO_SOPORTADA"),
+            (new { entidad = "configuracion", modo = "VENTANA", ventanaDesde = "2026-01-01", ventanaHasta = "2026-01-31" }, "CONTRATO_INVALIDO"),
             (new { entidad = "asientos", modo = "COMPLETA" }, "CONTRATO_INVALIDO"),
             (new { entidad = "asientos", modo = "VENTANA" }, "CONTRATO_INVALIDO"),
             (new { entidad = "asientos", modo = "VENTANA", ventanaDesde = "2026-02-01", ventanaHasta = "2026-01-01" }, "CONTRATO_INVALIDO"),
