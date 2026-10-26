@@ -19,6 +19,9 @@
                 <AuthorizeView Policy="admin.empresas" Context="superadmin">
                     <li class="nav-item"><a class="nav-link" href="/admin/empresas/nueva">Nueva empresa</a></li>
                 </AuthorizeView>
+                <AuthorizeView Policy="ia.usar" Context="ia">
+                    <li class="nav-item"><a class="nav-link" href="/asistente">Asistente</a></li>
+                </AuthorizeView>
                 <AuthorizeView Policy="admin.catalogos" Context="catalogos">
                     <li class="nav-item"><a class="nav-link" href="/admin/regulacion">Regulación</a></li>
                 </AuthorizeView>
