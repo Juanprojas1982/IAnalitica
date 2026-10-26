@@ -92,6 +92,7 @@ CREATE TABLE cfg.KpiMeta (
 );
 GO
 CREATE TABLE seg.HistorialClave (                         -- no repetir las últimas 5 (Identity no lo trae)
+    HistorialId bigint IDENTITY(1,1) CONSTRAINT PK_HistorialClave PRIMARY KEY,   -- agregado al unificar: EF Core necesita llave para insertar
     UsuarioId int NOT NULL CONSTRAINT FK_HC_Usuario REFERENCES seg.Usuario(Id),
     HashClave nvarchar(max) NOT NULL,
     CreadoEn  datetime2(0) NOT NULL DEFAULT SYSUTCDATETIME()
