@@ -1,0 +1,135 @@
+@page "/admin/empresas/nueva"
+@attribute [Authorize(Policy = "admin.empresas")]
+@using IAnalitica.Application.Empresas
+@using IAnalitica.Application.Mediacion
+@using IAnalitica.Domain.Empresas
+@using IAnalitica.Web.Components.Pages.Comunes
+@inject ISender Enviar
+
+<PageTitle>Nueva empresa · IAnalitica</PageTitle>
+<h1 class="h3">Nueva empresa</h1>
+
+@if (kit is not null)
+{
+    <KitEntregaVista Kit="kit" />
+    <p><a class="btn btn-outline-primary" href="/admin/empresas/nueva">Crear otra empresa</a></p>
+}
+else
+{
+    <p class="text-muted">Al crearla se genera el usuario <code>Admin{NIT}</code> con una contraseña aleatoria, y la credencial del conector.</p>
+    <Mensajes Errores="errores" />
+    <EditForm Model="Entrada" FormName="nueva-empresa" OnValidSubmit="CrearAsync" method="post">
+        <DataAnnotationsValidator />
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label" for="nit">NIT (sin dígito de verificación)</label>
+                <InputText id="nit" class="form-control" @bind-Value="Entrada.Nit" />
+                <ValidationMessage For="() => Entrada.Nit" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" for="dv">Dígito de verificación</label>
+                <InputText id="dv" class="form-control" @bind-Value="Entrada.DigitoVerificacion" maxlength="1" />
+                <ValidationMessage For="() => Entrada.DigitoVerificacion" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="razon">Razón social</label>
+                <InputText id="razon" class="form-control" @bind-Value="Entrada.RazonSocial" />
+                <ValidationMessage For="() => Entrada.RazonSocial" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="comercial">Nombre comercial</label>
+                <InputText id="comercial" class="form-control" @bind-Value="Entrada.NombreComercial" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="tipo">Tipo de entidad</label>
+                <InputSelect id="tipo" class="form-select" @bind-Value="Entrada.TipoEntidad">
+                    @foreach (var t in TiposEntidad.Todos) { <option value="@t">@t</option> }
+                </InputSelect>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="naturaleza">Naturaleza</label>
+                <InputSelect id="naturaleza" class="form-select" @bind-Value="Entrada.Naturaleza">
+                    <option value="">Automática (ESE = pública)</option>
+                    @foreach (var n in Naturalezas.Todas) { <option value="@n">@n</option> }
+                </InputSelect>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="correo">Correo del administrador</label>
+                <InputText id="correo" class="form-control" @bind-Value="Entrada.EmailContacto" type="email" />
+                <ValidationMessage For="() => Entrada.EmailContacto" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="ciudad">Ciudad</label>
+                <InputText id="ciudad" class="form-control" @bind-Value="Entrada.Ciudad" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="depto">Departamento</label>
+                <InputText id="depto" class="form-control" @bind-Value="Entrada.Departamento" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="color1">Color primario</label>
+                <InputText id="color1" class="form-control" @bind-Value="Entrada.ColorPrimario" placeholder="#0B3D91" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="color2">Color secundario</label>
+                <InputText id="color2" class="form-control" @bind-Value="Entrada.ColorSecundario" placeholder="#5B6B7F" />
+            </div>
+        </div>
+
+        <fieldset class="mt-4">
+            <legend class="h6">Módulos activos</legend>
+            <div class="row">
+                @foreach (var m in Modulos.Todos)
+                {
+                    var modulo = m;
+                    <div class="col-md-3 col-sm-6">
+                        <div class="form-check">
+                            <input type="checkbox" id="@($"mod-{modulo}")" class="form-check-input" name="@($"Entrada.Modulos[{modulo}]")" value="true" checked="@Entrada.Modulos.GetValueOrDefault(modulo)" />
+                            <label class="form-check-label" for="@($"mod-{modulo}")">@modulo</label>
+                        </div>
+                    </div>
+                }
+            </div>
+        </fieldset>
+
+        <button class="btn btn-primary mt-4" type="submit">Crear empresa</button>
+    </EditForm>
+}
+
+@code {
+    private KitEntrega? kit;
+    private List<string>? errores;
+
+    [SupplyParameterFromForm(Name = "Entrada")] private EntradaEmpresa? EntradaPublicada { get; set; }
+    private EntradaEmpresa Entrada => EntradaPublicada ??= new();
+
+    private async Task CrearAsync()
+    {
+        var elegidos = Entrada.Modulos.Where(m => m.Value).Select(m => m.Key).ToArray();
+        var r = await Enviar.Send(new CrearEmpresaCommand(
+            Entrada.Nit.Trim(), Entrada.DigitoVerificacion.Trim(), Entrada.RazonSocial, Vacio(Entrada.NombreComercial), Entrada.TipoEntidad,
+            Vacio(Entrada.Naturaleza), Entrada.EmailContacto, Vacio(Entrada.Ciudad), Vacio(Entrada.Departamento), null, null,
+            Vacio(Entrada.ColorPrimario), Vacio(Entrada.ColorSecundario), null, null, elegidos, null));
+
+        if (r.EsExitoso) kit = r.Valor;
+        else errores = r.Errores.Select(e => e.Mensaje).ToList();
+    }
+
+    private static string? Vacio(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
+
+    private sealed class EntradaEmpresa
+    {
+        [Required(ErrorMessage = "Escriba el NIT.")] public string Nit { get; set; } = "";
+        [Required(ErrorMessage = "Escriba el dígito de verificación.")] public string DigitoVerificacion { get; set; } = "";
+        [Required(ErrorMessage = "Escriba la razón social.")] public string RazonSocial { get; set; } = "";
+        public string? NombreComercial { get; set; }
+        public string TipoEntidad { get; set; } = TiposEntidad.Ips;
+        public string? Naturaleza { get; set; }
+        [Required(ErrorMessage = "Escriba el correo del administrador.")] public string EmailContacto { get; set; } = "";
+        public string? Ciudad { get; set; }
+        public string? Departamento { get; set; }
+        public string? ColorPrimario { get; set; }
+        public string? ColorSecundario { get; set; }
+        public Dictionary<string, bool> Modulos { get; set; } = IAnalitica.Domain.Empresas.Modulos.Todos.ToDictionary(m => m, _ => false);
+    }
+}

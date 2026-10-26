@@ -1,3 +1,4 @@
+/* REEMPLAZADO (24_SPEC_MAESTRA §6.1, rev. 1.1): el DDL vigente y verificado está en database/scripts. Este archivo se conserva solo como registro del diseño. */
 /* =====================================================================
    DDL complementario y correcciones para la SPEC MAESTRA (24_SPEC_MAESTRA.md, §6)
    Tablas que no estaban en 01_v2, 07, 10 ni 15 (las correcciones ya están aplicadas en esos archivos)

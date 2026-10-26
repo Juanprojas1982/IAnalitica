@@ -1,0 +1,138 @@
+@page "/admin/usuarios"
+@attribute [Authorize(Policy = "admin.usuarios")]
+@using IAnalitica.Application.Abstracciones
+@using IAnalitica.Application.Mediacion
+@using IAnalitica.Application.Usuarios
+@using IAnalitica.Web.Components.Pages.Comunes
+@inject ISender Enviar
+
+<PageTitle>Usuarios · IAnalitica</PageTitle>
+<h1 class="h3">Usuarios de su empresa</h1>
+
+@if (credencial is not null)
+{
+    <div class="card border-success my-3">
+        <div class="card-body">
+            <div class="alert alert-warning" role="alert"><strong>Se muestra una sola vez.</strong> Entregue estos datos por un canal seguro; deberá cambiar la contraseña en su primer ingreso.</div>
+            <dl class="row mb-0">
+                <dt class="col-sm-3">Usuario</dt><dd class="col-sm-9"><code id="cred-usuario">@credencial.Usuario</code> <button type="button" class="btn btn-outline-secondary btn-sm" data-copiar="cred-usuario">Copiar</button></dd>
+                <dt class="col-sm-3">Contraseña temporal</dt><dd class="col-sm-9"><code id="cred-clave">@credencial.ClaveInicial</code> <button type="button" class="btn btn-outline-secondary btn-sm" data-copiar="cred-clave">Copiar</button>
+                    <div class="text-muted small">Vence el @credencial.ClaveVenceEnUtc.ToString("yyyy-MM-dd HH:mm") UTC.</div></dd>
+            </dl>
+        </div>
+    </div>
+}
+@if (Error is { Length: > 0 })
+{
+    <div class="alert alert-danger" role="alert">@Error</div>
+}
+
+<table class="table table-sm align-middle">
+    <thead><tr><th>Usuario</th><th>Nombre</th><th>Roles</th><th>Estado</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var u in lista)
+    {
+        <tr>
+            <td>@u.Usuario @if (u.EsAdminPrincipal) { <span class="badge bg-primary">Administrador</span> }</td>
+            <td>@u.NombreCompleto</td>
+            <td>@string.Join(", ", u.Roles)</td>
+            <td>@(u.Activo ? "Activo" : "Desactivado")@(u.DobleFactorActivo ? " · 2FA" : "")</td>
+            <td class="text-end">
+                @if (!u.EsAdminPrincipal)
+                {
+                    <form method="post" action="@($"/admin/usuarios/{u.Id}/estado?activo={(!u.Activo).ToString().ToLowerInvariant()}")" class="d-inline">
+                        <AntiforgeryToken />
+                        <button class="btn btn-outline-secondary btn-sm" type="submit">@(u.Activo ? "Desactivar" : "Reactivar")</button>
+                    </form>
+                    <form method="post" action="@($"/admin/usuarios/{u.Id}/restablecer")" class="d-inline">
+                        <AntiforgeryToken />
+                        <button class="btn btn-outline-warning btn-sm" type="submit">Restablecer contraseña</button>
+                    </form>
+                }
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+<h2 class="h5 mt-4">Nuevo usuario</h2>
+<Mensajes Errores="errores" />
+<EditForm Model="Entrada" FormName="nuevo-usuario" OnValidSubmit="CrearAsync" method="post">
+    <DataAnnotationsValidator />
+    <div class="row g-3">
+        <div class="col-md-3">
+            <label class="form-label" for="u-usuario">Usuario</label>
+            <InputText id="u-usuario" class="form-control" @bind-Value="Entrada.NombreUsuario" />
+            <ValidationMessage For="() => Entrada.NombreUsuario" />
+        </div>
+        <div class="col-md-4">
+            <label class="form-label" for="u-nombre">Nombre completo</label>
+            <InputText id="u-nombre" class="form-control" @bind-Value="Entrada.NombreCompleto" />
+            <ValidationMessage For="() => Entrada.NombreCompleto" />
+        </div>
+        <div class="col-md-5">
+            <label class="form-label" for="u-correo">Correo</label>
+            <InputText id="u-correo" type="email" class="form-control" @bind-Value="Entrada.Email" />
+            <ValidationMessage For="() => Entrada.Email" />
+        </div>
+    </div>
+    <fieldset class="mt-3">
+        <legend class="h6">Roles</legend>
+        <div class="row">
+            @foreach (var r in RolesAsignables.Lista)
+            {
+                var rol = r;
+                <div class="col-md-3 col-sm-6">
+                    <div class="form-check">
+                        <input type="checkbox" id="@($"rol-{rol}")" class="form-check-input" name="@($"Entrada.Roles[{rol}]")" value="true" checked="@Entrada.Roles.GetValueOrDefault(rol)" />
+                        <label class="form-check-label" for="@($"rol-{rol}")">@rol</label>
+                    </div>
+                </div>
+            }
+        </div>
+    </fieldset>
+    <button class="btn btn-primary mt-3" type="submit">Crear usuario</button>
+</EditForm>
+
+@code {
+    private IReadOnlyList<UsuarioResumen> lista = [];
+    private CredencialTemporal? credencial;
+    private List<string>? errores;
+
+    [SupplyParameterFromQuery(Name = "error")] private string? Error { get; set; }
+    [SupplyParameterFromForm(Name = "Entrada")] private EntradaUsuario? EntradaPublicada { get; set; }
+    private EntradaUsuario Entrada => EntradaPublicada ??= new();
+
+    protected override async Task OnInitializedAsync() => await CargarAsync();
+
+    private async Task CargarAsync()
+    {
+        var r = await Enviar.Send(new ListarUsuariosQuery());
+        lista = r.EsExitoso ? r.Valor : [];
+    }
+
+    private async Task CrearAsync()
+    {
+        var roles = Entrada.Roles.Where(x => x.Value).Select(x => x.Key).ToArray();
+        var r = await Enviar.Send(new CrearUsuarioCommand(Entrada.NombreUsuario.Trim(), Entrada.Email.Trim(), Entrada.NombreCompleto.Trim(), roles));
+        if (r.EsExitoso)
+        {
+            credencial = r.Valor;
+            EntradaPublicada = new();
+            errores = null;
+        }
+        else
+        {
+            errores = r.Errores.Select(e => e.Mensaje).ToList();
+        }
+        await CargarAsync();
+    }
+
+    private sealed class EntradaUsuario
+    {
+        [Required(ErrorMessage = "Escriba el usuario.")] public string NombreUsuario { get; set; } = "";
+        [Required(ErrorMessage = "Escriba el nombre.")] public string NombreCompleto { get; set; } = "";
+        [Required(ErrorMessage = "Escriba el correo.")] public string Email { get; set; } = "";
+        public Dictionary<string, bool> Roles { get; set; } = RolesAsignables.Lista.ToDictionary(r => r, _ => false);
+    }
+}

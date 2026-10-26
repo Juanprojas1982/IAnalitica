@@ -1,3 +1,4 @@
+/* REEMPLAZADO (24_SPEC_MAESTRA §6.1, rev. 1.1): el DDL vigente y verificado está en database/scripts. Este archivo se conserva solo como registro del diseño. */
 /* =====================================================================
    Plataforma analítica contable multiempresa - Sector salud   (v2)
    Motor: SQL Server 2022 / Azure SQL Database

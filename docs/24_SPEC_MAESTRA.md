@@ -1,6 +1,6 @@
 # IAnalitica — ESPECIFICACIÓN MAESTRA v1.0
 
-Estado: **cerrada para implementación** (Opus, 2026‑10‑26). Implementa: Sonnet.
+Estado: **cerrada para implementación** (Opus, 2026‑10‑26; rev. 1.1 del 2026‑10‑26: DDL unificado y verificado en `database/scripts`, D35–D38). Implementa: Sonnet.
 Repositorio: `Juanprojas1982/IAnalitica` (plataforma) y `Juanprojas1982/SaludIPS2` (conector, rama `feature/analitica-conector`).
 
 ## 0. Cómo usar este documento (obligatorio para quien implementa)
@@ -9,7 +9,7 @@ Repositorio: `Juanprojas1982/IAnalitica` (plataforma) y `Juanprojas1982/SaludIPS
    2. specs detalladas vigentes (§16);
    3. todo lo demás.
 
-   El registro de decisiones (D01–D33) está en §17 de este documento.
+   El registro de decisiones (D01–D38) está en §17 de este documento.
 
    Si un documento contradice a uno de mayor precedencia, gana el de mayor precedencia. **Los documentos marcados «reemplazado» en §16 no se usan.**
 2. **No inventar.** Si algo no está definido aquí ni en una spec vigente, **se pregunta** antes de implementarlo. No se asumen valores, nombres de tablas, reglas de negocio ni paquetes.
@@ -198,14 +198,36 @@ public interface IPublisher { Task Publish<TNotification>(TNotification notifica
 - Solo el superadmin crea empresas. Al crearla se genera **`Admin{NIT}`** (NIT sin DV) con **contraseña aleatoria de 14 caracteres** mostrada una vez y vencida a las 72 h. En el primer ingreso son obligatorios el cambio de contraseña y el doble factor.
 - **Un solo administrador por empresa.** El `Admin{NIT}` crea usuarios de su empresa con los roles `GERENTE`, `FINANCIERO`, `CARTERA`, `TESORERO`, `FARMACIA`, `AUDITOR` y `CONSULTA`. Doble factor obligatorio para `Admin{NIT}` y superadmin; opcional para el resto (configurable por empresa).
 - Política de contraseñas: mínimo 10 caracteres con mayúscula, minúscula, número y carácter especial; historial de 5; bloqueo tras 5 intentos durante 15 min; sesión inactiva de 30 min.
+- **Usuario desactivado** (D35): al desactivar se cambia el `SecurityStamp`; el `SecurityStampValidator` revalida cada **1 min** y cierra la sesión. El inicio de sesión rechaza usuarios con `Activo = 0`. La BD ya no verifica `Activo` (ver §4.2).
+- **Permisos** (`seg.RolPermiso`, semilla en `0130`, **[S] hasta confirmación del dueño**, D37): `dash.<modulo>` (13, uno por módulo de §5.3), `reportes.exportar`, `hallazgos.gestionar`, `ia.usar`, `admin.usuarios`, y solo superadmin `admin.empresas`, `admin.ia`, `admin.catalogos`. Matriz: SUPERADMIN todo; ADMIN_EMPRESA todos los `dash.*` + exportar, hallazgos, IA y usuarios; GERENTE todos los `dash.*` + exportar e IA; FINANCIERO financiero, ciclo del ingreso, cartera, tesorería, glosas, ESE, inventario + exportar e IA; CARTERA cartera, glosas, ciclo del ingreso + exportar; TESORERO tesorería y cartera + exportar; FARMACIA farmacia e inventario + hallazgos y exportar; AUDITOR auditor de configuración + hallazgos y exportar; CONSULTA todos los `dash.*` salvo nómina, sin exportar ni IA. `dash.nomina_costos` solo gerencia (05 §6b).
+- **Primer superadmin** (D38): `IAnalitica.Database.Migrator crear-superadmin --usuario <u> --correo <c>`. Crea el usuario con contraseña aleatoria de 14 caracteres mostrada una vez, `DebeCambiarClave = 1` y doble factor obligatorio en el primer ingreso. Falla si ya existe un superadmin activo. Fija `EsSuperAdmin = 1` en el contexto de sesión solo para esa operación.
 - **Kit de entrega** al crear la empresa: usuario, contraseña inicial, URL y credenciales del conector (ClientId y secreto mostrados una vez).
 
-### 4.2 Aislamiento por empresa
-- **RLS** en SQL (`23_ddl` §12): política única al final del despliegue.
-- **Interceptor de EF Core / Dapper:** en **cada** apertura de conexión ejecuta `sp_set_session_context 'UsuarioId', @id, @read_only = 1`.
-- El **worker** usa el login `rol_etl` para el procesamiento. Para generar reportes y para la IA usa **el contexto del usuario solicitante**.
-- Doble defensa: los handlers filtran además por `EmpresaId` de la sesión.
-- **Pruebas obligatorias:** un usuario de la empresa A no puede leer ni escribir datos de la empresa B en ninguna tabla.
+### 4.2 Aislamiento por empresa (D35, D36)
+- **RLS** en SQL, script `database/scripts/siempre/9000_rls.sql`, que se ejecuta **en cada despliegue** (DbUp *run always*) y regenera la política `seg.PolTenant` sobre **todas** las tablas con columna `EmpresaId` de los esquemas seg, cfg, etl, stg, dim, fact, ia, rpt, reg, saludips y aud. Una tabla nueva queda cubierta sin tocar nada. `crm.*` no lleva RLS.
+- **Contexto de sesión.** Un interceptor de EF Core / Dapper ejecuta en **cada** apertura de conexión `sp_set_session_context` con `@read_only = 1`:
+
+  | Clave | Portal (usuario) | API (token) | Superadmin |
+  |---|---|---|---|
+  | `EmpresaId` (int) | su empresa | `empresa_id` del token | NULL |
+  | `UsuarioId` (int) | su Id | NULL | su Id |
+  | `EsSuperAdmin` (bit) | 0 | 0 | 1 |
+  | `EsAdminPrincipal` (bit) | 1 solo `Admin{NIT}` | 0 | 0 |
+  | `Autenticacion` (bit) | 1 **solo** en inicio de sesión, 2FA y cambio de clave | 1 **solo** en `POST /connect/token` | igual |
+
+  Ninguna otra ruta fija `Autenticacion`. Sin contexto, la aplicación no ve nada.
+- **Predicados:**
+  - general: `rol_etl` o `EsSuperAdmin = 1` o `EmpresaId = contexto` (FILTER + BLOCK AFTER INSERT/UPDATE);
+  - `ia.Tarifa`, `cfg.Dashboard`: además, lo global (`EmpresaId` NULL) es legible para todos; escribir lo global, solo superadmin;
+  - `seg.Usuario`, `seg.ApiClienteEmpresa`: además, visibles y actualizables con `Autenticacion = 1` (búsqueda por nombre, intentos fallidos, bloqueo, sello);
+  - `aud.*`: la auditoría de una empresa la ve solo su `Admin{NIT}`; la global, solo el superadmin; `aud.AccesoSuperadmin`, solo el superadmin. Sin BLOCK (hay eventos antes del inicio de sesión); solo inserción por permisos.
+- **Principales de BD** (`0900`; los usuarios concretos los crea el ambiente, no DbUp):
+  - `rol_app`: portal, API y los trabajos del worker que corren con el contexto de un usuario (reportes, IA). Sujeto a RLS.
+  - `rol_etl`: worker para procesar cargas y cálculos. Sin RLS. **El worker tiene dos cadenas de conexión** (una por rol).
+  - `dbo`/`sysadmin` quedan filtrados por RLS como cualquiera: las pruebas se conectan con usuarios de `rol_app`.
+- **Pool de conexiones:** `sp_reset_connection` borra el contexto al devolver la conexión al pool; el interceptor lo fija de nuevo en cada apertura. **Verificar en F0 con una prueba** (dos usuarios de empresas distintas en el mismo pool).
+- Doble defensa: los handlers filtran además por `EmpresaId` de la sesión. Las solicitudes de reporte de otro usuario de la misma empresa se filtran en el handler (la RLS es por empresa).
+- **Pruebas obligatorias:** un usuario de la empresa A no puede leer ni escribir datos de la empresa B en ninguna tabla (lectura, UPDATE/DELETE por filtro, INSERT y cambio de `EmpresaId` bloqueados); sin contexto no se ve nada; toda tabla con `EmpresaId` está en la política (consulta a `sys.security_predicates`).
 
 ### 4.3 API de ingesta
 - OpenIddict, client credentials. Cada `ClientId` se asocia a una empresa (`seg.ApiClienteEmpresa`); el `EmpresaId` sale del token.
@@ -292,32 +314,44 @@ Todo PDF o Excel pasa por `rpt.SolicitudReporte` + `etl.Trabajo`. Aviso con `seg
 
 ## 6. Datos
 
-### 6.1 Fuentes de DDL vigentes
-`01_esquema_analitico_salud_v2.sql`, `07_asistente_ia.sql`, `10_hechos_operativos_y_costeo.sql`, `15_spec_…` (§2.4, `reg.*` y `fact.HallazgoTarifario`), `20_spec_…` (§2, `etl.Trabajo`), `21_spec_…` (§3, `rpt.SolicitudReporte`) y `23_ddl_complementario.sql` (tablas adicionales y RLS final). **Todos ya están corregidos entre sí; no hay correcciones pendientes que aplicar.**
+### 6.1 Fuente única del DDL
+**El DDL vive solo en `database/scripts`** y está verificado contra SQL Server 2022 (rev. 1.1). Los bloques SQL de `01`, `07`, `10`, `15`, `20`, `21` y `23` quedan **reemplazados**: se conservan como registro del diseño, pero si difieren, gana `database/scripts`. Las extracciones `06` y `11` (lado SaludIPS) siguen vigentes.
 
-### 6.2 Orden de scripts DbUp (`database/scripts`)
+Correcciones aplicadas al unificar (rev. 1.1):
+- Los esquemas se crean antes que Identity (antes, 0001 fallaba porque `seg` no existía).
+- `ia.Plan` → **`ia.PlanComercial`** (`PLAN` es palabra reservada de T‑SQL; el script no compilaba).
+- `etl.Carga` alineada con el contrato 05: modos `COMPLETA`, `VENTANA`, `INCREMENTAL`, `FOTO`, `INICIAL` (+ `REPROCESO` de plataforma); estados `ABIERTA`, `CERRADA`, `PROCESANDO`, `OK`, `ERROR`, `RECHAZADA` (atómica, sin `PARCIAL`); columnas `Corte`, `VersionFuente`, `TotalLotes`, `TotalFilas`, `SumaControl`, `CerradaEn`, `TraceParent`.
+- `stg.Payload`: `NumeroLote` y `UNIQUE (CargaId, NumeroLote)` para el reintento idempotente.
+- `etl.Trabajo`: `EmpresaId` admite NULL (trabajos globales) y se agrega `UsuarioId` (trabajos con el contexto del solicitante).
+- Columnas del contrato que faltaban: `dim.Sede.NombreCorto`; `dim.CentroCosto.TipoOrigen`, `UnidadNegocio`; `dim.Tercero.DigitoVerificacion`, `ClaseOrigen`; `dim.Pagador.CodigoAdministradora`, `EsParticular`, `Activo`; `dim.Servicio.CodigoEstandar`; `dim.Articulo.CodigoCum`; `fact.TesoreriaMovimiento.ConceptoCodigo`.
+- `fact.HallazgoTarifario.Estado` con CHECK y el mismo ciclo del auditor (`NUEVO`…`FALSO_POSITIVO`).
+- RLS rediseñada (D35, D36) y semillas nuevas: roles, matriz de permisos (D37) y plan `PILOTO`.
+
+### 6.2 Scripts DbUp (`database/scripts`)
 | Script | Contenido |
 |---|---|
-| 0001 | Identity + OpenIddict (generado con `dotnet ef migrations script` desde el `DbContext` de identidad) |
-| 0010 | Esquemas: seg, cfg, etl, stg, dim, fact, rpt, aud, ia, reg, saludips, crm |
-| 0020 | `seg.Empresa`, `EmpresaContacto`, `EmpresaModulo` (lista de módulos de `23` §2), `ApiClienteEmpresa`, `Notificacion`, `HistorialClave`; `cfg.EmpresaParametro`, `KpiMeta`, `Dashboard`, `ReglaConfiguracion*` |
-| 0021 | Restricciones sobre `seg.Usuario` (`23` §1) |
+| 0001 | Esquemas: seg, cfg, etl, stg, dim, fact, rpt, aud, ia, reg, saludips, crm (idempotente) |
+| 0005 | Identity + OpenIddict: **se genera en F0** con `dotnet ef migrations script` desde el `DbContext` de identidad (nombres de tablas en `seg`, §4.1 y 23 §1) |
+| 0020 | `seg.Empresa`, `EmpresaContacto`, `EmpresaModulo`, `RolPermiso`, `UsuarioAlcance`, `HistorialClave`, `ApiClienteEmpresa`, `Notificacion`; `cfg.EmpresaParametro`, `KpiMeta`, `Dashboard`, `ReglaConfiguracion`, `ReglaConfiguracionEmpresa` |
+| 0021 | Restricciones sobre `seg.Usuario` (empresa/superadmin, FK, un admin principal por empresa) |
 | 0030 | `etl.Carga`, `Rechazo`, `PeriodoCierre`, `Trabajo`; `stg.Payload` |
-| 0040 | Dimensiones (v2 + `Especialidad` + `Profesional` corregido + `FuenteFinanciacion` + `RubroPresupuestal`) |
-| 0050 | Hechos financieros (v2) |
-| 0060 | Hechos operativos (10) |
-| 0070 | Hechos ESE (`23` §5) |
-| 0080 | `reg.*` + `fact.HallazgoTarifario` (15) |
-| 0090 | Auditor: `fact.HallazgoConfiguracion` + tablas `saludips.*` |
-| 0100 | `ia.*` (07) |
+| 0040 | Dimensiones (incluye `Especialidad`, `Profesional`, `FuenteFinanciacion`, `RubroPresupuestal`) |
+| 0050 | Hechos financieros |
+| 0060 | Hechos operativos |
+| 0070 | Hechos ESE |
+| 0080 | `reg.*` + `fact.HallazgoTarifario` |
+| 0090 | `fact.HallazgoConfiguracion`. Las tablas `saludips.*` van en F4 (script 1000+) |
+| 0100 | `ia.*` (tablas y semilla de proveedores y modelos) |
 | 0110 | `rpt.SolicitudReporte`, `aud.*`, `crm.Prospecto` |
-| 0120 | Costeo: `cfg.CostoBase`, `CostoRegla`, `fact.CostoBaseValor`, `CostoDistribuido` |
-| 0130 | Población de `dim.Fecha` y datos semilla (roles, módulos, reglas, `ia.Parametro`, modelos IA) |
-| 0140 | Procedimientos (cartera, costos, cuota IA, cierre IA) |
-| 0150 | Vistas `rpt.*` e `ia.vw_ConsumoMes` |
-| 0900 | Roles de BD (`rol_etl`, `rol_app`), permisos (DENY UPDATE/DELETE sobre `aud`) y **RLS** (`23` §12) |
+| 0120 | Costeo: `cfg.CostoBase` (con semilla), `CostoRegla`, `fact.CostoBaseValor`, `CostoDistribuido` |
+| 0130 | `dim.Fecha` 2015–2035, roles, matriz de permisos [S], plan `PILOTO` [S] (idempotente) |
+| 0140 | Vistas `rpt.*` e `ia.vw_ConsumoMes` |
+| 0150 | Funciones y procedimientos (cartera, costos, cuota y cierre de IA) |
+| 0900 | Roles de BD `rol_app` y `rol_etl` y permisos por esquema (DENY UPDATE/DELETE sobre `aud`) |
+| `siempre/9000` | **RLS**, en cada despliegue (§4.2) |
 
-**Cada script es idempotente o se ejecuta una sola vez (registro de DbUp). Nunca se edita un script ya aplicado: se agrega uno nuevo.**
+- Los scripts numerados se ejecutan **una sola vez** (registro de DbUp). **Nunca se edita un script ya aplicado:** se agrega uno nuevo (1000 en adelante). Hasta el primer despliegue de F0, todavía se pueden corregir.
+- Los semillas de las 10 reglas del auditor (`cfg.ReglaConfiguracion`) van en F4, con los textos de corrección y rutas validados.
 
 ### 6.3 Compatibilidad con la base gratuita de Azure SQL
 General Purpose serverless admite RLS y columnstore. Límite de **32 GB** y cupo de vCore‑segundos: medir el consumo en los pilotos (§11) y **configurar la pausa al agotar el cupo**.
@@ -343,7 +377,7 @@ Problem Details (RFC 9457) con los códigos de la spec 05 §7.
 ## 8. Procesamiento y concurrencia (spec 20)
 - Toda tarea pesada pasa por `IColaTrabajos`. En los pilotos la cola es SQL (`etl.Trabajo`). La cola de Storage se activa solo con aprobación.
 - Cadena nocturna por empresa: `PROCESAR_CARGA` (por entidad) → `CALCULAR_CARTERA` → `AUDITAR_CONFIG` → `VALIDAR_PRECIOS` → `DISTRIBUIR_COSTOS` (si el periodo cerró) → `ALERTAS`.
-- **Worker:** máximo **2** trabajos simultáneos en pruebas, configurable. Exclusión por `ClaveExclusion`; reintentos 1/2/4/8/16 min; estado `VENENO` con alerta.
+- **Worker:** máximo **2** trabajos simultáneos en pruebas, configurable. Procesa con `rol_etl`; reportes e IA, con `rol_app` y el contexto (`EmpresaId`, `UsuarioId`) del solicitante guardado en `etl.Trabajo`. Exclusión por `ClaveExclusion`; reintentos 1/2/4/8/16 min; estado `VENENO` con alerta.
 
 ## 9. Interfaz (portal)
 - Blazor Web App con render **InteractiveAuto**. Tema MudBlazor con los **colores y el logo de la empresa** (`seg.Empresa`).
@@ -382,7 +416,7 @@ Problem Details (RFC 9457) con los códigos de la spec 05 §7.
 ## 13. Plan de implementación (fases y criterios de aceptación)
 | Fase | Entregables | Criterio de aceptación |
 |---|---|---|
-| **F0 · Base** | Solución, CI, migrador DbUp + scripts 0001–0900, Identity + 2FA, alta de empresa con kit de entrega, RLS con pruebas, OpenTelemetry local | Crear 2 empresas; el `Admin{NIT}` de A no ve nada de B (prueba automatizada) |
+| **F0 · Base** | Solución, CI, migrador DbUp (scripts de §6.2 + generar 0005 + `crear-superadmin`), Identity + 2FA, alta de empresa con kit de entrega, RLS con pruebas, OpenTelemetry local | Crear 2 empresas; el `Admin{NIT}` de A no ve nada de B (prueba automatizada) |
 | **F1 · Conector en simulación** | Proyecto en SaludIPS, parámetros `Analitica.*`, funciones `analitica.fn_*` para catálogos, asientos, facturas y configuración; modo simulación (JSON a disco) | Los JSON de un piloto real cuadran contra `SIPS_5` y `ESTADORESULTADOSCENTROCOSTOHORIZONTAL` del mismo periodo |
 | **F2 · Ingesta** | API de cargas (token, lotes, cerrar, estado), cola SQL, worker `PROCESAR_CARGA`, cartera | Carga de 13 meses del piloto; la cartera cuadra con `CARTERAESTADOCUENTAEDADES` (≤ 0,5 %) |
 | **F3 · Dashboards fase 1** | Capa semántica, renderizador, dashboards de §5.3 fase 1, reportes en segundo plano | Los 3 pilotos usan los dashboards; criterios del acuerdo de piloto |
@@ -401,6 +435,9 @@ Problem Details (RFC 9457) con los códigos de la spec 05 §7.
 | P6 | Fórmulas de categorización del riesgo de la ESE | ESE piloto | Simulador (fase 2) |
 | P7 | Reglas de distribución de costos por piloto | Cada piloto | F5 |
 | P8 | Dominio y marca de IAnalitica | Dueño | Landing |
+| P9 | Agregar al contrato 05 las entidades `configuracion` (FOTO), `tarifas-suministros`, `catalogo-medicamentos`, `ordenes-externas`, `presupuesto-publico` y `contratos-publicos`, con sus tablas destino (farmacia no tiene hechos definidos) | Diseño (Opus) | F1 (`configuracion`), F4 y ESE |
+| P10 | Confirmar la matriz rol × permiso (§4.1, D37) | Dueño | Nada (se corrige con un script nuevo) |
+| P11 | Planes comerciales de IA y su cupo (hoy solo `PILOTO` con cupo 0) | Dueño | Abrir la IA a clientes (fase 2) |
 
 ## 15. Riesgos principales (y su control)
 | Riesgo | Control |
@@ -415,18 +452,20 @@ Problem Details (RFC 9457) con los códigos de la spec 05 §7.
 ## 16. Estado de los documentos
 | Documento | Estado |
 |---|---|
-| `01_esquema_analitico_salud_v2.sql` | **Vigente** (correcciones ya aplicadas) |
+| `database/scripts/*` | **Vigente: fuente única del DDL** (§6.1) |
+| `01_esquema_analitico_salud_v2.sql` | **Reemplazado** por `database/scripts` (DDL); se conserva como registro |
 | `02_mapeo_SaludIPS.md`, `03_analisis_reportes_SaludIPS.md` | **Vigentes como referencia de reglas.** Su afirmación sobre el presupuesto público queda reemplazada por la 17 |
 | `05_contrato_api_ingesta.md` | **Vigente** |
 | `06_`, `11_extraccion` | **Vigentes** con las correcciones de §5.1 |
-| `07_spec_asistente_ia.md` (rev. 2), `07_asistente_ia.sql` | **Vigentes** |
+| `07_spec_asistente_ia.md` (rev. 2) | **Vigente** (`ia.Plan` se llama `ia.PlanComercial`) |
+| `07_asistente_ia.sql` | **Reemplazado** por `database/scripts` |
 | `09_catalogo_kpi_gerencial.md` | **Vigente** (catálogo de KPI) |
-| `10_hechos_operativos_y_costeo.sql` | **Vigente** |
+| `10_hechos_operativos_y_costeo.sql` | **Reemplazado** por `database/scripts` |
 | `12_spec_conector_saludips.md` | **Vigente** |
 | `13_spec_landing_page.md` | **Vigente** |
 | `14_spec_capa_semantica_dashboards.md` | **Vigente** |
-| `15_` (farmacia), `16_` (auditor), `17_` (ESE), `18_` (infra), `19_` (observabilidad), `20_` (colas), `21_` (reportes), `22_` (usuarios) | **Vigentes** |
-| `23_ddl_complementario.sql` | **Vigente** (tablas adicionales y RLS final) |
+| `15_` (farmacia), `16_` (auditor), `17_` (ESE), `18_` (infra), `19_` (observabilidad), `20_` (colas), `21_` (reportes), `22_` (usuarios) | **Vigentes**, salvo sus bloques SQL (reemplazados por `database/scripts`) y lo que §4.2 cambia de la RLS |
+| `23_ddl_complementario.sql` | **Reemplazado** por `database/scripts` (la RLS, por `siempre/9000` y §4.2) |
 | `08_consentimiento_proveedor_ia.md` y `legal/` | Borradores para el abogado |
 
 ## 17. Registro de decisiones
@@ -485,5 +524,9 @@ Problem Details (RFC 9457) con los códigos de la spec 05 §7.
 | D30 | Análisis y specs con **Opus**; implementación con **Sonnet**. |
 | D33 | **Licencias comunitarias:** la empresa factura **menos de USD 1 M al año** (declarado por el dueño, 2026‑10‑26). Se usa **QuestPDF** (comunitaria, umbral USD 1 M). **Revisión anual:** si los ingresos se acercan a USD 1 M, se evalúa la licencia pagada o la alternativa HTML → PDF antes de superar el umbral (QuestPDF da 90 días de transición). |
 | D34 | **Mediador propio, sin MediatR**, para no depender de licencias ni renovaciones de terceros. Diseño en §3.5. La clave comunitaria de MediatR obtenida no se usa. **Criterio general:** preferir componentes de .NET o con licencia permisiva (MIT/Apache) sin vencimientos. |
+| D35 | **RLS por contexto de sesión** (rev. 1.1). El predicado lee `EmpresaId`, `EsSuperAdmin`, `EsAdminPrincipal` y `Autenticacion` desde `SESSION_CONTEXT` en vez de consultar `seg.Usuario`. Motivos: `seg.Usuario` quedaba fuera de la RLS (fuga de la lista de usuarios), la API no tiene `UsuarioId` (sus inserciones quedaban bloqueadas) y el predicado consultaba una tabla por fila. Consecuencia aceptada: la desactivación la controla la aplicación (§4.1). Dos roles de BD; el worker usa ambos (§4.2). |
+| D36 | **RLS en un script que corre en cada despliegue** (`siempre/9000`) para que las tablas agregadas en scripts posteriores queden cubiertas sin editar scripts aplicados. |
+| D37 | **Matriz rol × permiso** inicial (§4.1). **[S] hasta confirmación del dueño.** |
+| D38 | **Primer superadmin** por comando del migrador (§4.1). Plan de IA por defecto `PILOTO` con cupo 0 **[S]**. |
 | D32 | **Costo primero.** Antes de crear cualquier recurso pago (nube, licencia, servicio, API) se hace **doble revisión de precio**: (1) precio en la página oficial o la calculadora del proveedor, con fecha; (2) estimado mensual para el escenario de uso real. Se presenta y se espera **tu aprobación explícita**. En la etapa de pruebas, se usan solo niveles gratuitos o mínimos. |
 | D31 | Documentos legales: los entrega IAnalitica (Claude) como **borradores**; los revisa y firma un abogado. |

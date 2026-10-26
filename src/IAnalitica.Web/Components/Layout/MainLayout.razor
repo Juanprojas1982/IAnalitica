@@ -1,0 +1,26 @@
+@inherits LayoutComponentBase
+
+<header class="navbar navbar-expand bg-dark navbar-dark px-3">
+    <a class="navbar-brand" href="/">IAnalitica</a>
+    <AuthorizeView>
+        <Authorized>
+            <ul class="navbar-nav me-auto">
+                <AuthorizeView Policy="admin.empresas" Context="superadmin">
+                    <li class="nav-item"><a class="nav-link" href="/admin/empresas/nueva">Nueva empresa</a></li>
+                </AuthorizeView>
+                <AuthorizeView Policy="admin.usuarios" Context="admin">
+                    <li class="nav-item"><a class="nav-link" href="/admin/usuarios">Usuarios</a></li>
+                </AuthorizeView>
+            </ul>
+            <span class="navbar-text me-3">@context.User.Identity?.Name</span>
+            <form method="post" action="/salir">
+                <AntiforgeryToken />
+                <button class="btn btn-outline-light btn-sm" type="submit">Salir</button>
+            </form>
+        </Authorized>
+    </AuthorizeView>
+</header>
+
+<main class="container py-4">
+    @Body
+</main>

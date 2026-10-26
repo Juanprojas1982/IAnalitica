@@ -1,0 +1,12 @@
+@page "/"
+@attribute [Authorize]
+
+<PageTitle>IAnalitica</PageTitle>
+<h1>Bienvenido</h1>
+<p class="text-muted">Los dashboards llegan en las siguientes fases. Por ahora puede administrar su cuenta.</p>
+<AuthorizeView Policy="admin.empresas">
+    <p><a class="btn btn-primary" href="/admin/empresas/nueva">Crear una empresa</a></p>
+</AuthorizeView>
+<AuthorizeView Policy="admin.usuarios">
+    <p><a class="btn btn-primary" href="/admin/usuarios">Administrar usuarios</a></p>
+</AuthorizeView>
