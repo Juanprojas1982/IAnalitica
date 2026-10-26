@@ -32,7 +32,8 @@ public class AislamientoEntreEmpresasTests(BaseDeDatosFixture bd)
         Assert.Equal("Admin800197268", dos.A.UsuarioAdministrador);
         Assert.Equal("Admin860034313", dos.B.UsuarioAdministrador);
         Assert.NotEqual(dos.A.EmpresaId, dos.B.EmpresaId);
-        Assert.Equal(2, await BaseDeDatosFixture.EscalarAsync<int>(bd.CadenaPropietario, "SELECT COUNT(*) FROM seg.Empresa", superadmin: true));
+        Assert.Equal(2, await BaseDeDatosFixture.EscalarAsync<int>(bd.CadenaPropietario,
+            $"SELECT COUNT(*) FROM seg.Empresa WHERE Nit IN ('{DosEmpresas.NitA}', '{DosEmpresas.NitB}')", superadmin: true));
     }
 
     [Fact]

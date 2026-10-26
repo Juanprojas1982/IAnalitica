@@ -1,4 +1,5 @@
 using IAnalitica.Application.Empresas;
+using IAnalitica.Domain.Empresas;
 using IAnalitica.Application.Mediacion;
 using IAnalitica.Infrastructure.Persistencia;
 using Microsoft.Data.SqlClient;
@@ -26,6 +27,13 @@ public static class Escenarios
     public static CrearEmpresaCommand Comando(string nit, string dv, string razon, string tipo = "IPS") => new(
         nit, dv, razon, null, tipo, null, $"admin{nit}@prueba.test", "Cali", "Valle", null, null, null, null, null, null,
         new[] { "FINANCIERO", "CARTERA" }, null);
+
+    /// <summary>Comando válido: el dígito de verificación se calcula con el mismo módulo 11 de la DIAN.</summary>
+    public static CrearEmpresaCommand ComandoValido(string nit, string razon, string tipo = "IPS")
+    {
+        Nit.TryCrear(nit, out var n);
+        return Comando(nit, n.CalcularDigitoVerificacion().ToString(), razon, tipo);
+    }
 
     public static async Task<DosEmpresas> ObtenerDosEmpresasAsync(this BaseDeDatosFixture bd)
     {

@@ -46,7 +46,6 @@ public static class DependencyInjection
             })
             .AddRoles<RolAplicacion>()
             .AddEntityFrameworkStores<AnaliticaDbContext>()
-            .AddUserManager<GestorIdentidad>()
             .AddClaimsPrincipalFactory<ClaimsFactory>()
             .AddPasswordValidator<HistorialClaveValidator>()
             .AddErrorDescriber<DescriptorErroresEs>()

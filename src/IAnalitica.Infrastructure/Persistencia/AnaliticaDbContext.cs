@@ -22,6 +22,35 @@ public class AnaliticaDbContext(DbContextOptions<AnaliticaDbContext> options) : 
     internal DbSet<IaEmpresaConfigEntidad> IaEmpresaConfigs => Set<IaEmpresaConfigEntidad>();
     internal DbSet<RolPermisoEntidad> RolPermisos => Set<RolPermisoEntidad>();
 
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        RegistrarHistorialDeClaves();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        RegistrarHistorialDeClaves();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    /// <summary>
+    /// Toda contraseña nueva (alta, cambio, restablecimiento) queda en seg.HistorialClave para no repetir las últimas 5 (24 §4.1).
+    /// Se hace aquí, al guardar, porque UserManager no expone un punto único de extensión para todos esos flujos.
+    /// </summary>
+    private void RegistrarHistorialDeClaves()
+    {
+        foreach (var entrada in ChangeTracker.Entries<UsuarioAplicacion>().ToList())
+        {
+            var hash = entrada.Entity.PasswordHash;
+            if (hash is null) continue;
+            var cambio = entrada.State == EntityState.Added
+                         || (entrada.State == EntityState.Modified && entrada.Property(u => u.PasswordHash).IsModified
+                             && !string.Equals(entrada.Property(u => u.PasswordHash).OriginalValue, hash, StringComparison.Ordinal));
+            if (cambio) HistorialClaves.Add(new HistorialClaveEntidad { Usuario = entrada.Entity, HashClave = hash });
+        }
+    }
+
     protected override void OnModelCreating(ModelBuilder b)
     {
         base.OnModelCreating(b);

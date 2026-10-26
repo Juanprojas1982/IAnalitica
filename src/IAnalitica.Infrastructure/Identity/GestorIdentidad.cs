@@ -6,27 +6,6 @@ using Microsoft.Extensions.Options;
 
 namespace IAnalitica.Infrastructure.Identity;
 
-/// <summary>
-/// UserManager que registra cada contraseña establecida en seg.HistorialClave (Identity no lo trae, spec 22 §6).
-/// Cubre crear, cambiar, restablecer y agregar clave: todos pasan por <see cref="UpdatePasswordHash"/>.
-/// </summary>
-public sealed class GestorIdentidad(
-    IUserStore<UsuarioAplicacion> store, IOptions<IdentityOptions> opciones, IPasswordHasher<UsuarioAplicacion> hasher,
-    IEnumerable<IUserValidator<UsuarioAplicacion>> validadoresUsuario, IEnumerable<IPasswordValidator<UsuarioAplicacion>> validadoresClave,
-    ILookupNormalizer normalizador, IdentityErrorDescriber errores, IServiceProvider servicios,
-    ILogger<UserManager<UsuarioAplicacion>> logger, AnaliticaDbContext db)
-    : UserManager<UsuarioAplicacion>(store, opciones, hasher, validadoresUsuario, validadoresClave, normalizador, errores, servicios, logger)
-{
-    protected override async Task<IdentityResult> UpdatePasswordHash(UsuarioAplicacion user, string newPassword, bool validatePassword)
-    {
-        var resultado = await base.UpdatePasswordHash(user, newPassword, validatePassword).ConfigureAwait(false);
-        if (resultado.Succeeded && user.PasswordHash is { } hash)
-            // Se guarda junto con el cambio del usuario (UpdateAsync/CreateAsync hacen SaveChanges). Para un usuario nuevo el FK se completa al insertar.
-            db.HistorialClaves.Add(new HistorialClaveEntidad { Usuario = user, HashClave = hash });
-        return resultado;
-    }
-}
-
 /// <summary>No permite repetir ninguna de las últimas 5 contraseñas (24 §4.1).</summary>
 public sealed class HistorialClaveValidator(AnaliticaDbContext db) : IPasswordValidator<UsuarioAplicacion>
 {
