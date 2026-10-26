@@ -14,7 +14,8 @@ SELECT YEAR(x.d) * 10000 + MONTH(x.d) * 100 + DAY(x.d), x.d, YEAR(x.d), DATEPART
        CASE WHEN x.dow <= 5 THEN 1 ELSE 0 END
 FROM n
 CROSS APPLY (SELECT DATEADD(DAY, n.i, CAST('2015-01-01' AS date)) AS d) d0
-CROSS APPLY (SELECT d0.d AS d, (DATEPART(WEEKDAY, d0.d) + @@DATEFIRST - 2) % 7 + 1 AS dow) x;
+CROSS APPLY (SELECT d0.d AS d, (DATEPART(WEEKDAY, d0.d) + @@DATEFIRST - 2) % 7 + 1 AS dow) x
+WHERE NOT EXISTS (SELECT 1 FROM dim.Fecha f WHERE f.Fecha = x.d);
 GO
 
 /* ============================ ROLES DE USUARIO (Identity, D27) ============================ */
