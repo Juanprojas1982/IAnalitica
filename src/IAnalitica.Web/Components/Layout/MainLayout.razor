@@ -1,10 +1,15 @@
 @inherits LayoutComponentBase
+@inject IAnalitica.Application.Reportes.INotificaciones Notificaciones
 
 <header class="navbar navbar-expand bg-dark navbar-dark px-3">
     <a class="navbar-brand" href="/">IAnalitica</a>
     <AuthorizeView>
         <Authorized>
             <ul class="navbar-nav me-auto">
+                <li class="nav-item"><a class="nav-link" href="/dashboards">Dashboards</a></li>
+                <AuthorizeView Policy="reportes.exportar" Context="exportador">
+                    <li class="nav-item"><a class="nav-link" href="/reportes">Mis reportes@(sinLeer > 0 ? " (" + sinLeer + ")" : "")</a></li>
+                </AuthorizeView>
                 <AuthorizeView Policy="admin.empresas" Context="superadmin">
                     <li class="nav-item"><a class="nav-link" href="/admin/empresas/nueva">Nueva empresa</a></li>
                 </AuthorizeView>
@@ -24,3 +29,13 @@
 <main class="container py-4">
     @Body
 </main>
+
+@code {
+    private int sinLeer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { sinLeer = await Notificaciones.ContarNoLeidasAsync(default); }
+        catch { sinLeer = 0; }   // el menú nunca debe tumbar la página (p. ej. la pantalla de ingreso, sin sesión)
+    }
+}

@@ -4,6 +4,7 @@ using System.Threading.RateLimiting;
 using IAnalitica.Api;
 using IAnalitica.Application;
 using IAnalitica.Application.Abstracciones;
+using IAnalitica.Application.Semantica;
 using IAnalitica.Infrastructure;
 using IAnalitica.Infrastructure.Observabilidad;
 using IAnalitica.Ingesta.Contracts;
@@ -32,6 +33,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddInfrastructure(cadena);
 builder.Services.AddApplication(ModuloFinanciero.Ensamblado, ModuloIngreso.Ensamblado, ModuloOperacion.Ensamblado,
     ModuloFarmacia.Ensamblado, ModuloEse.Ensamblado, ModuloAuditor.Ensamblado);
+builder.Services.AddCapaSemantica(new[] { ModuloFinanciero.Modulo }.Concat(ModuloIngreso.Modulos));
 builder.Services.AddScoped<ISesionUsuario, SesionApi>();
 builder.Services.AddScoped<IConfiguracionPortal, ConfiguracionPortalApi>();
 builder.Services.AddOpenApi();

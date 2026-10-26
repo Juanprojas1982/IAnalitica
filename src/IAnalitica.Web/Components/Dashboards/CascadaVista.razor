@@ -1,0 +1,48 @@
+@using IAnalitica.Application.Semantica
+@using System.Globalization
+
+@{
+    var resultado = Datos.Series[0].Resultado;
+    var dim = resultado.Dimensiones[0];
+    var pasos = Formato.Ordenar(dim, resultado.Filas.Select(f => f.Dimensiones[dim].Clave)).Select(c => resultado.Filas.First(f => f.Dimensiones[dim].Clave == c)).ToList();
+    var items = new List<(string Etiqueta, decimal Desde, decimal Hasta, bool EsTotal)>();
+    var corrida = 0m;
+    foreach (var p in pasos)
+    {
+        var v = p.Valor ?? 0m;
+        items.Add((p.Dimensiones[dim].Etiqueta, corrida, corrida + v, false));
+        corrida += v;
+    }
+    items.Add(("Resultado", 0m, corrida, true));
+    var (min, max, ticks) = Escala.Bonita(Math.Min(0m, items.Min(i => Math.Min(i.Desde, i.Hasta))), Math.Max(1m, items.Max(i => Math.Max(i.Desde, i.Hasta))));
+    const double W = 640, H = 240, ML = 64, MR = 14, MT = 14, MB = 40;
+    var ancho = (W - ML - MR) / items.Count;
+    double Y(decimal v) => MT + (double)(max - v) / (double)(max - min) * (H - MT - MB);
+    string F(double d) => d.ToString("0.#", CultureInfo.InvariantCulture);
+}
+<figure class="grafico">
+    <svg viewBox="0 0 @W @H" role="img" aria-labelledby="t-@Datos.Widget">
+        <title id="t-@Datos.Widget">@Datos.Titulo: @string.Join("; ", items.Select(i => $"{i.Etiqueta} {Formato.Valor(i.Hasta - i.Desde, resultado.Unidad)}"))</title>
+        @foreach (var v in ticks)
+        {
+            <line x1="@F(ML)" x2="@F(W - MR)" y1="@F(Y(v))" y2="@F(Y(v))" class="eje" />
+            @Svg.Texto(F(ML - 6), F(Y(v) + 4), "end", "etiqueta", Formato.Corto(v, resultado.Unidad))
+        }
+        @for (var i = 0; i < items.Count; i++)
+        {
+            var it = items[i];
+            var arriba = Math.Max(it.Desde, it.Hasta);
+            var abajo = Math.Min(it.Desde, it.Hasta);
+            var color = it.EsTotal ? Paleta.De(0) : (it.Hasta >= it.Desde ? Paleta.Positivo : Paleta.Negativo);
+            <rect x="@F(ML + i * ancho + ancho * 0.18)" y="@F(Y(arriba))" width="@F(ancho * 0.64)" height="@F(Math.Max(1, Y(abajo) - Y(arriba)))" fill="@color">
+                <title>@it.Etiqueta: @Formato.Valor(it.Hasta - it.Desde, resultado.Unidad)</title>
+            </rect>
+            @Svg.Texto(F(ML + i * ancho + ancho / 2), F(H - 22), "middle", "etiqueta", it.Etiqueta)
+            @Svg.Texto(F(ML + i * ancho + ancho / 2), F(H - 8), "middle", "etiqueta valor", Formato.Corto(it.Hasta - it.Desde, resultado.Unidad))
+        }
+    </svg>
+</figure>
+
+@code {
+    [Parameter, EditorRequired] public DatosWidget Datos { get; set; } = default!;
+}

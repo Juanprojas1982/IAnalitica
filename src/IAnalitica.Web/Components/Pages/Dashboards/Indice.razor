@@ -1,0 +1,36 @@
+@page "/dashboards"
+@attribute [Authorize]
+@using IAnalitica.Application.Mediacion
+@using IAnalitica.Application.Semantica
+@inject ISender Enviar
+
+<PageTitle>Dashboards · IAnalitica</PageTitle>
+<h1>Dashboards</h1>
+
+@if (lista is null) { }
+else if (lista.Count == 0)
+{
+    <p class="text-muted">Su usuario no tiene dashboards disponibles. Si los necesita, pídaselo al administrador de su empresa.</p>
+}
+else
+{
+    foreach (var modulo in lista.GroupBy(d => d.NombreModulo))
+    {
+        <section class="mb-4">
+            <h2 class="h5">@modulo.Key</h2>
+            <ul class="list-unstyled">
+                @foreach (var d in modulo)
+                {
+                    <li><a href="/d/@d.Codigo">@d.Titulo</a></li>
+                }
+            </ul>
+        </section>
+    }
+}
+
+@code {
+    private IReadOnlyList<ResumenDashboard>? lista;
+
+    protected override async Task OnInitializedAsync()
+        => lista = (await Enviar.Send(new ListarDashboardsQuery())).Valor ?? [];
+}

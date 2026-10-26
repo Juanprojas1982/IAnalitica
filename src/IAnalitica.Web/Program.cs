@@ -1,6 +1,7 @@
 using System.Threading.RateLimiting;
 using IAnalitica.Application;
 using IAnalitica.Application.Abstracciones;
+using IAnalitica.Application.Semantica;
 using IAnalitica.Application.Empresas;
 using IAnalitica.Application.Mediacion;
 using IAnalitica.Application.Usuarios;
@@ -15,6 +16,7 @@ using IAnalitica.Modulos.Ingreso;
 using IAnalitica.Modulos.Operacion;
 using IAnalitica.Web.Components;
 using IAnalitica.Web.Components.Pages.Admin;
+using IAnalitica.Web.Consultas;
 using IAnalitica.Web.Seguridad;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Components.Endpoints;
@@ -32,6 +34,9 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddInfrastructure(cadena);
 builder.Services.AddApplication(ModuloFinanciero.Ensamblado, ModuloIngreso.Ensamblado, ModuloOperacion.Ensamblado,
     ModuloFarmacia.Ensamblado, ModuloEse.Ensamblado, ModuloAuditor.Ensamblado);
+builder.Services.Configure<IAnalitica.Application.Reportes.LimitesReportes>(builder.Configuration.GetSection("Reportes:Limites"));
+builder.Services.Configure<IAnalitica.Infrastructure.Reportes.OpcionesAlmacenReportes>(builder.Configuration.GetSection("Reportes:Almacen"));
+builder.Services.AddCapaSemantica(new[] { ModuloFinanciero.Modulo }.Concat(ModuloIngreso.Modulos));
 builder.Services.AddScoped<ISesionUsuario, SesionUsuarioHttp>();
 builder.Services.AddScoped<IConfiguracionPortal, ConfiguracionPortalHttp>();
 
@@ -60,7 +65,8 @@ builder.Services.Configure<SecurityStampValidatorOptions>(o =>
 // Un permiso = una política (spec 22; seg.RolPermiso). Los permisos viajan como reclamos «permiso» en el cookie.
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy("admin.empresas", p => p.RequireClaim(Reclamos.Permiso, "admin.empresas"))
-    .AddPolicy("admin.usuarios", p => p.RequireClaim(Reclamos.Permiso, "admin.usuarios"));
+    .AddPolicy("admin.usuarios", p => p.RequireClaim(Reclamos.Permiso, "admin.usuarios"))
+    .AddPolicy("reportes.exportar", p => p.RequireClaim(Reclamos.Permiso, "reportes.exportar"));
 builder.Services.AddCascadingAuthenticationState();
 
 builder.Services.AddRateLimiter(o =>
@@ -72,6 +78,7 @@ builder.Services.AddRateLimiter(o =>
         _ => new FixedWindowRateLimiterOptions { PermitLimit = builder.Configuration.GetValue("Seguridad:LimiteIngresoPorMinuto", 20), Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
 });
 
+builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
 builder.Services.AddRazorComponents();   // F0: páginas estáticas del servidor. El render InteractiveAuto llega con los dashboards (F3).
 
 var app = builder.Build();
@@ -117,6 +124,9 @@ usuarios.MapPost("/{id:int}/restablecer", async (int id, ISender enviar, IAntifo
         ? (IResult)new RazorComponentResult<CredencialEntregada>(new { Credencial = r.Valor, Titulo = "Contraseña restablecida" })
         : Results.Redirect("/admin/usuarios?error=" + Uri.EscapeDataString(r.Errores[0].Mensaje));
 });
+
+app.MapConsultasQ();
+app.MapReportes();
 
 app.MapRazorComponents<App>();
 

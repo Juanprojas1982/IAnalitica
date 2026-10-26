@@ -3,6 +3,12 @@ using IAnalitica.Application.Ingesta;
 using IAnalitica.Infrastructure.Empresas;
 using IAnalitica.Infrastructure.Identity;
 using IAnalitica.Infrastructure.Ingesta;
+using IAnalitica.Infrastructure.Semantica;
+using IAnalitica.Application.Semantica;
+using IAnalitica.Application.Reportes;
+using IAnalitica.Infrastructure.Reportes;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using Microsoft.Data.SqlClient;
 using IAnalitica.Infrastructure.Persistencia;
 using IAnalitica.Infrastructure.Seguridad;
@@ -57,6 +63,20 @@ public static class DependencyInjection
 
         services.AddOpenIddict().AddCore(o => o.UseEntityFrameworkCore().UseDbContext<AnaliticaDbContext>());
 
+        // Reportes en segundo plano (spec 21): el portal solicita y descarga; el worker genera con la identidad del solicitante
+        services.AddScoped<IRepositorioReportes, RepositorioReportes>();
+        services.AddScoped<INotificaciones, Notificaciones>();
+        services.AddScoped<IPermisosUsuario, PermisosUsuario>();
+        services.AddSingleton<IAlmacenReportes, AlmacenReportesDisco>();
+        services.AddSingleton<IExportadorReporte, ExportadorCsv>();
+        services.AddSingleton<IExportadorReporte, ExportadorXlsx>();
+        services.AddSingleton<IExportadorReporte, ExportadorPdf>();
+        services.AddOptions<LimitesReportes>();
+        services.AddOptions<OpcionesAlmacenReportes>();
+        services.TryAddScoped<IColaTrabajos>(sp => new ColaTrabajosSql(sp.GetRequiredService<IFabricaConexiones>().AbrirAsync));
+        services.AddScoped<IMotorMetricas, MotorMetricas>();
+        services.AddScoped<IMetasKpi, MetasKpi>();
+        services.AddScoped<IOpcionesFiltros, Semantica.OpcionesFiltros>();
         services.AddScoped<IRepositorioCargas, RepositorioCargas>();
         services.AddScoped<IRepositorioApiClientes, RepositorioApiClientes>();
         services.AddScoped<IRepositorioEmpresas, RepositorioEmpresas>();
@@ -81,15 +101,30 @@ public static class DependencyInjection
     public static IServiceCollection AddProcesamiento(this IServiceCollection services, string cadenaEtl)
     {
         services.AddSingleton<IFabricaConexionesEtl>(new FabricaConexionesEtl(cadenaEtl));
-        services.AddSingleton<IColaTrabajos>(sp =>
+        services.Replace(ServiceDescriptor.Singleton<IColaTrabajos>(sp =>
         {
             var fabrica = sp.GetRequiredService<IFabricaConexionesEtl>();
             return new ColaTrabajosSql(fabrica.AbrirAsync);
-        });
+        }));
         services.AddSingleton<ProcesadorCargas>();
         services.AddSingleton<IManejadorTrabajo, ManejadorProcesarCarga>();
         services.AddSingleton<IManejadorTrabajo, ManejadorCalcularCartera>();
         services.AddSingleton<DespachadorTrabajos>();
+        services.TryAddSingleton<IAlmacenReportes, AlmacenReportesDisco>();
+        services.AddOptions<OpcionesAlmacenReportes>();
+        services.AddSingleton<ExpiradorReportes>();
+        return services;
+    }
+
+    /// <summary>
+    /// Generación de reportes en el worker: el manejador y la sesión del trabajo. Requiere <see cref="AddInfrastructure"/> (cadena de <c>rol_app</c>,
+    /// con la que se consulta con la identidad del solicitante) y <see cref="AddProcesamiento"/> (cadena de <c>rol_etl</c>, para la cola y el estado).
+    /// </summary>
+    public static IServiceCollection AddGeneracionReportes(this IServiceCollection services)
+    {
+        services.AddScoped<SesionTrabajo>();
+        services.AddScoped<ISesionUsuario>(sp => sp.GetRequiredService<SesionTrabajo>());
+        services.AddSingleton<IManejadorTrabajo, ManejadorGenerarReporte>();
         return services;
     }
 }

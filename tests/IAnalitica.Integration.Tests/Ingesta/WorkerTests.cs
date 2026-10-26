@@ -23,7 +23,7 @@ public class WorkerTests(BaseDeDatosFixture bd)
         servicios.AddSingleton(TimeProvider.System);
         servicios.AddProcesamiento(bd.CadenaEtl);
         servicios.AddSingleton(new OpcionesWorker { MaxConcurrentes = 2, SondeoSegundos = 1 });
-        servicios.AddSingleton<ServicioTrabajos>();
+        servicios.AddSingleton<ServicioTrabajos>();   // el expirador de reportes lo trae AddProcesamiento
         await using var sp = servicios.BuildServiceProvider();
 
         var filas = new[]

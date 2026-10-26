@@ -1,0 +1,32 @@
+@using IAnalitica.Application.Semantica
+@using IAnalitica.Domain.Modulos
+
+@if (Serie is null || Serie.Resultado.SinDatos)
+{
+    <p class="sin-datos">@MensajeSinDatos</p>
+}
+else
+{
+    var r = Serie.Resultado;
+    <p class="kpi-valor" aria-label="@r.Nombre: @Formato.Valor(r.Total, r.Unidad)">@Formato.Valor(r.Total, r.Unidad)</p>
+    @if (Serie.Variacion is { } v)
+    {
+        var mejora = r.Sentido == SentidoMejora.Neutro ? (bool?)null : (v > 0) == (r.Sentido == SentidoMejora.MayorEsMejor);
+        <p class="kpi-variacion @(mejora is null ? "" : mejora == true ? "mejor" : "peor")">
+            <span aria-hidden="true">@(v > 0 ? "▲" : v < 0 ? "▼" : "■")</span>
+            @Formato.Variacion(v) frente al periodo anterior (@Formato.Valor(Serie.Anterior, r.Unidad))
+        </p>
+    }
+    @if (Serie.Semaforo != Semaforo.SinMeta && Serie.Meta is { } meta)
+    {
+        <p class="kpi-meta semaforo-@Serie.Semaforo.ToString().ToLowerInvariant()">
+            <strong>@(Serie.Semaforo switch { Semaforo.Verde => "Cumple la meta", Semaforo.Amarillo => "En alerta", _ => "Fuera de la meta" })</strong>
+            · meta @Formato.Valor(meta.Meta, r.Unidad)
+        </p>
+    }
+}
+
+@code {
+    [Parameter, EditorRequired] public SerieWidget? Serie { get; set; }
+    [Parameter] public string MensajeSinDatos { get; set; } = "";
+}
