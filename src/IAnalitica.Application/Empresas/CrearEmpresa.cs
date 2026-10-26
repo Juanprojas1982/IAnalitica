@@ -34,29 +34,32 @@ public sealed class CrearEmpresaCommandValidator : AbstractValidator<CrearEmpres
         RuleFor(x => x).Must(x => Nit.TryCrear(x.Nit, out var nit) && nit.EsDigitoValido(x.DigitoVerificacion))
             .When(x => Nit.TryCrear(x.Nit, out _)).WithName("DigitoVerificacion").WithErrorCode("DV_INVALIDO")
             .WithMessage("El dígito de verificación no corresponde al NIT.");
-        RuleFor(x => x.RazonSocial).NotEmpty().MaximumLength(200).WithErrorCode("RAZON_SOCIAL_INVALIDA")
-            .WithMessage("La razón social es obligatoria (máximo 200 caracteres).");
+        RuleFor(x => x.RazonSocial).NotEmpty().WithErrorCode("RAZON_SOCIAL_INVALIDA").WithMessage("La razón social es obligatoria.");
+        RuleFor(x => x.RazonSocial).MaximumLength(200).WithErrorCode("RAZON_SOCIAL_INVALIDA").WithMessage("La razón social admite máximo 200 caracteres.");
         RuleFor(x => x.NombreComercial).MaximumLength(150).WithErrorCode("NOMBRE_COMERCIAL_LARGO").WithMessage("El nombre comercial admite máximo 150 caracteres.");
         RuleFor(x => x.TipoEntidad).Must(t => TiposEntidad.Todos.Contains(t)).WithErrorCode("TIPO_ENTIDAD_INVALIDO")
             .WithMessage("Tipo de entidad no válido.");
         RuleFor(x => x.Naturaleza).Must(n => n is null || Naturalezas.Todas.Contains(n)).WithErrorCode("NATURALEZA_INVALIDA")
             .WithMessage("Naturaleza no válida.");
-        RuleFor(x => x.EmailContacto).NotEmpty().EmailAddress().MaximumLength(256).WithErrorCode("EMAIL_INVALIDO")
-            .WithMessage("El correo del administrador no es válido.");
+        RuleFor(x => x.EmailContacto).NotEmpty().WithErrorCode("EMAIL_INVALIDO").WithMessage("El correo del administrador es obligatorio.");
+        RuleFor(x => x.EmailContacto).EmailAddress().WithErrorCode("EMAIL_INVALIDO").WithMessage("El correo del administrador no es válido.");
+        RuleFor(x => x.EmailContacto).MaximumLength(256).WithErrorCode("EMAIL_INVALIDO").WithMessage("El correo admite máximo 256 caracteres.");
         RuleFor(x => x.ColorPrimario!).Matches(ColorHex).When(x => x.ColorPrimario is not null).WithErrorCode("COLOR_INVALIDO")
             .WithMessage("El color primario debe tener el formato #RRGGBB.");
         RuleFor(x => x.ColorSecundario!).Matches(ColorHex).When(x => x.ColorSecundario is not null).WithErrorCode("COLOR_INVALIDO")
             .WithMessage("El color secundario debe tener el formato #RRGGBB.");
         RuleFor(x => x.CupoIaCop).GreaterThanOrEqualTo(0).When(x => x.CupoIaCop is not null).WithErrorCode("CUPO_INVALIDO")
             .WithMessage("El cupo de IA no puede ser negativo.");
-        RuleFor(x => x.Modulos).NotNull().NotEmpty().WithErrorCode("MODULOS_REQUERIDOS").WithMessage("Seleccione al menos un módulo.");
+        RuleFor(x => x.Modulos).NotEmpty().WithErrorCode("MODULOS_REQUERIDOS").WithMessage("Seleccione al menos un módulo.");
         RuleForEach(x => x.Modulos).Must(m => Domain.Empresas.Modulos.Todos.Contains(m)).WithErrorCode("MODULO_INVALIDO")
             .WithMessage("Módulo no válido.");
         RuleForEach(x => x.Contactos).ChildRules(c =>
         {
             c.RuleFor(k => k.Tipo).Must(t => TiposContacto.Todos.Contains(t)).WithErrorCode("CONTACTO_TIPO_INVALIDO").WithMessage("Tipo de contacto no válido.");
-            c.RuleFor(k => k.Nombre).NotEmpty().MaximumLength(150).WithErrorCode("CONTACTO_NOMBRE_INVALIDO").WithMessage("El contacto necesita nombre.");
-            c.RuleFor(k => k.Email).NotEmpty().EmailAddress().WithErrorCode("CONTACTO_EMAIL_INVALIDO").WithMessage("El correo del contacto no es válido.");
+            c.RuleFor(k => k.Nombre).NotEmpty().WithErrorCode("CONTACTO_NOMBRE_INVALIDO").WithMessage("El contacto necesita nombre.");
+            c.RuleFor(k => k.Nombre).MaximumLength(150).WithErrorCode("CONTACTO_NOMBRE_INVALIDO").WithMessage("El nombre del contacto admite máximo 150 caracteres.");
+            c.RuleFor(k => k.Email).NotEmpty().WithErrorCode("CONTACTO_EMAIL_INVALIDO").WithMessage("El contacto necesita correo.");
+            c.RuleFor(k => k.Email).EmailAddress().WithErrorCode("CONTACTO_EMAIL_INVALIDO").WithMessage("El correo del contacto no es válido.");
         });
     }
 }

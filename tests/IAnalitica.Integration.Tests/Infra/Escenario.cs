@@ -69,6 +69,26 @@ public static class Escenarios
         return await alcance.ServiceProvider.GetRequiredService<ISender>().Send(comando);
     }
 
+    /// <summary>Ejecuta un request como un usuario de empresa: la sesión y el contexto de BD salen del usuario, nunca del request.</summary>
+    public static async Task<TResp> EnviarComoUsuarioAsync<TResp>(BaseDeDatosFixture bd, int empresaId, int usuarioId, bool esAdminPrincipal,
+        IAnalitica.Application.Mediacion.IRequest<TResp> request, params string[] permisos)
+    {
+        var sesion = new SesionPrueba(usuarioId, empresaId, false, permisos);
+        await using var sp = bd.Construir(bd.CadenaApp, sesion);
+        await using var alcance = sp.CreateAsyncScope();
+        alcance.ServiceProvider.GetRequiredService<IContextoBdAccesor>().Establecer(ContextoBd.DeEmpresa(empresaId, usuarioId, esAdminPrincipal));
+        return await alcance.ServiceProvider.GetRequiredService<ISender>().Send(request);
+    }
+
+    public static async Task<TResp> EnviarComoSuperadminAsync<TResp>(BaseDeDatosFixture bd, IAnalitica.Application.Mediacion.IRequest<TResp> request)
+    {
+        var sesion = new SesionPrueba(bd.SuperadminId, null, true, "admin.empresas");
+        await using var sp = bd.Construir(bd.CadenaApp, sesion);
+        await using var alcance = sp.CreateAsyncScope();
+        alcance.ServiceProvider.GetRequiredService<IContextoBdAccesor>().Establecer(ContextoBd.DeSuperadmin(bd.SuperadminId));
+        return await alcance.ServiceProvider.GetRequiredService<ISender>().Send(request);
+    }
+
     private static Task<int> IdUsuarioAsync(BaseDeDatosFixture bd, string nombre)
         => BaseDeDatosFixture.EscalarAsync<int>(bd.CadenaPropietario, $"SELECT Id FROM seg.Usuario WHERE UserName = '{nombre}'", superadmin: true);
 

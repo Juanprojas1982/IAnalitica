@@ -60,3 +60,25 @@ public interface IGeneradorSecretos
     /// <summary>Secreto del cliente del conector: 256 bits aleatorios.</summary>
     string SecretoCliente();
 }
+
+public sealed record UsuarioResumen(
+    int Id, string Usuario, string Email, string NombreCompleto, IReadOnlyList<string> Roles, bool Activo,
+    bool DebeCambiarClave, bool DobleFactorActivo, bool EsAdminPrincipal);
+
+public sealed record UsuarioNuevo(
+    int EmpresaId, string NombreUsuario, string Email, string NombreCompleto, IReadOnlyList<string> Roles,
+    string ClaveTemporal, DateTime ClaveVenceEnUtc, int CreadoPor);
+
+/// <summary>Operaciones sobre usuarios de UNA empresa. Todas reciben el EmpresaId de la sesión, nunca del cliente (spec 22 §5).</summary>
+public interface IGestionUsuariosEmpresa
+{
+    Task<UsuarioResumen?> ObtenerAsync(int empresaId, int usuarioId, CancellationToken ct);
+    Task<UsuarioResumen?> ObtenerAdminPrincipalAsync(int empresaId, CancellationToken ct);
+    Task<IReadOnlyList<UsuarioResumen>> ListarAsync(int empresaId, CancellationToken ct);
+    Task<Result<int>> CrearAsync(UsuarioNuevo datos, CancellationToken ct);
+    Task<Result> EditarAsync(int empresaId, int usuarioId, string email, string nombreCompleto, IReadOnlyList<string> roles, CancellationToken ct);
+    Task<Result> CambiarActivoAsync(int empresaId, int usuarioId, bool activo, CancellationToken ct);
+
+    /// <summary>Nueva clave temporal, cambio obligatorio y (opcional) elimina el doble factor anterior para que la nueva persona lo configure.</summary>
+    Task<Result> RestablecerClaveAsync(int empresaId, int usuarioId, string claveTemporal, DateTime venceEnUtc, bool quitarDobleFactor, CancellationToken ct);
+}

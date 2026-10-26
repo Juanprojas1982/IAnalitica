@@ -64,7 +64,8 @@ public class AislamientoEntreEmpresasTests(BaseDeDatosFixture bd)
 
         Assert.Equal(1, await Escalar<int>(c, "SELECT COUNT(*) FROM seg.Empresa"));
         Assert.Equal(dos.A.EmpresaId, await Escalar<int>(c, "SELECT EmpresaId FROM seg.Empresa"));
-        Assert.Equal(1, await Escalar<int>(c, "SELECT COUNT(*) FROM seg.Usuario"));   // solo su Admin{NIT}
+        Assert.True(await Escalar<int>(c, "SELECT COUNT(*) FROM seg.Usuario") >= 1);   // su Admin{NIT} y los usuarios que haya creado
+        Assert.Equal(0, await Escalar<int>(c, $"SELECT COUNT(*) FROM seg.Usuario WHERE EmpresaId <> {dos.A.EmpresaId}"));
         Assert.Equal(2, await Escalar<int>(c, "SELECT COUNT(*) FROM seg.EmpresaModulo"));
         Assert.Equal(1, await Escalar<int>(c, "SELECT COUNT(*) FROM seg.ApiClienteEmpresa"));
         Assert.Equal(0, await Escalar<int>(c, $"SELECT COUNT(*) FROM seg.Usuario WHERE UserName = '{dos.B.UsuarioAdministrador}'"));
@@ -100,7 +101,7 @@ public class AislamientoEntreEmpresasTests(BaseDeDatosFixture bd)
         // B conserva todo.
         await using var comoB = await AbrirAsync(bd.CadenaApp, adminB);
         Assert.Equal(1, await Escalar<int>(comoB, "SELECT COUNT(*) FROM seg.Empresa"));
-        Assert.Equal(1, await Escalar<int>(comoB, "SELECT COUNT(*) FROM seg.Usuario"));
+        Assert.True(await Escalar<int>(comoB, "SELECT COUNT(*) FROM seg.Usuario") >= 1);
         Assert.Equal(1, await Escalar<int>(comoB, "SELECT COUNT(*) FROM seg.ApiClienteEmpresa"));
     }
 

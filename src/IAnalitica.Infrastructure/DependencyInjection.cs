@@ -55,6 +55,7 @@ public static class DependencyInjection
 
         services.AddScoped<IRepositorioEmpresas, RepositorioEmpresas>();
         services.AddScoped<IGestorUsuarios, GestorUsuarios>();
+        services.AddScoped<IGestionUsuariosEmpresa, GestionUsuariosEmpresa>();
         services.AddScoped<IGestorCredencialesApi, GestorCredencialesApi>();
         services.AddScoped<IAuditoriaAdministrativa, AuditoriaAdministrativa>();
         services.AddScoped<ITransaccion, TransaccionEf>();
