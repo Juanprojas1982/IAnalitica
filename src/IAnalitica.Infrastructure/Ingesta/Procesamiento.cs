@@ -138,8 +138,11 @@ public sealed class ProcesadorCargas(IFabricaConexionesEtl etl, IColaTrabajos co
             {
                 var (ins, upd, del, rech) = await AplicarAsync(cn, cargaId, empresaId, entidad, modo, ct).ConfigureAwait(false);
 
-                if (entidad == "configuracion")   // la foto de configuración dispara la auditoría (spec 20 §2: AUDITAR_CONFIG)
+                if (entidad == "configuracion")   // la foto de configuración dispara la auditoría y el validador de precios (spec 20 §2)
+                {
                     await cola.EncolarAsync(new TrabajoPendiente(TiposTrabajo.AuditarConfig, empresaId, $"EMP:{empresaId}|AUDITOR", $"{{\"cargaId\":{cargaId}}}", Prioridad: 6), ct).ConfigureAwait(false);
+                    await cola.EncolarAsync(new TrabajoPendiente(TiposTrabajo.ValidarPrecios, empresaId, $"EMP:{empresaId}|PRECIOS", $"{{\"cargaId\":{cargaId}}}", Prioridad: 6), ct).ConfigureAwait(false);
+                }
                 if (entidad == "asientos")   // la cartera se recalcula después de cargar contabilidad (contrato 05 §3)
                 {
                     var corte = reloj.GetUtcNow().UtcDateTime.AddHours(-5).Date;   // Colombia: UTC-5 todo el año

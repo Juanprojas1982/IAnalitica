@@ -32,6 +32,9 @@ public sealed class Procesamiento : IAsyncDisposable
     public IAnalitica.Infrastructure.Auditoria.MotorAuditoria AuditorEn(DateTimeOffset ahora, params IAnalitica.Domain.Auditoria.IReglaConfiguracion[] reglas)
         => new(_sp.GetRequiredService<IFabricaConexionesEtl>(), reglas.Length > 0 ? reglas : IAnalitica.Modulos.Auditor.ModuloAuditor.Reglas(),
             new Microsoft.Extensions.Time.Testing.FakeTimeProvider(ahora), Microsoft.Extensions.Logging.Abstractions.NullLogger<IAnalitica.Infrastructure.Auditoria.MotorAuditoria>.Instance);
+    public IAnalitica.Infrastructure.Auditoria.ValidadorPrecios ValidadorEn(DateTimeOffset ahora)
+        => new(_sp.GetRequiredService<IFabricaConexionesEtl>(), new Microsoft.Extensions.Time.Testing.FakeTimeProvider(ahora),
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<IAnalitica.Infrastructure.Auditoria.ValidadorPrecios>.Instance);
     public DespachadorTrabajos Despachador => _sp.GetRequiredService<DespachadorTrabajos>();
 
     private Procesamiento(BaseDeDatosFixture bd)

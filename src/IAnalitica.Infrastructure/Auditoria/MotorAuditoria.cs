@@ -23,7 +23,7 @@ public sealed class MotorAuditoria(IFabricaConexionesEtl etl, IEnumerable<IRegla
     public async Task<ResumenAuditoria> EjecutarAsync(int empresaId, CancellationToken ct)
     {
         var ahora = reloj.GetUtcNow();
-        var hoy = DateOnly.FromDateTime(ahora.UtcDateTime);
+        var hoy = DateOnly.FromDateTime(ahora.UtcDateTime.AddHours(-5));   // Colombia: UTC-5 todo el año
         await using var cn = await etl.AbrirAsync(ct).ConfigureAwait(false);
         var metas = (await cn.QueryAsync<Meta>(new CommandDefinition("SELECT Codigo, SeveridadBase, UmbralesJson, Activa FROM cfg.ReglaConfiguracion", cancellationToken: ct)).ConfigureAwait(false)).ToDictionary(m => m.Codigo);
         var ajustes = (await cn.QueryAsync<Ajuste>(new CommandDefinition("SELECT Codigo, Activa, SeveridadAjustada, UmbralesJson FROM cfg.ReglaConfiguracionEmpresa WHERE EmpresaId = @empresaId", new { empresaId }, cancellationToken: ct)).ConfigureAwait(false)).ToDictionary(a => a.Codigo);

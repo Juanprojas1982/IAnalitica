@@ -115,6 +115,8 @@ public static class DependencyInjection
         services.AddSingleton<IManejadorTrabajo, ManejadorCalcularCartera>();
         services.AddSingleton<MotorAuditoria>();
         services.AddSingleton<IManejadorTrabajo, ManejadorAuditarConfig>();
+        services.AddSingleton<ValidadorPrecios>();
+        services.AddSingleton<IManejadorTrabajo, ManejadorValidarPrecios>();
         services.AddSingleton<DespachadorTrabajos>();
         services.TryAddSingleton<IAlmacenReportes, AlmacenReportesDisco>();
         services.AddOptions<OpcionesAlmacenReportes>();

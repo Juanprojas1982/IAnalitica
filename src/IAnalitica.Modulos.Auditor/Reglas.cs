@@ -131,11 +131,11 @@ public sealed class Tar01() : ReglaSql("TAR-01", "Tarifas", Severidad.Critica, $
 
 /// <summary>
 /// TAR-02. Por pagador activo con manual: procedimientos del portafolio, de los tipos de servicio que el pagador puede usar (TipoServiciosXEmpresa),
-/// sin tarifa mayor que cero en su manual y plan (pTarifasProcedimientos). Replica la idea de SIPS_198. [S] el cruce es por CodManual y, si el pagador lo tiene, CodPlan.
+/// sin tarifa mayor que cero en su manual (pTarifasProcedimientos). Replica la idea de SIPS_198. [S] el cruce es solo por CodManual: CodPlan no es parte de la llave de la tarifa y su significado no está confirmado.
 /// </summary>
 public sealed class Tar02() : ReglaSql("TAR-02", "Tarifas", Severidad.Alta, """
     SELECT CAST(e.IdEmpresa AS nvarchar(200)) AS ClaveEntidad, e.NomEmpresa AS NombreEntidad,
-           CAST(x.Faltan AS nvarchar(20)) + N' procedimientos sin tarifa' AS ValorEncontrado, N'Tarifa en el manual ' + CAST(e.CodManual AS nvarchar(10)) + ISNULL(N' y plan ' + CAST(e.CodPlan AS nvarchar(10)), N'') AS ValorEsperado,
+           CAST(x.Faltan AS nvarchar(20)) + N' procedimientos sin tarifa' AS ValorEncontrado, N'Tarifa en el manual ' + CAST(e.CodManual AS nvarchar(10)) AS ValorEsperado,
            x.Faltan AS ImpactoCantidad, CAST(NULL AS decimal(19,4)) AS ImpactoValor, N'Procedimientos del portafolio sin tarifa' AS ImpactoDetalle, CAST(NULL AS varchar(8)) AS Severidad
     FROM saludips.dbo_mEmpresas e
     CROSS APPLY (
@@ -144,8 +144,7 @@ public sealed class Tar02() : ReglaSql("TAR-02", "Tarifas", Severidad.Alta, """
         JOIN saludips.dbo_pPortafolio pf ON pf.EmpresaId = t.EmpresaId AND pf.CodTipoServicio = t.CodTipoServicio
         WHERE t.EmpresaId = @EmpresaId AND t.IdEmpresa = e.IdEmpresa
           AND NOT EXISTS (SELECT 1 FROM saludips.dbo_pTarifasProcedimientos tp
-                          WHERE tp.EmpresaId = @EmpresaId AND tp.CodProcedimiento = pf.CodProcedimiento AND tp.CodManual = e.CodManual
-                            AND (e.CodPlan IS NULL OR tp.CodPlan = e.CodPlan) AND tp.Valor > 0)) x
+                          WHERE tp.EmpresaId = @EmpresaId AND tp.CodProcedimiento = pf.CodProcedimiento AND tp.CodManual = e.CodManual AND tp.Valor > 0)) x
     WHERE e.EmpresaId = @EmpresaId AND e.EstadoEntidad = 1 AND ISNULL(e.CodManual, 0) <> 0 AND x.Faltan > 0
     """);
 
