@@ -24,15 +24,15 @@ public static class Escenarios
     private static readonly SemaphoreSlim Candado = new(1, 1);
     private static DosEmpresas? _dos;
 
-    public static CrearEmpresaCommand Comando(string nit, string dv, string razon, string tipo = "IPS") => new(
+    public static CrearEmpresaCommand Comando(string nit, string dv, string razon, string tipo = "IPS", string[]? modulos = null) => new(
         nit, dv, razon, null, tipo, null, $"admin{nit}@prueba.test", "Cali", "Valle", null, null, null, null, null, null,
-        new[] { "FINANCIERO", "CARTERA" }, null);
+        modulos ?? new[] { "FINANCIERO", "CARTERA" }, null);
 
     /// <summary>Comando válido: el dígito de verificación se calcula con el mismo módulo 11 de la DIAN.</summary>
-    public static CrearEmpresaCommand ComandoValido(string nit, string razon, string tipo = "IPS")
+    public static CrearEmpresaCommand ComandoValido(string nit, string razon, string tipo = "IPS", string[]? modulos = null)
     {
         Nit.TryCrear(nit, out var n);
-        return Comando(nit, n.CalcularDigitoVerificacion().ToString(), razon, tipo);
+        return Comando(nit, n.CalcularDigitoVerificacion().ToString(), razon, tipo, modulos);
     }
 
     public static async Task<DosEmpresas> ObtenerDosEmpresasAsync(this BaseDeDatosFixture bd)

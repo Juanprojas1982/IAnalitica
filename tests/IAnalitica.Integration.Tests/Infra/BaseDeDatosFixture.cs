@@ -1,5 +1,8 @@
 using IAnalitica.Application;
 using IAnalitica.Application.Abstracciones;
+using IAnalitica.Application.Semantica;
+using IAnalitica.Modulos.Financiero;
+using IAnalitica.Modulos.Ingreso;
 using IAnalitica.Database.Migrator;
 using IAnalitica.Infrastructure;
 using IAnalitica.Infrastructure.Identity;
@@ -65,6 +68,7 @@ public sealed class BaseDeDatosFixture : IAsyncLifetime
         s.AddInfrastructure(cadena);
         s.AddSingleton(Substitute.For<IConfiguracionPortal>());
         if (sesion is not null) s.AddSingleton(sesion);
+        s.AddCapaSemantica(new[] { ModuloFinanciero.Modulo }.Concat(ModuloIngreso.Modulos));
         s.AddApplication(typeof(IAnalitica.Application.Empresas.CrearEmpresaCommand).Assembly);
         return s.BuildServiceProvider(validateScopes: true);
     }

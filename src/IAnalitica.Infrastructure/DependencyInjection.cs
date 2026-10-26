@@ -3,6 +3,8 @@ using IAnalitica.Application.Ingesta;
 using IAnalitica.Infrastructure.Empresas;
 using IAnalitica.Infrastructure.Identity;
 using IAnalitica.Infrastructure.Ingesta;
+using IAnalitica.Infrastructure.Semantica;
+using IAnalitica.Application.Semantica;
 using Microsoft.Data.SqlClient;
 using IAnalitica.Infrastructure.Persistencia;
 using IAnalitica.Infrastructure.Seguridad;
@@ -57,6 +59,8 @@ public static class DependencyInjection
 
         services.AddOpenIddict().AddCore(o => o.UseEntityFrameworkCore().UseDbContext<AnaliticaDbContext>());
 
+        services.AddScoped<IMotorMetricas, MotorMetricas>();
+        services.AddScoped<IMetasKpi, MetasKpi>();
         services.AddScoped<IRepositorioCargas, RepositorioCargas>();
         services.AddScoped<IRepositorioApiClientes, RepositorioApiClientes>();
         services.AddScoped<IRepositorioEmpresas, RepositorioEmpresas>();

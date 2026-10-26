@@ -34,6 +34,8 @@
     <ProjectReference Include="..\..\database\IAnalitica.Database.Migrator\IAnalitica.Database.Migrator.csproj" />
     <ProjectReference Include="..\..\src\IAnalitica.Web\IAnalitica.Web.csproj" />
     <ProjectReference Include="..\..\src\IAnalitica.Api\IAnalitica.Api.csproj" />
+    <ProjectReference Include="..\..\src\IAnalitica.Modulos.Financiero\IAnalitica.Modulos.Financiero.csproj" />
+    <ProjectReference Include="..\..\src\IAnalitica.Modulos.Ingreso\IAnalitica.Modulos.Ingreso.csproj" />
     <ProjectReference Include="..\..\src\IAnalitica.Worker\IAnalitica.Worker.csproj" />
   </ItemGroup>
 

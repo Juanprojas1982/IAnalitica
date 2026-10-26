@@ -37,11 +37,11 @@ public sealed class Procesamiento : IAsyncDisposable
         _sp = s.BuildServiceProvider();
     }
 
-    public static async Task<Procesamiento> NuevaEmpresaAsync(BaseDeDatosFixture bd)
+    public static async Task<Procesamiento> NuevaEmpresaAsync(BaseDeDatosFixture bd, params string[] modulos)
     {
         var p = new Procesamiento(bd);
         var nit = Interlocked.Increment(ref _secuencia).ToString();
-        var kit = await Escenarios.CrearComoSuperadminAsync(bd, Escenarios.ComandoValido(nit, "Empresa de prueba " + nit));
+        var kit = await Escenarios.CrearComoSuperadminAsync(bd, Escenarios.ComandoValido(nit, "Empresa de prueba " + nit, modulos: modulos.Length == 0 ? null : modulos));
         p.EmpresaId = kit.EmpresaId;
         return p;
     }
@@ -142,10 +142,12 @@ public sealed class Procesamiento : IAsyncDisposable
             ["relacionadoSourceKey"] = rel, ["numDocumento"] = numDoc, ["fechaCartera"] = fechaCartera, ["sedeCodigo"] = "1",
         }.Where(kv => kv.Value is not null).ToDictionary(kv => kv.Key, kv => kv.Value);
 
-    public static object Factura(string key, string doc, string fecha, string pagador, decimal neto, bool anulada = false, string sede = "1")
+    public static object Factura(string key, string doc, string fecha, string pagador, decimal neto, bool anulada = false, string sede = "1",
+        int? estadoFe = null, string? fechaRips = null, string? usuario = null)
         => new Dictionary<string, object?>
         {
             ["sourceKey"] = key, ["numeroDocumento"] = doc, ["fechaEmision"] = fecha, ["pagadorCodigo"] = pagador, ["sedeCodigo"] = sede,
             ["cantidad"] = 1, ["valorServicio"] = neto, ["valorNeto"] = neto, ["anulada"] = anulada,
-        };
+            ["estadoFE"] = estadoFe, ["fechaEnvioRips"] = fechaRips, ["usuarioCodigo"] = usuario,
+        }.Where(kv => kv.Value is not null).ToDictionary(kv => kv.Key, kv => kv.Value);
 }
