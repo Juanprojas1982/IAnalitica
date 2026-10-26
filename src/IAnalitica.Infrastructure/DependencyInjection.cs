@@ -9,6 +9,7 @@ using IAnalitica.Infrastructure.Regulacion;
 using IAnalitica.Infrastructure.Semantica;
 using IAnalitica.Application.Semantica;
 using IAnalitica.Application.Auditoria;
+using IAnalitica.Application.Costos;
 using IAnalitica.Application.Regulacion;
 using IAnalitica.Application.Reportes;
 using IAnalitica.Infrastructure.Reportes;
@@ -71,6 +72,7 @@ public static class DependencyInjection
         // Reportes en segundo plano (spec 21): el portal solicita y descarga; el worker genera con la identidad del solicitante
         services.AddScoped<IRepositorioReportes, RepositorioReportes>();
         services.AddScoped<IRepositorioHallazgos, RepositorioHallazgos>();
+        services.AddScoped<IRepositorioCostos, RepositorioCostos>();
         services.AddScoped<IImportadorPreciosMaximos, ImportadorPreciosMaximos>();
         services.AddScoped<INotificaciones, Notificaciones>();
         services.AddScoped<IPermisosUsuario, PermisosUsuario>();

@@ -134,6 +134,7 @@ app.MapConsultasQ();
 app.MapReportes();
 app.MapAuditor();
 app.MapRegulacion();
+app.MapCostos();
 
 app.MapRazorComponents<App>();
 
