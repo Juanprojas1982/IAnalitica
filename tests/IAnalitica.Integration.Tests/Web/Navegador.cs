@@ -68,14 +68,15 @@ public sealed partial class Navegador(HttpClient cliente)
     }
 
     /// <summary>Envía un POST usando un token antiforgery tomado de cualquier formulario de una página ya cargada (acciones de tabla).</summary>
-    public async Task<(HttpStatusCode Estado, string Html, string? Redireccion)> PostConTokenAsync(string rutaConToken, string destino)
+    public async Task<(HttpStatusCode Estado, string Html, string? Redireccion)> PostConTokenAsync(string rutaConToken, string destino, IDictionary<string, string>? campos = null)
     {
         var (_, html, _) = await IrCrudoAsync(rutaConToken);
         var token = Entradas().Matches(html).Select(m => m.Value)
             .FirstOrDefault(e => e.Contains("__RequestVerificationToken", StringComparison.Ordinal));
         Assert.NotNull(token);
-        var respuesta = await Cliente.PostAsync(destino, new FormUrlEncodedContent(new Dictionary<string, string>
-            { ["__RequestVerificationToken"] = WebUtility.HtmlDecode(Atributo(token!, "value") ?? "") }));
+        var datos = new Dictionary<string, string> { ["__RequestVerificationToken"] = WebUtility.HtmlDecode(Atributo(token!, "value") ?? "") };
+        foreach (var (clave, valor) in campos ?? new Dictionary<string, string>()) datos[clave] = valor;
+        var respuesta = await Cliente.PostAsync(destino, new FormUrlEncodedContent(datos));
         return (respuesta.StatusCode, WebUtility.HtmlDecode(await respuesta.Content.ReadAsStringAsync()), respuesta.Headers.Location?.OriginalString);
     }
 

@@ -66,7 +66,9 @@ builder.Services.Configure<SecurityStampValidatorOptions>(o =>
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy("admin.empresas", p => p.RequireClaim(Reclamos.Permiso, "admin.empresas"))
     .AddPolicy("admin.usuarios", p => p.RequireClaim(Reclamos.Permiso, "admin.usuarios"))
-    .AddPolicy("reportes.exportar", p => p.RequireClaim(Reclamos.Permiso, "reportes.exportar"));
+    .AddPolicy("reportes.exportar", p => p.RequireClaim(Reclamos.Permiso, "reportes.exportar"))
+    .AddPolicy("dash.auditor_config", p => p.RequireClaim(Reclamos.Permiso, "dash.auditor_config"))
+    .AddPolicy("hallazgos.gestionar", p => p.RequireClaim(Reclamos.Permiso, "hallazgos.gestionar"));
 builder.Services.AddCascadingAuthenticationState();
 
 builder.Services.AddRateLimiter(o =>
@@ -127,6 +129,7 @@ usuarios.MapPost("/{id:int}/restablecer", async (int id, ISender enviar, IAntifo
 
 app.MapConsultasQ();
 app.MapReportes();
+app.MapAuditor();
 
 app.MapRazorComponents<App>();
 

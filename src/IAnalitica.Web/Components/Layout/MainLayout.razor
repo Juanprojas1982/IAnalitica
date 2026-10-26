@@ -10,6 +10,9 @@
                 <AuthorizeView Policy="reportes.exportar" Context="exportador">
                     <li class="nav-item"><a class="nav-link" href="/reportes">Mis reportes@(sinLeer > 0 ? " (" + sinLeer + ")" : "")</a></li>
                 </AuthorizeView>
+                <AuthorizeView Policy="dash.auditor_config" Context="auditor">
+                    <li class="nav-item"><a class="nav-link" href="/auditor">Salud de la configuración</a></li>
+                </AuthorizeView>
                 <AuthorizeView Policy="admin.empresas" Context="superadmin">
                     <li class="nav-item"><a class="nav-link" href="/admin/empresas/nueva">Nueva empresa</a></li>
                 </AuthorizeView>
