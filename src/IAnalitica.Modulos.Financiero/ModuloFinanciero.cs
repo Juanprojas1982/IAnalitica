@@ -60,7 +60,7 @@ internal sealed class ModuloFinancieroAnalitico : IModuloAnalitico
                 new[] { "financiero.ingresos", "financiero.costos_gastos", "financiero.utilidad" }, new[] { "periodo" }, 2, 0, 8, 4),
             Kpi("facturado", "Facturado en el periodo", "ciclo_ingreso.facturado", 2, 8, 4, 2, "ciclo_ingreso.facturacion", "CICLO_INGRESO"),
             Kpi("cartera", "Cartera por cobrar", "cartera.saldo_cxc", 4, 8, 4, 2, "cartera.antiguedad", "CARTERA"),
-            Grafico("pagadores", "Facturado por pagador (primeros 10)", TipoWidget.Barras, new[] { "ciclo_ingreso.facturado" }, new[] { "pagador" }, 6, 0, 12, 4,
+            Grafico("pagadores", "Facturado por pagador", TipoWidget.Barras, new[] { "ciclo_ingreso.facturado" }, new[] { "pagador" }, 6, 0, 12, 4,
                 "ciclo_ingreso.facturacion", "CICLO_INGRESO"),
         }));
 

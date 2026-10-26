@@ -106,8 +106,9 @@ internal sealed class MotorMetricas(CatalogoAnalitico catalogo, ISesionUsuario s
         var clave = Convert.ToString(crudo, CultureInfo.InvariantCulture) ?? "";
         if (dim == Dimensiones.Periodo && int.TryParse(clave, out var per)) return new DimensionValor(clave, Dimensiones.EtiquetaPeriodo(per));
         if (dim == "corte" && int.TryParse(clave, out var corte)) return new DimensionValor(clave, Dimensiones.EtiquetaCorte(corte));
-        if (etiquetas.TryGetValue(dim, out var mapa) && mapa.TryGetValue(clave, out var texto)) return new DimensionValor(clave, texto);
-        return new DimensionValor(clave, clave);
+        if (etiquetas.TryGetValue(dim, out var mapa) && mapa.TryGetValue(clave, out var texto))
+            return new DimensionValor(clave, Dimensiones.Buscar(dim)?.ClaveTexto == true ? $"{clave} · {texto}" : texto);
+        return new DimensionValor(clave, Dimensiones.EtiquetaFija(dim, clave) ?? clave);
     }
 
     /// <summary>Etiquetas de las dimensiones que vienen de una tabla: una consulta por dimensión (lista blanca), con RLS.</summary>
@@ -119,11 +120,13 @@ internal sealed class MotorMetricas(CatalogoAnalitico catalogo, ISesionUsuario s
         {
             var def = Dimensiones.Buscar(dims[i]);
             if (def?.Tabla is null || filas.Count == 0) continue;
-            var ids = filas.Select(f => f[$"d{i}"]).Where(v => v is not null and not DBNull).Select(Convert.ToInt32).Distinct().ToArray();
-            if (ids.Length == 0) continue;
-            var sql = $"SELECT CAST({def.ColumnaId} AS varchar(20)) AS Id, {def.ColumnaEtiqueta} AS Etiqueta FROM {def.Tabla} WHERE {def.ColumnaId} IN @ids";
-            var mapa = (await cn.QueryAsync<(string Id, string? Etiqueta)>(new CommandDefinition(sql, new { ids }, cancellationToken: ct)).ConfigureAwait(false))
-                .ToDictionary(x => x.Id, x => x.Etiqueta ?? x.Id);
+            var crudos = filas.Select(f => f[$"d{i}"]).Where(v => v is not null and not DBNull).ToList();
+            if (crudos.Count == 0) continue;
+            var sql = $"SELECT CAST({def.ColumnaId} AS varchar(25)) AS Id, {def.ColumnaEtiqueta} AS Etiqueta FROM {def.Tabla} WHERE {def.ColumnaId} IN @ids";
+            var filasEtiqueta = def.ClaveTexto
+                ? await cn.QueryAsync<(string Id, string? Etiqueta)>(new CommandDefinition(sql, new { ids = crudos.Select(v => Convert.ToString(v, CultureInfo.InvariantCulture)!).Distinct().ToArray() }, cancellationToken: ct)).ConfigureAwait(false)
+                : await cn.QueryAsync<(string Id, string? Etiqueta)>(new CommandDefinition(sql, new { ids = crudos.Select(Convert.ToInt32).Distinct().ToArray() }, cancellationToken: ct)).ConfigureAwait(false);
+            var mapa = filasEtiqueta.GroupBy(x => x.Id).ToDictionary(g => g.Key, g => g.First().Etiqueta ?? g.Key);
             resultado[dims[i]] = mapa;
         }
         return resultado;
@@ -153,5 +156,20 @@ internal sealed class MetasKpi(IFabricaConexiones conexiones, ISesionUsuario ses
             WHERE EmpresaId = @empresaId AND KpiCodigo = @kpiCodigo AND (@periodoHasta IS NULL OR PeriodoKey <= @periodoHasta)
             ORDER BY PeriodoKey DESC
             """, new { empresaId, kpiCodigo, periodoHasta }, cancellationToken: ct)).ConfigureAwait(false);
+    }
+}
+
+/// <summary>Sedes, pagadores y centros de costo para la barra de filtros. Las dimensiones salen de la RLS, no de la sesión.</summary>
+internal sealed class OpcionesFiltros(IFabricaConexiones conexiones) : IOpcionesFiltros
+{
+    public async Task<Application.Semantica.OpcionesFiltros> ObtenerAsync(CancellationToken ct)
+    {
+        await using var cn = await conexiones.AbrirAsync(ct).ConfigureAwait(false);
+        async Task<IReadOnlyList<OpcionFiltro>> Lista(string sql)
+            => (await cn.QueryAsync<OpcionFiltro>(new CommandDefinition(sql, cancellationToken: ct)).ConfigureAwait(false)).ToList();
+        return new Application.Semantica.OpcionesFiltros(
+            await Lista("SELECT TOP (500) SedeId AS Id, Nombre FROM dim.Sede WHERE Activa = 1 ORDER BY Nombre").ConfigureAwait(false),
+            await Lista("SELECT TOP (500) PagadorId AS Id, Nombre FROM dim.Pagador WHERE Activo = 1 ORDER BY Nombre").ConfigureAwait(false),
+            await Lista("SELECT TOP (500) CentroCostoId AS Id, Nombre FROM dim.CentroCosto WHERE Activo = 1 ORDER BY Nombre").ConfigureAwait(false));
     }
 }

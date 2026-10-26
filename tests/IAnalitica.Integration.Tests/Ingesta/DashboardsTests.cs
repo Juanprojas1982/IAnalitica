@@ -61,6 +61,9 @@ public class DashboardsTests(BaseDeDatosFixture bd) : IAsyncLifetime
     private async Task<decimal?> KpiAsync(string dashboard, string widget, FiltrosDashboard? filtros = null)
         => (await DatosAsync(dashboard, widget, filtros)).Series[0].Resultado.Total;
 
+    private static Dictionary<string, decimal?> PorClave(DatosWidget d, int serie = 0)
+        => d.Series[serie].Resultado.Filas.ToDictionary(f => f.Dimensiones.Values.First().Clave, f => f.Valor);
+
     private static Dictionary<string, decimal?> PorDimension(DatosWidget d, int serie = 0)
         => d.Series[serie].Resultado.Filas.ToDictionary(f => f.Dimensiones.Values.First().Etiqueta, f => f.Valor);
 
@@ -134,12 +137,12 @@ public class DashboardsTests(BaseDeDatosFixture bd) : IAsyncLifetime
     [Fact]
     public async Task El_resultado_por_grupo_y_la_cascada_dan_los_signos_correctos()
     {
-        var grupos = PorDimension(await DatosAsync("financiero.pyg", "grupos"));
+        var grupos = PorClave(await DatosAsync("financiero.pyg", "grupos"));
         Assert.Equal(3000m, grupos["41"]);
         Assert.Equal(-300m, grupos["51"]);
         Assert.Equal(-200m, grupos["61"]);
 
-        var cascada = PorDimension(await DatosAsync("financiero.pyg", "cascada"));
+        var cascada = PorClave(await DatosAsync("financiero.pyg", "cascada"));
         Assert.Equal(3000m, cascada["4"]);
         Assert.Equal(-500m, cascada["5"] + cascada["6"]);
     }
@@ -173,7 +176,7 @@ public class DashboardsTests(BaseDeDatosFixture bd) : IAsyncLifetime
     public async Task El_balance_agrupa_por_grupo_del_balance_con_el_respaldo_del_PUC()
     {
         var d = await DatosAsync("financiero.balance", "grupos", new FiltrosDashboard(null, 202602));
-        var grupos = PorDimension(d);
+        var grupos = PorClave(d);
         Assert.Equal(8900m, grupos["ACTIVO_CORRIENTE"]);
         Assert.Equal(200m, grupos["PASIVO_CORRIENTE"]);
         Assert.Equal(8400m, grupos["PATRIMONIO"]);          // capital 5.400 + resultado 3.000
@@ -213,7 +216,7 @@ public class DashboardsTests(BaseDeDatosFixture bd) : IAsyncLifetime
         Assert.Equal(2000m, await KpiAsync("ciclo_ingreso.fe_rips", "sin_radicar", todo));                             // F2
         Assert.Equal(10m, await KpiAsync("ciclo_ingreso.fe_rips", "dias", todo));                                       // F1 y F0: 10 días
 
-        var estados = PorDimension(await DatosAsync("ciclo_ingreso.fe_rips", "estados", todo));
+        var estados = PorClave(await DatosAsync("ciclo_ingreso.fe_rips", "estados", todo));
         Assert.Equal(new Dictionary<string, decimal?> { ["ENVIADA"] = 1, ["ERROR"] = 1, ["CARGADA"] = 1 }, estados);
     }
 

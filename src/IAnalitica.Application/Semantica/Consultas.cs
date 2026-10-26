@@ -136,3 +136,24 @@ public sealed class ObtenerDatosWidgetHandler(CatalogoAnalitico catalogo, ISesio
         return r.Total;
     }
 }
+
+// ---------- Opciones de la barra de filtros ----------
+public sealed record OpcionFiltro(int Id, string Nombre);
+
+public sealed record OpcionesFiltros(IReadOnlyList<OpcionFiltro> Sedes, IReadOnlyList<OpcionFiltro> Pagadores, IReadOnlyList<OpcionFiltro> CentrosCosto);
+
+/// <summary>Valores de los filtros globales de la empresa de la sesión (con RLS). Acotado a 500 por lista.</summary>
+public interface IOpcionesFiltros
+{
+    Task<OpcionesFiltros> ObtenerAsync(CancellationToken ct);
+}
+
+public sealed record ListarOpcionesFiltrosQuery : IRequest<Result<OpcionesFiltros>>;
+
+public sealed class ListarOpcionesFiltrosHandler(ISesionUsuario sesion, IOpcionesFiltros opciones) : IRequestHandler<ListarOpcionesFiltrosQuery, Result<OpcionesFiltros>>
+{
+    public async Task<Result<OpcionesFiltros>> Handle(ListarOpcionesFiltrosQuery request, CancellationToken ct)
+        => sesion.EmpresaId is null || sesion.UsuarioId is null
+            ? Result<OpcionesFiltros>.Falla(Error.NoAutorizado("Debe iniciar sesión con una empresa."))
+            : await opciones.ObtenerAsync(ct).ConfigureAwait(false);
+}

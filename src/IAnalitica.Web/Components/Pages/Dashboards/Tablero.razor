@@ -1,0 +1,116 @@
+@page "/d/{Codigo}"
+@attribute [Authorize]
+@using IAnalitica.Application.Comun
+@using IAnalitica.Application.Mediacion
+@using IAnalitica.Application.Semantica
+@using IAnalitica.Domain.Modulos
+@using IAnalitica.Web.Components.Dashboards
+@inject ISender Enviar
+@inject CatalogoAnalitico Catalogo
+@inject TimeProvider Reloj
+@inject IHttpContextAccessor Http
+@inject ILogger<Tablero> Log
+
+<PageTitle>@(visible?.Definicion.Titulo ?? "Dashboard") · IAnalitica</PageTitle>
+
+@if (problema is not null)
+{
+    <div class="alert alert-warning" role="alert">@problema</div>
+    <p><a href="/dashboards">Volver a los dashboards</a></p>
+}
+else if (visible is not null && opciones is not null)
+{
+    <header class="tablero-encabezado">
+        <p class="modulo">@visible.NombreModulo</p>
+        <h1>@visible.Definicion.Titulo</h1>
+    </header>
+
+    <BarraFiltros Codigo="@Codigo" Filtros="@pagina" Efectivos="@filtros" Opciones="@opciones"
+                  MuestraPeriodo="@Usa(Dimensiones.Periodo)" MuestraCorte="@Usa("corte")" MuestraSede="@Usa(Dimensiones.Sede)"
+                  MuestraPagador="@Usa(Dimensiones.Pagador)" MuestraCentro="@Usa(Dimensiones.CentroCosto)" />
+
+    <div class="tablero">
+        @foreach (var w in visible.Widgets.OrderBy(w => w.Fila).ThenBy(w => w.Columna))
+        {
+            <section class="widget widget-@w.Tipo.ToString().ToLowerInvariant()" style="--c:@(w.Columna + 1);--a:@w.Ancho;--f:@(w.Fila + 1);--h:@w.Alto" aria-labelledby="h-@w.Codigo">
+                <h2 id="h-@w.Codigo">@w.Titulo</h2>
+                <WidgetVista Datos="@(datos.GetValueOrDefault(w.Codigo))" Error="@(errores.GetValueOrDefault(w.Codigo))"
+                             Drill="@DrillDe(w)" />
+                @if (w.DrillDashboard is { } drill && Catalogo.Dashboards.TryGetValue(drill, out var destino))
+                {
+                    <p class="widget-pie"><a href="@Enlace(drill)">Ver: @destino.Titulo →</a></p>
+                }
+            </section>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public string Codigo { get; set; } = "";
+    [SupplyParameterFromQuery(Name = "desde")] public string? Desde { get; set; }
+    [SupplyParameterFromQuery(Name = "hasta")] public string? Hasta { get; set; }
+    [SupplyParameterFromQuery(Name = "sede")] public string? Sede { get; set; }
+    [SupplyParameterFromQuery(Name = "pagador")] public string? Pagador { get; set; }
+    [SupplyParameterFromQuery(Name = "cc")] public string? CentroCosto { get; set; }
+    [SupplyParameterFromQuery(Name = "corte")] public string? Corte { get; set; }
+
+    private DashboardVisible? visible;
+    private OpcionesFiltros? opciones;
+    private FiltrosPagina pagina = new();
+    private FiltrosDashboard filtros = FiltrosDashboard.Ninguno;
+    private string? problema;
+    private readonly Dictionary<string, DatosWidget> datos = new();
+    private readonly Dictionary<string, string> errores = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        pagina = new FiltrosPagina(Vacio(Desde), Vacio(Hasta), Entero(Sede), Entero(Pagador), Entero(CentroCosto), Vacio(Corte));
+        var hoyColombia = Reloj.GetUtcNow().UtcDateTime.AddHours(-5);   // Colombia: UTC−5 todo el año
+        filtros = pagina.ParaMotor(hoyColombia);
+
+        var d = await Enviar.Send(new ObtenerDashboardQuery(Codigo));
+        if (!d.EsExitoso)
+        {
+            Estado(d.Errores[0].Codigo == "NO_ENCONTRADO" ? 404 : d.Errores[0].Codigo == "NO_AUTORIZADO" ? 403 : 409);
+            problema = d.Errores[0].Codigo switch
+            {
+                "NO_ENCONTRADO" => "El dashboard no existe.",
+                "NO_AUTORIZADO" => "No tiene permiso para ver este dashboard.",
+                _ => d.Errores[0].Mensaje,
+            };
+            return;
+        }
+        visible = d.Valor;
+        // Sin widgets por periodo, el periodo por omisión no se aplica (ni se avisa «no aplica» en cada widget)
+        if (!Usa(Dimensiones.Periodo)) filtros = filtros with { PeriodoDesde = null, PeriodoHasta = null };
+        opciones = (await Enviar.Send(new ListarOpcionesFiltrosQuery())).Valor ?? new OpcionesFiltros([], [], []);
+
+        // Uno tras otro: la sesión y el contexto de EF no admiten consultas simultáneas dentro de la misma solicitud.
+        foreach (var w in visible.Widgets)
+        {
+            try
+            {
+                var r = await Enviar.Send(new ObtenerDatosWidgetQuery(Codigo, w.Codigo, filtros));
+                if (r.EsExitoso) datos[w.Codigo] = r.Valor;
+                else errores[w.Codigo] = r.Errores[0].Mensaje;
+            }
+            catch (Exception e)
+            {
+                Log.LogError(e, "No se pudo calcular el widget {Dashboard}/{Widget}", Codigo, w.Codigo);
+                errores[w.Codigo] = "No fue posible calcular esta información. Intente de nuevo; si persiste, avise a soporte.";
+            }
+        }
+    }
+
+    private Func<string, string, string>? DrillDe(DefinicionWidget w)
+        => w.DrillDashboard is null ? null : (dim, clave) => "/d/" + w.DrillDashboard + pagina.Consulta(f => f.Con(dim, clave));
+
+    private string Enlace(string codigo) => "/d/" + codigo + pagina.Consulta();
+
+    private bool Usa(string dimension)
+        => visible!.Widgets.Any(w => w.Metricas.Any(m => Catalogo.Metricas[m].Dimensiones.ContainsKey(dimension)));
+
+    private static string? Vacio(string? s) => string.IsNullOrWhiteSpace(s) ? null : s;
+    private static int? Entero(string? s) => int.TryParse(s, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var n) ? n : null;
+    private void Estado(int codigo) { if (Http.HttpContext is { Response.HasStarted: false } c) c.Response.StatusCode = codigo; }
+}

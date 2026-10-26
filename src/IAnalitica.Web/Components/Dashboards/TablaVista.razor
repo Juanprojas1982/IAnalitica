@@ -1,0 +1,64 @@
+@using IAnalitica.Application.Semantica
+@using IAnalitica.Domain.Modulos
+
+@{
+    var series = Datos.Series;
+    var dims = series[0].Resultado.Dimensiones;
+    // una fila por combinación de dimensiones; cada serie aporta su columna
+    var claves = series.SelectMany(s => s.Resultado.Filas).Select(f => string.Join("\u001f", dims.Select(d => f.Dimensiones[d].Clave))).Distinct().ToList();
+    var etiquetas = series.SelectMany(s => s.Resultado.Filas)
+        .GroupBy(f => string.Join("\u001f", dims.Select(d => f.Dimensiones[d].Clave)))
+        .ToDictionary(g => g.Key, g => dims.Select(d => g.First().Dimensiones[d]).ToList());
+    decimal? Valor(int s, string clave) => series[s].Resultado.Filas.FirstOrDefault(f => string.Join("\u001f", dims.Select(d => f.Dimensiones[d].Clave)) == clave)?.Valor;
+    var ordenCronologico = dims.Any(d => d is "periodo" or "corte" or "rango_edad");
+    var ordenadas = ordenCronologico
+        ? claves.OrderBy(c => c, StringComparer.Ordinal).ToList()
+        : claves.OrderByDescending(c => Valor(0, c) ?? decimal.MinValue).ToList();
+    var visibles = ordenadas.Take(Maximo).ToList();
+}
+@if (series.Count == 0 || visibles.Count == 0)
+{
+    <p class="sin-datos">Sin filas para mostrar.</p>
+}
+else
+{
+    <div class="tabla-scroll">
+        <table class="table table-sm table-striped">
+            <thead>
+                <tr>
+                    @foreach (var d in dims) { <th scope="col">@Dimensiones.Buscar(d)?.Nombre</th> }
+                    @foreach (var s in series) { <th scope="col" class="num">@s.Resultado.Nombre</th> }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var clave in visibles)
+                {
+                    <tr>
+                        @for (var i = 0; i < dims.Count; i++)
+                        {
+                            var dv = etiquetas[clave][i];
+                            <th scope="row">
+                                @if (Drill is not null && FiltrosPagina.EsFiltrable(dims[i]) && dv.Clave != "")
+                                {
+                                    <a href="@Drill(dims[i], dv.Clave)">@dv.Etiqueta</a>
+                                }
+                                else { @dv.Etiqueta }
+                            </th>
+                        }
+                        @for (var s = 0; s < series.Count; s++) { <td class="num">@Formato.Valor(Valor(s, clave), series[s].Resultado.Unidad)</td> }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    @if (ordenadas.Count > visibles.Count)
+    {
+        <p class="nota">Se muestran @visibles.Count de @ordenadas.Count filas. Descargue el reporte para verlas todas.</p>
+    }
+}
+
+@code {
+    [Parameter, EditorRequired] public DatosWidget Datos { get; set; } = default!;
+    [Parameter] public int Maximo { get; set; } = 25;
+    [Parameter] public Func<string, string, string>? Drill { get; set; }
+}

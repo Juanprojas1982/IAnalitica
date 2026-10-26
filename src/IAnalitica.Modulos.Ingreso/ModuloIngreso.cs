@@ -51,7 +51,7 @@ internal sealed class ModuloCicloIngreso : IModuloAnalitico
             Kpi("facturas", "Facturas", "ciclo_ingreso.facturas", 0, 4, 4),
             Kpi("descuentos", "Descuentos otorgados", "ciclo_ingreso.descuentos", 0, 8, 4),
             Grafico("tendencia", "Facturado por periodo", TipoWidget.Linea, new[] { "ciclo_ingreso.facturado" }, new[] { "periodo" }, 2, 0, 12, 3),
-            Grafico("pagadores", "Facturado por pagador (primeros 10)", TipoWidget.Barras, new[] { "ciclo_ingreso.facturado" }, new[] { "pagador" }, 5, 0, 6, 4),
+            Grafico("pagadores", "Facturado por pagador", TipoWidget.Barras, new[] { "ciclo_ingreso.facturado" }, new[] { "pagador" }, 5, 0, 6, 4),
             Grafico("lineas", "Facturado por línea de servicio", TipoWidget.Barras, new[] { "ciclo_ingreso.facturado" }, new[] { "linea_servicio" }, 5, 6, 6, 4),
             Grafico("sedes", "Facturación por sede", TipoWidget.Tabla, new[] { "ciclo_ingreso.facturado", "ciclo_ingreso.facturas", "ciclo_ingreso.descuentos" }, new[] { "sede" }, 9, 0, 12, 4),
         }));
@@ -62,7 +62,7 @@ internal sealed class ModuloCicloIngreso : IModuloAnalitico
             Kpi("sin_radicar", "Facturado sin radicar", "ciclo_ingreso.sin_radicar", 0, 4, 4),
             Kpi("dias", "Días de factura a radicación", "ciclo_ingreso.dias_a_radicacion", 0, 8, 4),
             Grafico("estados", "Facturas por estado de la factura electrónica", TipoWidget.Dona, new[] { "ciclo_ingreso.facturas_fe" }, new[] { "estado_fe" }, 2, 0, 5, 4),
-            Grafico("pagadores", "Facturado sin radicar por pagador (primeros 10)", TipoWidget.Barras, new[] { "ciclo_ingreso.sin_radicar" }, new[] { "pagador" }, 2, 5, 7, 4),
+            Grafico("pagadores", "Facturado sin radicar por pagador", TipoWidget.Barras, new[] { "ciclo_ingreso.sin_radicar" }, new[] { "pagador" }, 2, 5, 7, 4),
             Grafico("tendencia", "Días a radicación por periodo", TipoWidget.Linea, new[] { "ciclo_ingreso.dias_a_radicacion" }, new[] { "periodo" }, 6, 0, 12, 3),
         }));
 
@@ -113,7 +113,7 @@ internal sealed class ModuloCartera : IModuloAnalitico
             Kpi("vencido", "Por cobrar a más de 90 días", "cartera.pct_vencido_cxc", 0, 4, 4),
             Kpi("cxp", "Cuentas por pagar", "cartera.saldo_cxp", 0, 8, 4),
             Grafico("edades", "Cartera por edad", TipoWidget.BarrasApiladas, new[] { "cartera.saldo" }, new[] { "rango_edad", "tipo_cartera" }, 2, 0, 12, 4),
-            Grafico("pagadores", "Por cobrar por pagador (primeros 10)", TipoWidget.Barras, new[] { "cartera.saldo_cxc" }, new[] { "pagador" }, 6, 0, 12, 4, "cartera.dso"),
+            Grafico("pagadores", "Por cobrar por pagador", TipoWidget.Barras, new[] { "cartera.saldo_cxc" }, new[] { "pagador" }, 6, 0, 12, 4, "cartera.dso"),
         }));
 
         r.DashboardDeFabrica(new("cartera.dso", "DSO por EPS", Codigo, "dash.cartera", 1, new[]
@@ -121,7 +121,7 @@ internal sealed class ModuloCartera : IModuloAnalitico
             Kpi("dso", "DSO", "cartera.dso", 0, 0, 4),
             Kpi("saldo", "Saldo por cobrar", "cartera.saldo_cxc_pagador", 0, 4, 4),
             Kpi("facturado", "Facturado en 90 días", "cartera.facturado_90", 0, 8, 4),
-            Grafico("dso_pagador", "DSO por pagador (primeros 15)", TipoWidget.Barras, new[] { "cartera.dso" }, new[] { "pagador" }, 2, 0, 12, 4),
+            Grafico("dso_pagador", "DSO por pagador", TipoWidget.Barras, new[] { "cartera.dso" }, new[] { "pagador" }, 2, 0, 12, 4),
             Grafico("detalle", "Detalle por pagador", TipoWidget.Tabla, new[] { "cartera.saldo_cxc_pagador", "cartera.facturado_90", "cartera.dso" }, new[] { "pagador" }, 6, 0, 12, 5),
         }));
 

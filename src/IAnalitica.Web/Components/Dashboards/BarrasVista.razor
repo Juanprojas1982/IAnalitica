@@ -1,0 +1,45 @@
+@using IAnalitica.Application.Semantica
+@using IAnalitica.Domain.Modulos
+
+@{
+    var resultado = Datos.Series[0].Resultado;
+    var dim = resultado.Dimensiones[0];
+    var filas = resultado.Filas.Where(f => f.Valor is not null).OrderByDescending(f => f.Valor).ToList();
+    var visibles = filas.Take(Maximo).ToList();
+    var max = visibles.Count == 0 ? 1m : Math.Max(1m, visibles.Max(f => Math.Abs(f.Valor!.Value)));
+}
+<figure class="grafico barras" role="group" aria-label="@Datos.Titulo">
+    <ul>
+        @foreach (var f in visibles)
+        {
+            var d = f.Dimensiones[dim];
+            var v = f.Valor!.Value;
+            var porcentaje = ((double)(Math.Abs(v) / max * 100)).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
+            <li>
+                <span class="barra-etiqueta">
+                    @if (Drill is not null && FiltrosPagina.EsFiltrable(dim) && d.Clave != "")
+                    {
+                        <a href="@Drill(dim, d.Clave)">@d.Etiqueta</a>
+                    }
+                    else
+                    {
+                        @d.Etiqueta
+                    }
+                </span>
+                <span class="barra-pista" aria-hidden="true"><span class="barra @(v < 0 ? "neg" : "")" style="width:@(porcentaje)%"></span></span>
+                <span class="barra-valor">@Formato.Valor(v, resultado.Unidad)</span>
+            </li>
+        }
+    </ul>
+    @if (filas.Count > visibles.Count)
+    {
+        <figcaption class="nota">Se muestran @visibles.Count de @filas.Count.</figcaption>
+    }
+</figure>
+
+@code {
+    [Parameter, EditorRequired] public DatosWidget Datos { get; set; } = default!;
+    [Parameter] public int Maximo { get; set; } = 10;
+    /// <summary>Construye el enlace de drill para (dimensión, llave); null si el widget no tiene drill.</summary>
+    [Parameter] public Func<string, string, string>? Drill { get; set; }
+}

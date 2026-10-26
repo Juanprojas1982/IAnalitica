@@ -5,6 +5,7 @@
     <AuthorizeView>
         <Authorized>
             <ul class="navbar-nav me-auto">
+                <li class="nav-item"><a class="nav-link" href="/dashboards">Dashboards</a></li>
                 <AuthorizeView Policy="admin.empresas" Context="superadmin">
                     <li class="nav-item"><a class="nav-link" href="/admin/empresas/nueva">Nueva empresa</a></li>
                 </AuthorizeView>

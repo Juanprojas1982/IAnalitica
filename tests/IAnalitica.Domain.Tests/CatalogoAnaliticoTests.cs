@@ -147,4 +147,22 @@ public class CatalogoAnaliticoTests
         Assert.Equal(a.Clave(), b.Clave());
         Assert.NotEqual(a.Clave(), (a with { Corte = 20260131 }).Clave());
     }
+
+    [Theory]
+    [InlineData("clase_puc", "4", "4 · Ingresos")]
+    [InlineData("clase_puc", "9", "9")]
+    [InlineData("tipo_cartera", "CXC", "Por cobrar")]
+    [InlineData("tipo_cartera", "CXP", "Por pagar")]
+    [InlineData("estado_fe", "SIN_ENVIAR", "Sin enviar")]
+    [InlineData("grupo_balance", "ACTIVO_CORRIENTE", "Activo corriente")]
+    public void Las_etiquetas_fijas_traducen_las_llaves_legibles(string dimension, string clave, string esperada)
+        => Assert.Equal(esperada, Dimensiones.EtiquetaFija(dimension, clave));
+
+    [Theory]
+    [InlineData("sede")]
+    [InlineData("pagador")]
+    [InlineData("rango_edad")]
+    [InlineData("periodo")]
+    public void Las_dimensiones_por_tabla_o_ya_legibles_no_tienen_etiqueta_fija(string dimension)
+        => Assert.Null(Dimensiones.EtiquetaFija(dimension, "1"));
 }

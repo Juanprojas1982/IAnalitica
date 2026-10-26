@@ -16,6 +16,7 @@ using IAnalitica.Modulos.Ingreso;
 using IAnalitica.Modulos.Operacion;
 using IAnalitica.Web.Components;
 using IAnalitica.Web.Components.Pages.Admin;
+using IAnalitica.Web.Consultas;
 using IAnalitica.Web.Seguridad;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Components.Endpoints;
@@ -74,6 +75,7 @@ builder.Services.AddRateLimiter(o =>
         _ => new FixedWindowRateLimiterOptions { PermitLimit = builder.Configuration.GetValue("Seguridad:LimiteIngresoPorMinuto", 20), Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
 });
 
+builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
 builder.Services.AddRazorComponents();   // F0: páginas estáticas del servidor. El render InteractiveAuto llega con los dashboards (F3).
 
 var app = builder.Build();
@@ -119,6 +121,8 @@ usuarios.MapPost("/{id:int}/restablecer", async (int id, ISender enviar, IAntifo
         ? (IResult)new RazorComponentResult<CredencialEntregada>(new { Credencial = r.Valor, Titulo = "Contraseña restablecida" })
         : Results.Redirect("/admin/usuarios?error=" + Uri.EscapeDataString(r.Errores[0].Mensaje));
 });
+
+app.MapConsultasQ();
 
 app.MapRazorComponents<App>();
 

@@ -1,0 +1,40 @@
+@using IAnalitica.Application.Semantica
+@using IAnalitica.Domain.Modulos
+
+@if (Error is not null)
+{
+    <p class="widget-error" role="alert">@Error</p>
+}
+else if (Datos is null)
+{
+    <p class="sin-datos">Cargando…</p>
+}
+else if (Datos.SinDatos)
+{
+    <p class="sin-datos">@Mensaje</p>
+}
+else
+{
+    switch (Datos.Tipo)
+    {
+        case TipoWidget.Kpi: <KpiVista Serie="Datos.Series[0]" MensajeSinDatos="@Mensaje" /> break;
+        case TipoWidget.Linea: <LineaVista Datos="Datos" /> break;
+        case TipoWidget.Barras: <BarrasVista Datos="Datos" Drill="Drill" /> break;
+        case TipoWidget.BarrasApiladas: <ApiladasVista Datos="Datos" /> break;
+        case TipoWidget.Dona: <DonaVista Datos="Datos" /> break;
+        case TipoWidget.Cascada: <CascadaVista Datos="Datos" /> break;
+        default: <TablaVista Datos="Datos" Drill="Drill" /> break;
+    }
+    @if (Datos.FiltrosNoAplicados.Count > 0)
+    {
+        <p class="nota">No aplica el filtro de @string.Join(", ", Datos.FiltrosNoAplicados.Select(f => Dimensiones.Buscar(f)?.Nombre?.ToLowerInvariant() ?? f)) a esta información.</p>
+    }
+}
+
+@code {
+    [Parameter] public DatosWidget? Datos { get; set; }
+    [Parameter] public string? Error { get; set; }
+    /// <summary>Qué decir cuando no hay datos: el módulo existe pero el HIS no ha enviado lo que necesita.</summary>
+    [Parameter] public string Mensaje { get; set; } = "Este módulo aún no tiene datos para el periodo y los filtros elegidos.";
+    [Parameter] public Func<string, string, string>? Drill { get; set; }
+}

@@ -61,6 +61,7 @@ public static class DependencyInjection
 
         services.AddScoped<IMotorMetricas, MotorMetricas>();
         services.AddScoped<IMetasKpi, MetasKpi>();
+        services.AddScoped<IOpcionesFiltros, Semantica.OpcionesFiltros>();
         services.AddScoped<IRepositorioCargas, RepositorioCargas>();
         services.AddScoped<IRepositorioApiClientes, RepositorioApiClientes>();
         services.AddScoped<IRepositorioEmpresas, RepositorioEmpresas>();

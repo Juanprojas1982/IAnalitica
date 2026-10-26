@@ -1,0 +1,67 @@
+@using IAnalitica.Application.Semantica
+@using IAnalitica.Domain.Modulos
+@using System.Globalization
+
+@{
+    var resultado = Datos.Series[0].Resultado;
+    var dimX = resultado.Dimensiones[0];
+    var dimS = resultado.Dimensiones[1];
+    var filas = resultado.Filas.Where(f => f.Valor is not null).ToList();
+    var cats = Formato.Ordenar(dimX, filas.Select(f => f.Dimensiones[dimX].Clave).Distinct()).ToList();
+    var etqCat = filas.GroupBy(f => f.Dimensiones[dimX].Clave).ToDictionary(g => g.Key, g => g.First().Dimensiones[dimX].Etiqueta);
+    var stacks = filas.Select(f => f.Dimensiones[dimS]).DistinctBy(d => d.Clave).OrderBy(d => d.Clave, StringComparer.Ordinal).ToList();
+    decimal Valor(string cat, string stack) => filas.Where(f => f.Dimensiones[dimX].Clave == cat && f.Dimensiones[dimS].Clave == stack).Sum(f => f.Valor!.Value);
+    var (_, maxTotal, ticks) = Escala.Bonita(0m, cats.Count == 0 ? 1m : Math.Max(1m, cats.Max(c => stacks.Sum(s => Math.Max(0m, Valor(c, s.Clave))))));
+    const double W = 640, H = 240, ML = 64, MR = 14, MT = 14, MB = 30;
+    var ancho = cats.Count == 0 ? 0 : (W - ML - MR) / cats.Count;
+    string F(double d) => d.ToString("0.#", CultureInfo.InvariantCulture);
+}
+<figure class="grafico">
+    <svg viewBox="0 0 @W @H" role="img" aria-labelledby="t-@Datos.Widget">
+        <title id="t-@Datos.Widget">@Datos.Titulo</title>
+        @foreach (var v in ticks)
+        {
+            var y = MT + (double)(maxTotal - v) / (double)maxTotal * (H - MT - MB);
+            <line x1="@F(ML)" x2="@F(W - MR)" y1="@F(y)" y2="@F(y)" class="eje" />
+            @Svg.Texto(F(ML - 6), F(y + 4), "end", "etiqueta", Formato.Corto(v, resultado.Unidad))
+        }
+        @for (var i = 0; i < cats.Count; i++)
+        {
+            var baseY = H - MB;
+            var x = ML + i * ancho + ancho * 0.15;
+            for (var s = 0; s < stacks.Count; s++)
+            {
+                var v = Math.Max(0m, Valor(cats[i], stacks[s].Clave));
+                if (v == 0) continue;
+                var alto = (double)(v / maxTotal) * (H - MT - MB);
+                baseY -= alto;
+                <rect x="@F(x)" y="@F(baseY)" width="@F(ancho * 0.7)" height="@F(alto)" fill="@Paleta.De(s)">
+                    <title>@etqCat[cats[i]] · @stacks[s].Etiqueta: @Formato.Valor(v, resultado.Unidad)</title>
+                </rect>
+            }
+            @Svg.Texto(F(ML + i * ancho + ancho / 2), F(H - 8), "middle", "etiqueta", etqCat[cats[i]])
+        }
+    </svg>
+    <figcaption class="leyenda">
+        @for (var s = 0; s < stacks.Count; s++)
+        {
+            <span><i style="background:@Paleta.De(s)"></i>@stacks[s].Etiqueta</span>
+        }
+    </figcaption>
+    <details class="datos">
+        <summary>Ver los datos</summary>
+        <table class="table table-sm">
+            <thead><tr><th scope="col">@Dimensiones.Buscar(dimX)?.Nombre</th>@foreach (var s in stacks) { <th scope="col" class="num">@s.Etiqueta</th> }</tr></thead>
+            <tbody>
+                @foreach (var c in cats)
+                {
+                    <tr><th scope="row">@etqCat[c]</th>@foreach (var s in stacks) { <td class="num">@Formato.Valor(Valor(c, s.Clave), resultado.Unidad)</td> }</tr>
+                }
+            </tbody>
+        </table>
+    </details>
+</figure>
+
+@code {
+    [Parameter, EditorRequired] public DatosWidget Datos { get; set; } = default!;
+}
