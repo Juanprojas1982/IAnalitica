@@ -101,7 +101,7 @@ Todas de solo lectura, sobre `rpt.*` con la conexión del usuario y RLS. `Empres
 ### 6.3 Niveles de cupo
 | Nivel | Qué es | Al alcanzarlo |
 |---|---|---|
-| **1. Cupo incluido** | Consumo, valorado a tarifa, incluido en el **canon mensual**. Viene del **plan** del contrato (`ia.Plan`) o de un valor pactado para la empresa | Si **no** hay excedente autorizado: **se bloquea** el asistente hasta el mes siguiente («cupo incluido agotado») y se avisa al administrador. Si **sí** hay excedente autorizado: continúa y cada respuesta se marca «adicional» |
+| **1. Cupo incluido** | Consumo, valorado a tarifa, incluido en el **canon mensual**. Viene del **plan** del contrato (`ia.PlanComercial`) o de un valor pactado para la empresa | Si **no** hay excedente autorizado: **se bloquea** el asistente hasta el mes siguiente («cupo incluido agotado») y se avisa al administrador. Si **sí** hay excedente autorizado: continúa y cada respuesta se marca «adicional» |
 | **2. Tope de excedente** | Máximo de consumo **adicional facturable** del mes, autorizado por la empresa (el administrador lo activa y fija el monto desde el portal; queda auditado quién y cuándo) | Se bloquea hasta el mes siguiente o hasta que se amplíe el tope |
 
 Controles complementarios:

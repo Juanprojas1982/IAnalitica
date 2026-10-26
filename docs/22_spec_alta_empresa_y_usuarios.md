@@ -52,7 +52,7 @@ public sealed class UsuarioAplicacion : IdentityUser<int>
     public int? CreadoPor { get; set; }
 }
 ```
-- Reemplaza la tabla `seg.Usuario` del diseño v2. Se mantienen la restricción «superadmin sin empresa / usuario con una empresa» y la función RLS, que pasa a leer la tabla de Identity.
+- Reemplaza la tabla `seg.Usuario` del diseño v2. Se mantienen la restricción «superadmin sin empresa / usuario con una empresa» ; la RLS se rediseñó en `24_SPEC_MAESTRA.md` §4.2 (D35).
 - Roles: `SUPERADMIN`, `ADMIN_EMPRESA`, `GERENTE`, `FINANCIERO`, `CARTERA`, `TESORERO`, `FARMACIA`, `AUDITOR`, `CONSULTA`, con permisos por rol (`seg.RolPermiso`).
 
 ## 4. Flujo de alta de empresa (superadmin)
