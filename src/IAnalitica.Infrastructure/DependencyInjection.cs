@@ -116,6 +116,7 @@ public static class DependencyInjection
         services.AddSingleton<ProcesadorCargas>();
         services.AddSingleton<IManejadorTrabajo, ManejadorProcesarCarga>();
         services.AddSingleton<IManejadorTrabajo, ManejadorCalcularCartera>();
+        services.AddSingleton<IManejadorTrabajo, ManejadorCalcularCostos>();
         services.AddSingleton<MotorAuditoria>();
         services.AddSingleton<IManejadorTrabajo, ManejadorAuditarConfig>();
         services.AddSingleton<ValidadorPrecios>();

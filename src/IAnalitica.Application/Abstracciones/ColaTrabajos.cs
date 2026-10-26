@@ -6,6 +6,7 @@ public static class TiposTrabajo
     public const string CalcularCartera = "CALCULAR_CARTERA";
     public const string GenerarReporte = "GENERAR_REPORTE";
     public const string AuditarConfig = "AUDITAR_CONFIG";
+    public const string CalcularCostos = "CALCULAR_COSTOS";
     public const string ValidarPrecios = "VALIDAR_PRECIOS";
 }
 
