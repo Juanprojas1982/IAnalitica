@@ -1,6 +1,8 @@
 using System.Text.Json;
 using Dapper;
+using IAnalitica.Application;
 using IAnalitica.Application.Abstracciones;
+using IAnalitica.Application.Semantica;
 using IAnalitica.Infrastructure;
 using IAnalitica.Infrastructure.Ingesta;
 using IAnalitica.Integration.Tests.Infra;
@@ -150,4 +152,23 @@ public sealed class Procesamiento : IAsyncDisposable
             ["cantidad"] = 1, ["valorServicio"] = neto, ["valorNeto"] = neto, ["anulada"] = anulada,
             ["estadoFE"] = estadoFe, ["fechaEnvioRips"] = fechaRips, ["usuarioCodigo"] = usuario,
         }.Where(kv => kv.Value is not null).ToDictionary(kv => kv.Key, kv => kv.Value);
+}
+
+/// <summary>El cableado del worker real (cargas, cartera y reportes) para pruebas que necesitan procesar trabajos.</summary>
+public static class WorkerDePrueba
+{
+    public static ServiceProvider Construir(BaseDeDatosFixture bd, string rutaReportes)
+    {
+        var s = new ServiceCollection();
+        s.AddLogging();
+        s.AddSingleton(TimeProvider.System);
+        s.AddSingleton(NSubstitute.Substitute.For<IAnalitica.Application.Abstracciones.IConfiguracionPortal>());
+        s.AddInfrastructure(bd.CadenaApp);
+        s.AddApplication(typeof(IAnalitica.Application.Empresas.CrearEmpresaCommand).Assembly);
+        s.AddCapaSemantica(new[] { IAnalitica.Modulos.Financiero.ModuloFinanciero.Modulo }.Concat(IAnalitica.Modulos.Ingreso.ModuloIngreso.Modulos));
+        s.AddProcesamiento(bd.CadenaEtl);
+        s.AddGeneracionReportes();
+        s.Configure<IAnalitica.Infrastructure.Reportes.OpcionesAlmacenReportes>(o => o.Ruta = rutaReportes);
+        return s.BuildServiceProvider();
+    }
 }

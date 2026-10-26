@@ -70,7 +70,8 @@ public sealed class ObtenerDashboardHandler(CatalogoAnalitico catalogo, ISesionU
 }
 
 // ---------- Datos de un widget ----------
-public sealed record ObtenerDatosWidgetQuery(string Dashboard, string Widget, FiltrosDashboard Filtros) : IRequest<Result<DatosWidget>>;
+/// <param name="Completo">Exportaciones: sin el tope de 50 filas de la pantalla (el motor mantiene su tope duro de 100.000).</param>
+public sealed record ObtenerDatosWidgetQuery(string Dashboard, string Widget, FiltrosDashboard Filtros, bool Completo = false) : IRequest<Result<DatosWidget>>;
 
 /// <summary>
 /// Autoriza (permiso y módulos) ANTES de consultar y de usar la caché: la caché es por empresa + versión de carga, así que lo que
@@ -90,7 +91,7 @@ public sealed class ObtenerDatosWidgetHandler(CatalogoAnalitico catalogo, ISesio
 
         var empresaId = sesion.EmpresaId!.Value;
         var v = await version.ObtenerAsync(empresaId, ct).ConfigureAwait(false);
-        var clave = $"widget|{empresaId}|{v}|{request.Dashboard}|{request.Widget}|{request.Filtros.Clave()}";
+        var clave = $"widget|{empresaId}|{v}|{request.Dashboard}|{request.Widget}|{request.Filtros.Clave()}|{(request.Completo ? "completo" : "")}";
         var datos = await cache.ObtenerOCrearAsync(clave, DuracionCache, () => CalcularAsync(request, widget, ct), ct).ConfigureAwait(false);
         return datos;
     }
@@ -102,7 +103,7 @@ public sealed class ObtenerDatosWidgetHandler(CatalogoAnalitico catalogo, ISesio
         foreach (var codigo in widget.Metricas)
         {
             var metrica = catalogo.Metricas[codigo];
-            var resultado = await motor.EjecutarAsync(new ConsultaMetrica(codigo, widget.Dimensiones, request.Filtros, Top: LimiteFilas(widget)), ct).ConfigureAwait(false);
+            var resultado = await motor.EjecutarAsync(new ConsultaMetrica(codigo, widget.Dimensiones, request.Filtros, Top: request.Completo ? null : LimiteFilas(widget)), ct).ConfigureAwait(false);
             foreach (var f in resultado.FiltrosNoAplicados) noAplicados.Add(f);
 
             decimal? anterior = null;

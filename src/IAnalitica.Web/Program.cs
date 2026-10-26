@@ -34,6 +34,8 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddInfrastructure(cadena);
 builder.Services.AddApplication(ModuloFinanciero.Ensamblado, ModuloIngreso.Ensamblado, ModuloOperacion.Ensamblado,
     ModuloFarmacia.Ensamblado, ModuloEse.Ensamblado, ModuloAuditor.Ensamblado);
+builder.Services.Configure<IAnalitica.Application.Reportes.LimitesReportes>(builder.Configuration.GetSection("Reportes:Limites"));
+builder.Services.Configure<IAnalitica.Infrastructure.Reportes.OpcionesAlmacenReportes>(builder.Configuration.GetSection("Reportes:Almacen"));
 builder.Services.AddCapaSemantica(new[] { ModuloFinanciero.Modulo }.Concat(ModuloIngreso.Modulos));
 builder.Services.AddScoped<ISesionUsuario, SesionUsuarioHttp>();
 builder.Services.AddScoped<IConfiguracionPortal, ConfiguracionPortalHttp>();
@@ -63,7 +65,8 @@ builder.Services.Configure<SecurityStampValidatorOptions>(o =>
 // Un permiso = una política (spec 22; seg.RolPermiso). Los permisos viajan como reclamos «permiso» en el cookie.
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy("admin.empresas", p => p.RequireClaim(Reclamos.Permiso, "admin.empresas"))
-    .AddPolicy("admin.usuarios", p => p.RequireClaim(Reclamos.Permiso, "admin.usuarios"));
+    .AddPolicy("admin.usuarios", p => p.RequireClaim(Reclamos.Permiso, "admin.usuarios"))
+    .AddPolicy("reportes.exportar", p => p.RequireClaim(Reclamos.Permiso, "reportes.exportar"));
 builder.Services.AddCascadingAuthenticationState();
 
 builder.Services.AddRateLimiter(o =>
@@ -123,6 +126,7 @@ usuarios.MapPost("/{id:int}/restablecer", async (int id, ISender enviar, IAntifo
 });
 
 app.MapConsultasQ();
+app.MapReportes();
 
 app.MapRazorComponents<App>();
 

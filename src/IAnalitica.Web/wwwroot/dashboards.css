@@ -29,3 +29,5 @@
 .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .tabla-scroll { overflow-x: auto; }
 @media (max-width: 768px) { .widget { grid-column: 1 / -1; grid-row: auto; } .barras li { grid-template-columns: 1fr auto; } .barra-pista { grid-column: 1 / -1; order: 3; } }
+.exportar { display: flex; gap: .5rem; align-items: center; justify-content: flex-end; margin: -.5rem 0 .75rem; font-size: .85rem; }
+.exportar select { padding: .2rem .4rem; border: 1px solid #aab4bf; border-radius: .25rem; }

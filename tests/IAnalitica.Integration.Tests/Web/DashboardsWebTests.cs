@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using IAnalitica.Integration.Tests.Infra;
 using IAnalitica.Integration.Tests.Ingesta;
+using Microsoft.Extensions.DependencyInjection;
 using static IAnalitica.Integration.Tests.Web.Flujos;
 
 namespace IAnalitica.Integration.Tests.Web;
@@ -216,5 +217,65 @@ public class DashboardsWebTests(BaseDeDatosFixture bd) : IAsyncLifetime
         Assert.Equal(JsonValueKind.Null, datos.GetProperty("series")[0].GetProperty("resultado").GetProperty("filas")[0].GetProperty("valor").ValueKind);
         var (_, html, _) = await solo.IrAsync("/d/financiero.gerencial?desde=2026-01&hasta=2026-02");
         Assert.DoesNotContain("$ 3.000", html);
+    }
+
+    [Fact]
+    public async Task Pedir_un_reporte_por_el_portal_esperar_y_descargarlo()
+    {
+        var n = await ComoAsync(_admin!);
+        var (_, tablero, _) = await n.IrAsync("/d/financiero.gerencial?desde=2026-01&hasta=2026-02");
+        Assert.Contains("action=\"/reportes/solicitar\"", tablero);
+        Assert.Contains("name=\"formato\"", tablero);
+
+        var (estado, _, redir) = await n.PostConTokenAsync("/d/financiero.gerencial?desde=2026-01&hasta=2026-02", "/reportes/solicitar");
+        // PostConTokenAsync solo manda el token: sin dashboard ni formato → se rechaza con un mensaje, no con un error del servidor
+        Assert.Equal(HttpStatusCode.Redirect, estado);
+        Assert.Contains("/reportes?error=", redir);
+
+        // Pedido real: el formulario de la página, tal como lo enviaría el navegador
+        var respuesta = await EnviarExportacionAsync(n, "financiero.gerencial", "XLSX", "2026-01", "2026-02");
+        Assert.Equal(HttpStatusCode.Redirect, respuesta.Estado);
+        Assert.Contains("/reportes?nuevo=1", respuesta.Redireccion);
+
+        var (_, lista, _) = await n.IrAsync("/reportes");
+        Assert.Contains("En cola", lista);
+        Assert.Contains("http-equiv=\"refresh\"", lista);               // mientras hay reportes en curso, la página se actualiza sola
+
+        await using var worker = WorkerDePrueba.Construir(bd, FabricaWeb.RutaReportes);
+        var despachador = worker.GetRequiredService<IAnalitica.Infrastructure.Ingesta.DespachadorTrabajos>();
+        while (await despachador.EjecutarUnoAsync("GENERAR_REPORTE", CancellationToken.None)) { }
+
+        var (_, listo, _) = await n.IrAsync("/reportes");
+        Assert.Contains("Listo (", listo);
+        var enlace = System.Text.RegularExpressions.Regex.Match(listo, "href=\"(/reportes/[0-9a-f-]{36}/descargar)\"");
+        Assert.True(enlace.Success);
+
+        var descarga = await n.Cliente.GetAsync(enlace.Groups[1].Value);
+        Assert.Equal(HttpStatusCode.OK, descarga.StatusCode);
+        Assert.Equal("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", descarga.Content.Headers.ContentType!.MediaType);
+        Assert.Equal("attachment", descarga.Content.Headers.ContentDisposition!.DispositionType);
+        Assert.Contains("financiero-gerencial-", descarga.Content.Headers.ContentDisposition.FileName);
+        Assert.Contains("no-store", descarga.Headers.CacheControl!.ToString());
+        var bytes = await descarga.Content.ReadAsByteArrayAsync();
+        Assert.Equal((byte)'P', bytes[0]);                              // un .xlsx es un ZIP («PK»)
+        Assert.Equal((byte)'K', bytes[1]);
+
+        // Otra empresa ni siquiera lo ve; un anónimo va al ingreso
+        var solo = await ComoAsync(_adminSoloFinanciero!);
+        Assert.Equal(HttpStatusCode.NotFound, (await solo.Cliente.GetAsync(enlace.Groups[1].Value)).StatusCode);
+        var (eAnon, _, rAnon) = await Fabrica(bd).NuevoNavegador().IrAsync(enlace.Groups[1].Value);
+        Assert.Equal(HttpStatusCode.Redirect, eAnon);
+        Assert.Contains("/ingresar", rAnon);
+    }
+
+    private static async Task<(HttpStatusCode Estado, string? Redireccion)> EnviarExportacionAsync(Navegador n, string dashboard, string formato, string desde, string hasta)
+    {
+        var (_, html, _) = await n.IrAsync($"/d/{dashboard}?desde={desde}&hasta={hasta}");
+        var token = System.Text.RegularExpressions.Regex.Match(html, "name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"").Groups[1].Value;
+        var r = await n.Cliente.PostAsync("/reportes/solicitar", new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["__RequestVerificationToken"] = System.Net.WebUtility.HtmlDecode(token), ["dashboard"] = dashboard, ["formato"] = formato, ["desde"] = desde, ["hasta"] = hasta,
+        }));
+        return (r.StatusCode, r.Headers.Location?.OriginalString);
     }
 }

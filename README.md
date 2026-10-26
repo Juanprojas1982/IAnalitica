@@ -5,6 +5,7 @@ Plataforma de analítica gerencial para el sector salud.
 **Punto de entrada:** [`docs/24_SPEC_MAESTRA.md`](docs/24_SPEC_MAESTRA.md) — especificación maestra (precedencia, arquitectura, fases y decisiones).
 Notas de la implementación de F0: [`docs/25_NOTAS_IMPLEMENTACION_F0.md`](docs/25_NOTAS_IMPLEMENTACION_F0.md).
 Notas de F2 (ingesta): [`docs/26_NOTAS_IMPLEMENTACION_F2.md`](docs/26_NOTAS_IMPLEMENTACION_F2.md).
+Notas de F3 (dashboards): [`docs/27_NOTAS_IMPLEMENTACION_F3.md`](docs/27_NOTAS_IMPLEMENTACION_F3.md).
 
 ## Requisitos locales
 - .NET SDK 10

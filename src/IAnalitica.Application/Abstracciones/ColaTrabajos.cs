@@ -4,6 +4,7 @@ public static class TiposTrabajo
 {
     public const string ProcesarCarga = "PROCESAR_CARGA";
     public const string CalcularCartera = "CALCULAR_CARTERA";
+    public const string GenerarReporte = "GENERAR_REPORTE";
 }
 
 /// <summary>Trabajo por encolar. El payload lleva solo identificadores, nunca datos (spec 20 §2).</summary>

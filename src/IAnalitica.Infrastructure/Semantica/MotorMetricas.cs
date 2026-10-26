@@ -17,6 +17,9 @@ namespace IAnalitica.Infrastructure.Semantica;
 /// </summary>
 internal sealed class MotorMetricas(CatalogoAnalitico catalogo, ISesionUsuario sesion, IFabricaConexiones conexiones, IServiceProvider servicios) : IMotorMetricas
 {
+    /// <summary>Tope duro de filas por consulta agrupada (spec 20 §4.4): ni una exportación puede traer más.</summary>
+    internal const int TopeDuro = 100_000;
+
     public async Task<ResultadoMetrica> EjecutarAsync(ConsultaMetrica consulta, CancellationToken ct)
     {
         var empresaId = sesion.EmpresaId ?? throw new InvalidOperationException("No hay empresa en la sesión.");
@@ -87,7 +90,7 @@ internal sealed class MotorMetricas(CatalogoAnalitico catalogo, ISesionUsuario s
         if (m.FiltroFijo is not null) donde.Add("(" + m.FiltroFijo + ")");
 
         var sql = new StringBuilder("SELECT ");
-        if (c.Top is { } top && c.AgruparPor.Count > 0) sql.Append($"TOP ({Math.Clamp(top, 1, 1000).ToString(CultureInfo.InvariantCulture)}) ");
+        if (c.AgruparPor.Count > 0) sql.Append($"TOP ({Math.Clamp(c.Top ?? TopeDuro, 1, TopeDuro).ToString(CultureInfo.InvariantCulture)}) ");
         for (var i = 0; i < c.AgruparPor.Count; i++) sql.Append($"{Col(c.AgruparPor[i])} AS d{i}, ");
         sql.Append($"{m.Expresion} AS valor FROM {m.Fuente} WHERE {string.Join(" AND ", donde)}");
         if (c.AgruparPor.Count > 0)
