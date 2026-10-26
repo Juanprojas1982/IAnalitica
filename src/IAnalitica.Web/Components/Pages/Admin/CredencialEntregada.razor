@@ -1,0 +1,24 @@
+@using IAnalitica.Application.Usuarios
+
+<PageTitle>@Titulo · IAnalitica</PageTitle>
+<h1 class="h3">@Titulo</h1>
+<div class="card border-success my-3">
+    <div class="card-body">
+        <div class="alert alert-warning" role="alert">
+            <strong>Se muestra una sola vez.</strong> Entréguela a la persona por un canal seguro. Deberá cambiarla en su primer ingreso.
+        </div>
+        <dl class="row mb-0">
+            <dt class="col-sm-4">Usuario</dt>
+            <dd class="col-sm-8"><code id="cred-usuario">@Credencial.Usuario</code> <button type="button" class="btn btn-outline-secondary btn-sm" data-copiar="cred-usuario">Copiar</button></dd>
+            <dt class="col-sm-4">Contraseña temporal</dt>
+            <dd class="col-sm-8"><code id="cred-clave">@Credencial.ClaveInicial</code> <button type="button" class="btn btn-outline-secondary btn-sm" data-copiar="cred-clave">Copiar</button>
+                <div class="text-muted small">Vence el @Credencial.ClaveVenceEnUtc.ToString("yyyy-MM-dd HH:mm") UTC (72 horas).</div></dd>
+        </dl>
+    </div>
+</div>
+<p><a class="btn btn-outline-primary" href="/admin/usuarios">Volver a usuarios</a></p>
+
+@code {
+    [Parameter, EditorRequired] public CredencialTemporal Credencial { get; set; } = default!;
+    [Parameter] public string Titulo { get; set; } = "Credencial temporal";
+}

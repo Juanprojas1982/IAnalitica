@@ -82,3 +82,9 @@ public interface IGestionUsuariosEmpresa
     /// <summary>Nueva clave temporal, cambio obligatorio y (opcional) elimina el doble factor anterior para que la nueva persona lo configure.</summary>
     Task<Result> RestablecerClaveAsync(int empresaId, int usuarioId, string claveTemporal, DateTime venceEnUtc, bool quitarDobleFactor, CancellationToken ct);
 }
+
+/// <summary>aud.Seguridad (spec 19 §5): inicios de sesión fallidos, bloqueos, activación o baja del doble factor. Solo inserción.</summary>
+public interface IAuditoriaSeguridad
+{
+    Task RegistrarAsync(string evento, int? empresaId, int? usuarioId, string? nombreUsuario, string? detalle, string? ip, CancellationToken ct);
+}

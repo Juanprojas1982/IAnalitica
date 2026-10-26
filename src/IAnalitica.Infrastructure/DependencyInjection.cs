@@ -45,6 +45,7 @@ public static class DependencyInjection
                 opciones.Tokens.AuthenticatorTokenProvider = TokenOptions.DefaultAuthenticatorProvider;
             })
             .AddRoles<RolAplicacion>()
+            .AddSignInManager()
             .AddEntityFrameworkStores<AnaliticaDbContext>()
             .AddClaimsPrincipalFactory<ClaimsFactory>()
             .AddPasswordValidator<HistorialClaveValidator>()
@@ -58,6 +59,7 @@ public static class DependencyInjection
         services.AddScoped<IGestionUsuariosEmpresa, GestionUsuariosEmpresa>();
         services.AddScoped<IGestorCredencialesApi, GestorCredencialesApi>();
         services.AddScoped<IAuditoriaAdministrativa, AuditoriaAdministrativa>();
+        services.AddScoped<IAuditoriaSeguridad, AuditoriaSeguridad>();
         services.AddScoped<ITransaccion, TransaccionEf>();
         services.AddScoped<IModulosEmpresa, ModulosEmpresa>();
         services.AddScoped<IVersionCarga, VersionCarga>();
