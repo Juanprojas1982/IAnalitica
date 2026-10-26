@@ -7,4 +7,15 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="dbup-sqlserver" Version="7.2.0" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.1" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.14" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Los scripts viven en database/scripts (fuente única del DDL, 24_SPEC_MAESTRA §6.1) y se embeben en el ejecutable. -->
+    <EmbeddedResource Include="..\scripts\**\*.sql" LinkBase="scripts" />
+  </ItemGroup>
+
 </Project>
