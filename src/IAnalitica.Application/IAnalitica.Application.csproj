@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\IAnalitica.Domain\IAnalitica.Domain.csproj" />
+    <ProjectReference Include="..\IAnalitica.Ingesta.Contracts\IAnalitica.Ingesta.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

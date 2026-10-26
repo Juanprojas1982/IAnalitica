@@ -19,8 +19,10 @@ POST /v1/cargas/{cargaId}/cerrar        { totalLotes, totalFilas, sumaControl }
   → 202  (se encola el procesamiento)
 GET  /v1/cargas/{cargaId}               → { estado, filasInsertadas, actualizadas, eliminadas, rechazadas }
 GET  /v1/cargas/{cargaId}/rechazos      → [{ sourceKey, motivo }]
-GET  /v1/estado                         → última carga OK por entidad (el agente decide su ventana)
+GET  /v1/estado                         → { empresa, entidades: [{ entidad, ultimaCargaOkEn, cargaId }] }  (el agente decide su ventana)
 ```
+- **Rev. 1.1 (F2):** `GET /v1/estado` devuelve una marca por entidad; las anulaciones de facturas (`facturas` en modo `INCREMENTAL`) figuran como `facturas-anulaciones`. Una carga idéntica a la última procesada (mismo hash de entidad, modo, ventana y lotes) responde `409 CARGA_DUPLICADA` al cerrar y cuenta para esa marca. `cerrar` es idempotente. `sumaControl` es obligatoria en `asientos` y `facturas`.
+- **Entidades aceptadas hoy:** catálogos (§5), `asientos` y `facturas`. Las demás responden `400 ENTIDAD_NO_SOPORTADA` hasta tener procesador. Ver `26_NOTAS_IMPLEMENTACION_F2.md`.
 - `sumaControl` = Σ débito + Σ crédito (asientos) o Σ `valor*` de la entidad. Si no cuadra con lo recibido, la carga se rechaza completa.
 - El procesamiento es atómico por carga: o se aplica todo o nada.
 
@@ -103,6 +105,7 @@ version*, periodo*, cuentaCodigo*, centroCostoCodigo, sedeCodigo, valor*.
 
 ## 7. Errores
 `400` contrato inválido · `401/403` credencial · `409` carga duplicada (mismo hash) o periodo cerrado en la plataforma · `413` lote grande · `422` validación de negocio (detalle por fila en `/rechazos`) · `429` límite (con `Retry-After`).
+Todos con Problem Details (RFC 9457) y la extensión `codigo`: `CONTRATO_INVALIDO`, `ENTIDAD_NO_SOPORTADA`, `CARGA_DUPLICADA`, `PERIODO_CERRADO`, `CARGA_NO_ABIERTA`, `LOTE_GRANDE`, `VALIDACION_NEGOCIO`, `CONTROL_NO_CUADRA`, `LIMITE_EXCEDIDO`, `NO_ENCONTRADO`. Los rechazos por fila (`/rechazos`): `CAMPO_REQUERIDO:<campo>`, `VALOR_INVALIDO:<campo>`, `DUPLICADO_EN_CARGA`, `REFERENCIA_INEXISTENTE:<campo>`, `FECHA_INVALIDA`, `FUERA_DE_VENTANA`, `VALORES_INVALIDOS`, `ESTADO_INVALIDO`, `COMPROBANTE_INCOMPLETO`, `COMPROBANTE_DESCUADRADO`.
 
 ## 8. Supuestos por validar en SaludIPS
 1. `SIIFNet.Sedes.Id` = `IdSede` de facturación (`cAdministracion`).
