@@ -1,0 +1,45 @@
+@page "/admin/regulacion"
+@attribute [Authorize(Policy = "admin.catalogos")]
+
+<PageTitle>Regulación · IAnalitica</PageTitle>
+<h1>Catálogo regulatorio</h1>
+<p class="text-muted">Lista de precios máximos de medicamentos y factores de presentación, compartidos por todas las empresas. Las normas y los campos del archivo deben confirmarse con el área regulatoria.</p>
+
+@if (!string.IsNullOrEmpty(Error)) { <div class="alert alert-warning" role="alert">@Error</div> }
+@if (!string.IsNullOrEmpty(Ok)) { <div class="alert alert-success" role="status">@Ok</div> }
+
+<section class="mb-5">
+    <h2 class="h5">Importar lista de precios máximos</h2>
+    <p class="text-muted">Archivo JSON (arreglo de objetos) exportado de datos.gov.co. Los nombres de campo se configuran en <code>Regulacion:PreciosMaximos:Mapeo</code>. Reimportar la misma circular reemplaza sus precios.</p>
+    <form method="post" action="/admin/regulacion/precios-maximos" enctype="multipart/form-data" class="row g-2" style="max-width:48rem">
+        <AntiforgeryToken />
+        <div class="col-md-3"><label class="form-label">Entidad<input class="form-control" name="entidad" value="CNPMDM" maxlength="20" required /></label></div>
+        <div class="col-md-3"><label class="form-label">Número<input class="form-control" name="numero" maxlength="20" required /></label></div>
+        <div class="col-md-3"><label class="form-label">Año<input class="form-control" name="anio" inputmode="numeric" maxlength="4" required /></label></div>
+        <div class="col-md-3"><label class="form-label">Tema<input class="form-control" name="tema" value="PRECIO_MAXIMO" maxlength="40" required /></label></div>
+        <div class="col-md-4"><label class="form-label">Fecha de expedición<input class="form-control" type="date" name="expedicion" required /></label></div>
+        <div class="col-md-4"><label class="form-label">Vigente desde<input class="form-control" type="date" name="vigenteDesde" required /></label></div>
+        <div class="col-md-4"><label class="form-label">Vigente hasta (opcional)<input class="form-control" type="date" name="vigenteHasta" /></label></div>
+        <div class="col-12"><label class="form-label">URL de la fuente oficial<input class="form-control" name="url" maxlength="400" required /></label></div>
+        <div class="col-12"><label class="form-label">Notas<input class="form-control" name="notas" maxlength="1000" /></label></div>
+        <div class="col-12"><label class="form-label">Archivo<input class="form-control" type="file" name="archivo" accept=".json,application/json" required /></label></div>
+        <div class="col-12"><button class="btn btn-primary" type="submit">Importar</button></div>
+    </form>
+</section>
+
+<section>
+    <h2 class="h5">Validar un factor de presentación</h2>
+    <p class="text-muted">Unidades de consumo por presentación comercial, validadas por el químico farmacéutico. Sin factor validado, un exceso de precio se muestra «por verificar» y no como crítico.</p>
+    <form method="post" action="/admin/regulacion/factores" class="row g-2" style="max-width:48rem">
+        <AntiforgeryToken />
+        <div class="col-md-4"><label class="form-label">CUM (expediente-consecutivo)<input class="form-control" name="cum" maxlength="30" required /></label></div>
+        <div class="col-md-3"><label class="form-label">Unidades por presentación<input class="form-control" name="unidades" inputmode="decimal" required /></label></div>
+        <div class="col-md-5"><label class="form-label">Validado por<input class="form-control" name="validadoPor" maxlength="150" required /></label></div>
+        <div class="col-12"><button class="btn btn-primary" type="submit">Registrar factor</button></div>
+    </form>
+</section>
+
+@code {
+    [SupplyParameterFromQuery(Name = "error")] public string? Error { get; set; }
+    [SupplyParameterFromQuery(Name = "ok")] public string? Ok { get; set; }
+}

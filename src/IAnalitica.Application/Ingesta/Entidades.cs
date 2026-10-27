@@ -21,6 +21,7 @@ public static class CatalogoEntidades
         Cat("pagadores"), Cat("contratos"), Cat("servicios"), Cat("articulos"), Cat("lotes"), Cat("almacenes"),
         Cat("especialidades"), Cat("profesionales"), Cat("usuarios-operativos"), Cat("cuentas-bancarias"),
         new EntidadIngesta("asientos", new[] { Modos.Ventana, Modos.Inicial }, new[] { "debito", "credito" }),
+        new EntidadIngesta("configuracion", new[] { Modos.Foto }, Array.Empty<string>()),
         new EntidadIngesta("facturas", new[] { Modos.Ventana, Modos.Inicial, Modos.Incremental }, new[] { "valorNeto" }),
     };
 

@@ -16,7 +16,7 @@ public class IngestaTests
 
     [Theory]
     [InlineData("recibos", "VENTANA", CodigosError.EntidadNoSoportada)]
-    [InlineData("configuracion", "FOTO", CodigosError.EntidadNoSoportada)]
+    [InlineData("configuracion", "VENTANA", CodigosError.ContratoInvalido)]
     [InlineData("asientos", "COMPLETA", CodigosError.ContratoInvalido)]
     [InlineData("sedes", "VENTANA", CodigosError.ContratoInvalido)]
     [InlineData("terceros", "INICIAL", CodigosError.ContratoInvalido)]

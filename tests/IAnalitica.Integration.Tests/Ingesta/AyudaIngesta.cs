@@ -27,6 +27,14 @@ public sealed class Procesamiento : IAsyncDisposable
     public int EmpresaId { get; private set; }
     public ProcesadorCargas Procesador => _sp.GetRequiredService<ProcesadorCargas>();
     public IColaTrabajos Cola => _sp.GetRequiredService<IColaTrabajos>();
+    public IAnalitica.Infrastructure.Auditoria.MotorAuditoria Auditor => _sp.GetRequiredService<IAnalitica.Infrastructure.Auditoria.MotorAuditoria>();
+    /// <summary>Motor del auditor con reloj fijo (y, si se pasan, otras reglas en lugar de las del módulo).</summary>
+    public IAnalitica.Infrastructure.Auditoria.MotorAuditoria AuditorEn(DateTimeOffset ahora, params IAnalitica.Domain.Auditoria.IReglaConfiguracion[] reglas)
+        => new(_sp.GetRequiredService<IFabricaConexionesEtl>(), reglas.Length > 0 ? reglas : IAnalitica.Modulos.Auditor.ModuloAuditor.Reglas(),
+            new Microsoft.Extensions.Time.Testing.FakeTimeProvider(ahora), Microsoft.Extensions.Logging.Abstractions.NullLogger<IAnalitica.Infrastructure.Auditoria.MotorAuditoria>.Instance);
+    public IAnalitica.Infrastructure.Auditoria.ValidadorPrecios ValidadorEn(DateTimeOffset ahora)
+        => new(_sp.GetRequiredService<IFabricaConexionesEtl>(), new Microsoft.Extensions.Time.Testing.FakeTimeProvider(ahora),
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<IAnalitica.Infrastructure.Auditoria.ValidadorPrecios>.Instance);
     public DespachadorTrabajos Despachador => _sp.GetRequiredService<DespachadorTrabajos>();
 
     private Procesamiento(BaseDeDatosFixture bd)
@@ -36,6 +44,7 @@ public sealed class Procesamiento : IAsyncDisposable
         s.AddLogging();
         s.AddSingleton(TimeProvider.System);
         s.AddProcesamiento(bd.CadenaEtl);
+        s.AddReglasAuditor(IAnalitica.Modulos.Auditor.ModuloAuditor.Reglas());
         _sp = s.BuildServiceProvider();
     }
 
@@ -64,6 +73,13 @@ public sealed class Procesamiento : IAsyncDisposable
         return await c.ExecuteScalarAsync<T>(sql, p) ?? default!;
     }
 
+    /// <summary>Consulta con @e = la empresa de la prueba.</summary>
+    public async Task<List<T>> ConsultarAsync<T>(string sql)
+    {
+        await using var c = await EtlAsync();
+        return (await c.QueryAsync<T>(sql, new { e = EmpresaId })).ToList();
+    }
+
     public async Task EjecutarAsync(string sql, object? p = null)
     {
         await using var c = await EtlAsync();
@@ -75,9 +91,9 @@ public sealed class Procesamiento : IAsyncDisposable
     {
         await using var c = await EtlAsync();
         var id = await c.ExecuteScalarAsync<long>("""
-            INSERT etl.Carga (EmpresaId, Entidad, Modo, VentanaDesde, VentanaHasta, Origen, Estado, CerradaEn)
-            OUTPUT inserted.CargaId VALUES (@e, @entidad, @modo, @d, @h, 'prueba', 'CERRADA', SYSUTCDATETIME())
-            """, new { e = EmpresaId, entidad, modo, d = desde?.ToDateTime(TimeOnly.MinValue), h = hasta?.ToDateTime(TimeOnly.MinValue) });
+            INSERT etl.Carga (EmpresaId, Entidad, Modo, VentanaDesde, VentanaHasta, Corte, Origen, Estado, CerradaEn)
+            OUTPUT inserted.CargaId VALUES (@e, @entidad, @modo, @d, @h, @corte, 'prueba', 'CERRADA', SYSUTCDATETIME())
+            """, new { e = EmpresaId, entidad, modo, d = desde?.ToDateTime(TimeOnly.MinValue), h = hasta?.ToDateTime(TimeOnly.MinValue), corte = modo == "FOTO" ? DateTime.UtcNow.Date : (DateTime?)null });
         var lista = filas.ToList();
         var n = 1;
         foreach (var lote in lista.Chunk(porLote))
@@ -167,6 +183,7 @@ public static class WorkerDePrueba
         s.AddApplication(typeof(IAnalitica.Application.Empresas.CrearEmpresaCommand).Assembly);
         s.AddCapaSemantica(new[] { IAnalitica.Modulos.Financiero.ModuloFinanciero.Modulo }.Concat(IAnalitica.Modulos.Ingreso.ModuloIngreso.Modulos));
         s.AddProcesamiento(bd.CadenaEtl);
+        s.AddReglasAuditor(IAnalitica.Modulos.Auditor.ModuloAuditor.Reglas());
         s.AddGeneracionReportes();
         s.Configure<IAnalitica.Infrastructure.Reportes.OpcionesAlmacenReportes>(o => o.Ruta = rutaReportes);
         return s.BuildServiceProvider();

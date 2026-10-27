@@ -2,9 +2,14 @@ using IAnalitica.Application.Abstracciones;
 using IAnalitica.Application.Ingesta;
 using IAnalitica.Infrastructure.Empresas;
 using IAnalitica.Infrastructure.Identity;
+using IAnalitica.Domain.Auditoria;
+using IAnalitica.Infrastructure.Auditoria;
 using IAnalitica.Infrastructure.Ingesta;
+using IAnalitica.Infrastructure.Regulacion;
 using IAnalitica.Infrastructure.Semantica;
 using IAnalitica.Application.Semantica;
+using IAnalitica.Application.Auditoria;
+using IAnalitica.Application.Regulacion;
 using IAnalitica.Application.Reportes;
 using IAnalitica.Infrastructure.Reportes;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -65,6 +70,8 @@ public static class DependencyInjection
 
         // Reportes en segundo plano (spec 21): el portal solicita y descarga; el worker genera con la identidad del solicitante
         services.AddScoped<IRepositorioReportes, RepositorioReportes>();
+        services.AddScoped<IRepositorioHallazgos, RepositorioHallazgos>();
+        services.AddScoped<IImportadorPreciosMaximos, ImportadorPreciosMaximos>();
         services.AddScoped<INotificaciones, Notificaciones>();
         services.AddScoped<IPermisosUsuario, PermisosUsuario>();
         services.AddSingleton<IAlmacenReportes, AlmacenReportesDisco>();
@@ -109,10 +116,21 @@ public static class DependencyInjection
         services.AddSingleton<ProcesadorCargas>();
         services.AddSingleton<IManejadorTrabajo, ManejadorProcesarCarga>();
         services.AddSingleton<IManejadorTrabajo, ManejadorCalcularCartera>();
+        services.AddSingleton<MotorAuditoria>();
+        services.AddSingleton<IManejadorTrabajo, ManejadorAuditarConfig>();
+        services.AddSingleton<ValidadorPrecios>();
+        services.AddSingleton<IManejadorTrabajo, ManejadorValidarPrecios>();
         services.AddSingleton<DespachadorTrabajos>();
         services.TryAddSingleton<IAlmacenReportes, AlmacenReportesDisco>();
         services.AddOptions<OpcionesAlmacenReportes>();
         services.AddSingleton<ExpiradorReportes>();
+        return services;
+    }
+
+    /// <summary>Reglas del auditor de configuración (las aporta el módulo; el motor no las conoce).</summary>
+    public static IServiceCollection AddReglasAuditor(this IServiceCollection services, IEnumerable<IReglaConfiguracion> reglas)
+    {
+        foreach (var r in reglas) services.AddSingleton(r);
         return services;
     }
 

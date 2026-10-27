@@ -31,3 +31,23 @@
 @media (max-width: 768px) { .widget { grid-column: 1 / -1; grid-row: auto; } .barras li { grid-template-columns: 1fr auto; } .barra-pista { grid-column: 1 / -1; order: 3; } }
 .exportar { display: flex; gap: .5rem; align-items: center; justify-content: flex-end; margin: -.5rem 0 .75rem; font-size: .85rem; }
 .exportar select { padding: .2rem .4rem; border: 1px solid #aab4bf; border-radius: .25rem; }
+
+/* Auditor de configuración (F4) */
+.indice-salud { display: flex; flex-wrap: wrap; gap: 1rem 2rem; align-items: center; margin: 1rem 0 1.5rem; }
+.indice-total { padding: .75rem 1.25rem; border-radius: .5rem; border: 1px solid #dde3ea; background: #fff; border-left-width: .4rem; }
+.indice-total.ok { border-left-color: #15803d; } .indice-total.regular { border-left-color: #b45309; } .indice-total.mal { border-left-color: #b91c1c; }
+.indice-valor { font-size: 2.4rem; font-weight: 700; margin: 0; line-height: 1.1; color: #0b2545; } .indice-valor span { font-size: 1rem; font-weight: 400; color: #5b6b7f; }
+.indice-texto { margin: 0; font-size: .85rem; color: #33424f; }
+.indice-areas { list-style: none; display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; padding: 0; margin: 0; }
+.indice-areas li { font-size: .9rem; } .indice-areas strong { font-size: 1.1rem; }
+.indice-areas .ok strong { color: #15803d; } .indice-areas .regular strong { color: #b45309; } .indice-areas .mal strong { color: #b91c1c; }
+.hallazgo { background: #fff; border: 1px solid #dde3ea; border-left-width: .35rem; border-radius: .5rem; padding: .75rem 1rem; margin-bottom: .75rem; }
+.hallazgo.sev-critica { border-left-color: #b91c1c; } .hallazgo.sev-alta { border-left-color: #c2410c; } .hallazgo.sev-media { border-left-color: #b45309; } .hallazgo.sev-baja { border-left-color: #5b6b7f; }
+.hallazgo header { display: flex; flex-wrap: wrap; gap: .25rem .75rem; align-items: baseline; }
+.hallazgo .sev { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.hallazgo.sev-critica .sev { color: #b91c1c; } .hallazgo.sev-alta .sev { color: #c2410c; } .hallazgo.sev-media .sev { color: #b45309; }
+.hallazgo .entidad { margin: .25rem 0; font-weight: 600; }
+.hallazgo dl { display: grid; grid-template-columns: max-content 1fr; gap: .15rem 1rem; margin: .5rem 0; font-size: .88rem; }
+.hallazgo dt { color: #5b6b7f; font-weight: 600; } .hallazgo dd { margin: 0; }
+.hallazgo details { margin-top: .5rem; } .hallazgo details form { display: grid; gap: .5rem; max-width: 40rem; margin-top: .5rem; }
+@media (max-width: 40rem) { .hallazgo dl { grid-template-columns: 1fr; } }
