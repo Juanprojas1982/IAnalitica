@@ -1,0 +1,15 @@
+/* Identidad visual: ÚNICO lugar para cambiar la marca.
+   Valores PROVISIONALES: parten de la paleta del portal de IAnalitica (dashboards.css: #0b2545 / #1f5fbf) y un acento cian para el tono «analítico».
+   Cuando se tenga la identidad corporativa de Procesos en Línea (logo, colores, tipografía), se reemplazan aquí y el sitio completo cambia. */
+:root{
+  --marca-900:#061428;   /* fondo oscuro del hero */
+  --marca-800:#0b2545;   /* azul institucional del portal */
+  --marca-600:#1f5fbf;   /* acción primaria */
+  --marca-500:#3b82f6;
+  --acento:#22d3ee;      /* cian de acento (solo sobre fondo oscuro o como detalle) */
+  --ok:#15803d; --alerta:#b45309; --peligro:#b91c1c;
+  --tx:#0f1b2d; --tx-suave:#4a5b73; --linea:#dde3ea; --fondo:#ffffff; --fondo-alt:#f4f6f9;
+  --radio:14px; --sombra:0 10px 30px rgba(11,37,69,.10);
+  --fuente:Inter,"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;
+  --ancho:1180px;
+}
