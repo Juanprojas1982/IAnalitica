@@ -9,7 +9,7 @@ Fuente: `docs/fuentes-saludips/reportes3.csv` (la única instalación que trae S
 | Fecha | `mFacturas.FechaFactura` | `mFacturas.FechaFactura` (igual) |
 | Anuladas | factura y servicio no anulados | ídem |
 | Filtro de sede | `mAdmisiones.IdSede` (en la versión de reportes3) | ídem |
-| Cruces | factura → admisión → servicios → paciente → empresa → usuario | Los de 108 **más ~12 cruces INNER extra** (ciudad, sede, médico, especialidad, tipo de servicio, procedimiento, **tarifa del manual**, usuario del servicio, tipo de atención, `dServicios`) y, para medicamentos, artículo base, suministro y su tarifa |
+| Cruces | factura → admisión → servicios → paciente → empresa → usuario | Los de 108 **más 9 cruces INNER extra en la rama de procedimientos** (ciudad, sede, médico, especialidad, tipo de servicio, procedimiento, **tarifa del manual**, usuario del servicio, tipo de atención, `dServicios`) y, para medicamentos, artículo base, suministro y su tarifa |
 | Empresa | la de la **factura** (`mFacturas.IdEmpresa`) | la de la **admisión** (`mAdmisiones.IdEmpresa`) |
 | Usuario | quien hizo la **factura** (`mFacturas.IdcUsuario`) | quien cargó el **servicio** (`ms.IdcUsuario`) |
 | Clase de servicio | todas | dos ramas con `UNION ALL`: `codclaseservicio <> 4` y `= 4` |
