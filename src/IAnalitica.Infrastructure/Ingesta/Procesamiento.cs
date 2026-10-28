@@ -110,6 +110,23 @@ internal sealed class ManejadorCalcularCartera(IFabricaConexionesEtl etl) : IMan
     }
 }
 
+/// <summary>CALCULAR_COSTOS: bases de costo y distribución escalonada de un periodo (spec 24 §5.4). Falla si la distribución no conserva el costo total.</summary>
+internal sealed class ManejadorCalcularCostos(IFabricaConexionesEtl etl) : IManejadorTrabajo
+{
+    public string Tipo => TiposTrabajo.CalcularCostos;
+
+    public async Task<(ResultadoTrabajo, TimeSpan)> EjecutarAsync(TrabajoTomado trabajo, CancellationToken ct)
+    {
+        using var doc = JsonDocument.Parse(trabajo.Payload ?? throw new InvalidOperationException("El trabajo no trae payload."));
+        var periodo = doc.RootElement.GetProperty("periodo").GetInt32();
+        var empresaId = trabajo.EmpresaId ?? throw new InvalidOperationException("Falta la empresa.");
+        await using var cn = await etl.AbrirAsync(ct).ConfigureAwait(false);
+        foreach (var procedimiento in new[] { "etl.usp_CalcularBasesCosto", "etl.usp_DistribuirCostos" })
+            await cn.ExecuteAsync(new CommandDefinition(procedimiento, new { EmpresaId = empresaId, PeriodoKey = periodo }, commandType: CommandType.StoredProcedure, commandTimeout: 3600, cancellationToken: ct)).ConfigureAwait(false);
+        return (ResultadoTrabajo.Completado, TimeSpan.Zero);
+    }
+}
+
 /// <summary>
 /// PROCESAR_CARGA (24 §8): aplica una carga CERRADA a las dimensiones o hechos. Atómico por carga; idempotente (reintentar una carga
 /// a medias repite el mismo upsert/reemplazo de ventana). Una sola carga por empresa y entidad a la vez (applock).
@@ -121,7 +138,7 @@ public sealed class ProcesadorCargas(IFabricaConexionesEtl etl, IColaTrabajos co
     {
         await using var cn = await etl.AbrirAsync(ct).ConfigureAwait(false);
         var carga = await cn.QuerySingleOrDefaultAsync<FilaProceso>(new CommandDefinition(
-            "SELECT EmpresaId, Entidad, Modo, Estado FROM etl.Carga WHERE CargaId = @cargaId", new { cargaId }, cancellationToken: ct)).ConfigureAwait(false);
+            "SELECT EmpresaId, Entidad, Modo, Estado, VentanaDesde AS Desde, VentanaHasta AS Hasta FROM etl.Carga WHERE CargaId = @cargaId", new { cargaId }, cancellationToken: ct)).ConfigureAwait(false);
         if (carga is null) throw new InvalidOperationException($"La carga {cargaId} no existe.");
         var (empresaId, entidad, modo, estado) = (carga.EmpresaId, carga.Entidad, carga.Modo, carga.Estado);
         if (estado is not (EstadosCarga.Cerrada or EstadosCarga.Procesando)) return true;   // ya terminada o rechazada: nada que hacer
@@ -143,6 +160,8 @@ public sealed class ProcesadorCargas(IFabricaConexionesEtl etl, IColaTrabajos co
                     await cola.EncolarAsync(new TrabajoPendiente(TiposTrabajo.AuditarConfig, empresaId, $"EMP:{empresaId}|AUDITOR", $"{{\"cargaId\":{cargaId}}}", Prioridad: 6), ct).ConfigureAwait(false);
                     await cola.EncolarAsync(new TrabajoPendiente(TiposTrabajo.ValidarPrecios, empresaId, $"EMP:{empresaId}|PRECIOS", $"{{\"cargaId\":{cargaId}}}", Prioridad: 6), ct).ConfigureAwait(false);
                 }
+                if (entidad is "asientos" or "facturas" && carga.Desde is { } desde && carga.Hasta is { } hasta)   // el costo directo y la base INGRESO cambian con la ventana
+                    await EncolarCostosAsync(cn, empresaId, desde, hasta, ct).ConfigureAwait(false);
                 if (entidad == "asientos")   // la cartera se recalcula después de cargar contabilidad (contrato 05 §3)
                 {
                     var corte = reloj.GetUtcNow().UtcDateTime.AddHours(-5).Date;   // Colombia: UTC-5 todo el año
@@ -172,7 +191,21 @@ public sealed class ProcesadorCargas(IFabricaConexionesEtl etl, IColaTrabajos co
         return true;
     }
 
-    private sealed record FilaProceso(int EmpresaId, string Entidad, string Modo, string Estado);
+    /// <summary>Máximo de periodos que una carga puede disparar (una carga INICIAL puede abarcar años).</summary>
+    private const int MaxPeriodosCosto = 36;
+
+    /// <summary>Un cálculo de costos por cada mes de la ventana (los últimos 36 como máximo), solo si la empresa ya definió reglas de distribución.</summary>
+    private async Task EncolarCostosAsync(SqlConnection cn, int empresaId, DateTime desde, DateTime hasta, CancellationToken ct)
+    {
+        if (!await cn.ExecuteScalarAsync<bool>(new CommandDefinition("SELECT CASE WHEN EXISTS (SELECT 1 FROM cfg.CostoRegla WHERE EmpresaId = @empresaId) THEN 1 ELSE 0 END", new { empresaId }, cancellationToken: ct)).ConfigureAwait(false)) return;
+        var primero = new DateTime(desde.Year, desde.Month, 1);
+        var ultimo = new DateTime(hasta.Year, hasta.Month, 1);
+        if (((ultimo.Year - primero.Year) * 12 + ultimo.Month - primero.Month) >= MaxPeriodosCosto) primero = ultimo.AddMonths(-(MaxPeriodosCosto - 1));
+        for (var mes = primero; mes <= ultimo; mes = mes.AddMonths(1))
+            await cola.EncolarAsync(new TrabajoPendiente(TiposTrabajo.CalcularCostos, empresaId, $"EMP:{empresaId}|COSTOS|{mes:yyyyMM}", $"{{\"periodo\":{mes:yyyyMM}}}", Prioridad: 8), ct).ConfigureAwait(false);
+    }
+
+    private sealed record FilaProceso(int EmpresaId, string Entidad, string Modo, string Estado, DateTime? Desde, DateTime? Hasta);
 
     private static async Task<(int Ins, int Upd, int Del, int Rech)> AplicarAsync(SqlConnection cn, long cargaId, int empresaId, string entidad, string modo, CancellationToken ct)
     {

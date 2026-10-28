@@ -75,7 +75,7 @@ public class DashboardsTests(BaseDeDatosFixture bd) : IAsyncLifetime
         await using var sp = bd.Construir(bd.CadenaApp, new SesionPrueba(4242, EmpresaId, false, TodosLosPermisos));
         var catalogo = sp.GetRequiredService<CatalogoAnalitico>();
         Assert.True(catalogo.Metricas.Count >= 30);
-        Assert.Equal(9, catalogo.Dashboards.Count);
+        Assert.Equal(10, catalogo.Dashboards.Count);
 
         foreach (var m in catalogo.Metricas.Values)
         {
@@ -287,7 +287,7 @@ public class DashboardsTests(BaseDeDatosFixture bd) : IAsyncLifetime
 
         var menu = (await EnviarAsync(new ListarDashboardsQuery(), null, "dash.financiero")).Valor;
         Assert.All(menu, d => Assert.Equal("FINANCIERO", d.Modulo));
-        Assert.Equal(3, menu.Count);
+        Assert.Equal(4, menu.Count);
     }
 
     [Fact]

@@ -1,0 +1,66 @@
+@page "/asistente"
+@attribute [Authorize(Policy = "ia.usar")]
+@using System.ComponentModel.DataAnnotations
+@using IAnalitica.Application.Asistente
+@using IAnalitica.Application.Mediacion
+@inject ISender Enviar
+
+<PageTitle>Asistente · IAnalitica</PageTitle>
+<h1>Asistente analista</h1>
+<p class="text-muted">
+    Pruebas internas. Responde solo con las métricas de los módulos activos de su empresa. Es un análisis automatizado: verifique las cifras importantes en los dashboards.
+</p>
+
+@if (!string.IsNullOrEmpty(error)) { <div class="alert alert-warning" role="alert">@error</div> }
+
+<EditForm Model="Entrada" FormName="asistente" OnValidSubmit="EnviarAsync" method="post" class="mb-4">
+    <DataAnnotationsValidator />
+    <input type="hidden" name="Entrada.ConversacionId" value="@(respuesta?.ConversacionId.ToString() ?? Entrada.ConversacionId)" />
+    <label class="form-label" for="pregunta">Su pregunta</label>
+    <InputTextArea id="pregunta" class="form-control mb-2" rows="3" maxlength="2000" @bind-Value="Entrada.Pregunta" />
+    <ValidationMessage For="() => Entrada.Pregunta" />
+    <button class="btn btn-primary" type="submit">Preguntar</button>
+</EditForm>
+
+@if (respuesta is not null)
+{
+    <article class="hallazgo sev-baja" aria-live="polite">
+        <p style="white-space: pre-wrap">@respuesta.Texto</p>
+        @if (respuesta.Fuentes.Count > 0)
+        {
+            <details>
+                <summary>Fuentes (@respuesta.Fuentes.Count)</summary>
+                <ul>
+                    @foreach (var f in respuesta.Fuentes) { <li>@f.Nombre · <small class="text-muted">@f.Parametros</small></li> }
+                </ul>
+            </details>
+        }
+        @if (respuesta.Parcial) { <p class="text-muted"><small>Respuesta incompleta.</small></p> }
+        @if (respuesta.MostrarValor) { <p class="text-muted"><small>Valor de esta respuesta: $ @respuesta.ValorCop.ToString("N2", Cultura)@(respuesta.EnExcedente ? " · consumo adicional" : "")</small></p> }
+    </article>
+}
+
+@code {
+    private static readonly System.Globalization.CultureInfo Cultura = System.Globalization.CultureInfo.GetCultureInfo("es-CO");
+    private RespuestaAsistente? respuesta;
+    private string? error;
+
+    [SupplyParameterFromForm(Name = "Entrada")] private EntradaPregunta? EntradaPublicada { get; set; }
+    private EntradaPregunta Entrada => EntradaPublicada ??= new();
+
+    private async Task EnviarAsync()
+    {
+        Guid? conversacion = Guid.TryParse(Entrada.ConversacionId, out var g) ? g : null;
+        var r = await Enviar.Send(new EnviarMensajeAsistenteCommand(conversacion, Entrada.Pregunta ?? ""));
+        if (r.EsExitoso) { respuesta = r.Valor; Entrada.Pregunta = ""; }
+        else error = r.Errores[0].Mensaje;
+    }
+
+    private sealed class EntradaPregunta
+    {
+        [Required(ErrorMessage = "Escriba su pregunta.")]
+        [StringLength(2000, ErrorMessage = "La pregunta admite hasta 2000 caracteres.")]
+        public string? Pregunta { get; set; }
+        public string? ConversacionId { get; set; }
+    }
+}

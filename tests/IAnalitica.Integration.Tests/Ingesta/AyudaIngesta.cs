@@ -60,6 +60,9 @@ public sealed class Procesamiento : IAsyncDisposable
     /// <summary>Procesamiento para una empresa que ya existe (la creó otra parte de la prueba).</summary>
     public static Procesamiento ParaEmpresa(BaseDeDatosFixture bd, int empresaId) { var p = new Procesamiento(bd); p.EmpresaId = empresaId; return p; }
 
+    public Task EncolarCostosPruebaAsync(int periodo)
+        => Cola.EncolarAsync(new TrabajoPendiente(TiposTrabajo.CalcularCostos, EmpresaId, $"EMP:{EmpresaId}|COSTOS|{periodo}", $"{{\"periodo\":{periodo}}}", Prioridad: 8), CancellationToken.None);
+
     public async Task<SqlConnection> EtlAsync()
     {
         var c = new SqlConnection(_bd.CadenaEtl);

@@ -3,12 +3,15 @@ using IAnalitica.Application.Ingesta;
 using IAnalitica.Infrastructure.Empresas;
 using IAnalitica.Infrastructure.Identity;
 using IAnalitica.Domain.Auditoria;
+using IAnalitica.Infrastructure.Asistente;
 using IAnalitica.Infrastructure.Auditoria;
 using IAnalitica.Infrastructure.Ingesta;
 using IAnalitica.Infrastructure.Regulacion;
 using IAnalitica.Infrastructure.Semantica;
 using IAnalitica.Application.Semantica;
+using IAnalitica.Application.Asistente;
 using IAnalitica.Application.Auditoria;
+using IAnalitica.Application.Costos;
 using IAnalitica.Application.Regulacion;
 using IAnalitica.Application.Reportes;
 using IAnalitica.Infrastructure.Reportes;
@@ -71,6 +74,9 @@ public static class DependencyInjection
         // Reportes en segundo plano (spec 21): el portal solicita y descarga; el worker genera con la identidad del solicitante
         services.AddScoped<IRepositorioReportes, RepositorioReportes>();
         services.AddScoped<IRepositorioHallazgos, RepositorioHallazgos>();
+        services.AddScoped<IRepositorioCostos, RepositorioCostos>();
+        services.AddScoped<IRepositorioAsistente, RepositorioAsistente>();
+        services.TryAddSingleton<IAsistenteChatClientFactory, SinProveedorChatClientFactory>();
         services.AddScoped<IImportadorPreciosMaximos, ImportadorPreciosMaximos>();
         services.AddScoped<INotificaciones, Notificaciones>();
         services.AddScoped<IPermisosUsuario, PermisosUsuario>();
@@ -116,6 +122,7 @@ public static class DependencyInjection
         services.AddSingleton<ProcesadorCargas>();
         services.AddSingleton<IManejadorTrabajo, ManejadorProcesarCarga>();
         services.AddSingleton<IManejadorTrabajo, ManejadorCalcularCartera>();
+        services.AddSingleton<IManejadorTrabajo, ManejadorCalcularCostos>();
         services.AddSingleton<MotorAuditoria>();
         services.AddSingleton<IManejadorTrabajo, ManejadorAuditarConfig>();
         services.AddSingleton<ValidadorPrecios>();

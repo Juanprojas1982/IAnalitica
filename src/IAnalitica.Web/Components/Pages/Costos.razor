@@ -1,0 +1,108 @@
+@page "/costos"
+@attribute [Authorize(Policy = "admin.usuarios")]
+@using IAnalitica.Application.Costos
+@using IAnalitica.Application.Mediacion
+@inject ISender Enviar
+
+<PageTitle>Distribución de costos · IAnalitica</PageTitle>
+<h1>Distribución de costos</h1>
+<p class="text-muted">
+    Cada centro de costo con regla reparte su costo (directo más lo recibido) entre los demás, en orden, según una base. Lo que no tiene a quién repartirse se queda en el centro de origen.
+    El resultado se ve en el dashboard «Estado de resultados con distribución de costos».
+</p>
+
+@if (!string.IsNullOrEmpty(Error)) { <div class="alert alert-warning" role="alert">@Error</div> }
+@if (!string.IsNullOrEmpty(Ok)) { <div class="alert alert-success" role="status">@Ok</div> }
+
+@if (vista is null) { }
+else
+{
+    var calculadas = vista.Bases.Where(b => b.Origen == "CALCULADA").ToList();
+    <section class="mb-4">
+        <h2 class="h5">Reglas</h2>
+        @if (vista.Centros.Count == 0)
+        {
+            <p>Todavía no hay centros de costo: el conector aún no ha enviado ese catálogo.</p>
+        }
+        else
+        {
+            <div class="tabla-scroll">
+            <table class="table table-sm align-middle">
+                <thead><tr><th scope="col">Centro de costo</th><th scope="col">Tipo</th><th scope="col">Orden</th><th scope="col">Base</th><th scope="col">Desde</th><th scope="col" class="text-end">Acciones</th></tr></thead>
+                <tbody>
+                @foreach (var c in vista.Centros)
+                {
+                    <tr>
+                        <td>@c.Codigo · @c.Nombre</td>
+                        <td>@c.TipoCC.ToLowerInvariant()@(c.TipoOrigen is null ? "" : " (" + c.TipoOrigen + ")")</td>
+                        <td>@(c.Orden?.ToString() ?? "—")</td>
+                        <td>@(c.BaseCodigo is null ? "—" : vista.Bases.FirstOrDefault(b => b.Codigo == c.BaseCodigo)?.Nombre ?? c.BaseCodigo)</td>
+                        <td>@(c.VigenteDesde?.ToString() ?? "—")</td>
+                        <td class="text-end">
+                            <details>
+                                <summary>@(c.BaseCodigo is null ? "Definir" : "Cambiar")</summary>
+                                <form method="post" action="/costos/regla" class="d-flex flex-wrap gap-2 align-items-end">
+                                    <AntiforgeryToken />
+                                    <input type="hidden" name="centro" value="@c.CentroCostoId" />
+                                    <label>Orden <input class="form-control form-control-sm" name="orden" inputmode="numeric" size="3" value="@(c.Orden?.ToString() ?? "")" required /></label>
+                                    <label>Base
+                                        <select class="form-select form-select-sm" name="base">
+                                            @foreach (var b in calculadas) { <option value="@b.Codigo" selected="@(b.Codigo == c.BaseCodigo)">@b.Nombre</option> }
+                                        </select>
+                                    </label>
+                                    <label>Desde (aaaamm) <input class="form-control form-control-sm" name="desde" inputmode="numeric" size="6" maxlength="6" value="@(c.VigenteDesde?.ToString() ?? "")" required /></label>
+                                    <button class="btn btn-sm btn-primary" type="submit">Guardar</button>
+                                </form>
+                            </details>
+                            @if (c.BaseCodigo is not null)
+                            {
+                                <form method="post" action="/costos/regla/quitar" class="d-inline">
+                                    <AntiforgeryToken />
+                                    <input type="hidden" name="centro" value="@c.CentroCostoId" />
+                                    <input type="hidden" name="desde" value="@c.VigenteDesde" />
+                                    <button class="btn btn-sm btn-outline-secondary" type="submit">Quitar</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+            </div>
+        }
+    </section>
+
+    <section class="mb-4">
+        <h2 class="h5">Reglas por defecto</h2>
+        <p class="text-muted">Los centros administrativos reparten primero por costo de personal; los de apoyo después, por actividades. No se toca lo que ya tiene regla. Requiere que los centros estén clasificados.</p>
+        <form method="post" action="/costos/defecto" class="d-flex gap-2 align-items-end">
+            <AntiforgeryToken />
+            <label>Vigentes desde (aaaamm) <input class="form-control form-control-sm" name="desde" inputmode="numeric" size="6" maxlength="6" required /></label>
+            <button class="btn btn-sm btn-outline-primary" type="submit">Aplicar</button>
+        </form>
+    </section>
+
+    <section>
+        <h2 class="h5">Recalcular periodos</h2>
+        <p class="text-muted">Se recalcula solo al cargar contabilidad o facturas. Úselo después de cambiar las reglas (máximo 24 meses).</p>
+        <form method="post" action="/costos/recalcular" class="d-flex gap-2 align-items-end">
+            <AntiforgeryToken />
+            <label>Desde (aaaamm) <input class="form-control form-control-sm" name="desde" inputmode="numeric" size="6" maxlength="6" required /></label>
+            <label>Hasta (aaaamm) <input class="form-control form-control-sm" name="hasta" inputmode="numeric" size="6" maxlength="6" required /></label>
+            <button class="btn btn-sm btn-outline-primary" type="submit">Recalcular</button>
+        </form>
+    </section>
+}
+
+@code {
+    [SupplyParameterFromQuery(Name = "error")] public string? Error { get; set; }
+    [SupplyParameterFromQuery(Name = "ok")] public string? Ok { get; set; }
+
+    private ReglasCostoVista? vista;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var r = await Enviar.Send(new ObtenerReglasCostoQuery());
+        vista = r.EsExitoso ? r.Valor : new ReglasCostoVista([], []);
+    }
+}
