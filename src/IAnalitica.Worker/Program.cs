@@ -29,6 +29,7 @@ builder.Services.AddApplication(ModuloFinanciero.Ensamblado, ModuloIngreso.Ensam
 builder.Services.AddCapaSemantica(new[] { ModuloFinanciero.Modulo }.Concat(ModuloIngreso.Modulos));
 builder.Services.AddProcesamiento(cadenaEtl);
 builder.Services.AddProcesamientoFacturacion();
+builder.Services.AddCorreoSaliente(builder.Configuration, builder.Environment.IsDevelopment());   // SMTP solo por configuración; la clave por Key Vault / User Secrets
 builder.Services.AddReglasAuditor(ModuloAuditor.Reglas());
 builder.Services.AddGeneracionReportes();
 builder.Services.Configure<LimitesReportes>(builder.Configuration.GetSection("Reportes:Limites"));

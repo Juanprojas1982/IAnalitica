@@ -24,6 +24,7 @@ using IAnalitica.Infrastructure.Persistencia;
 using IAnalitica.Infrastructure.Seguridad;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace IAnalitica.Infrastructure;
@@ -152,6 +153,36 @@ public static class DependencyInjection
         services.AddSingleton<IManejadorTrabajo, ManejadorPrevalidarFacturacion>();
         services.AddSingleton<IManejadorTrabajo, ManejadorGenerarCuentasCobro>();
         services.AddSingleton<IManejadorTrabajo, ManejadorGenerarCuenta>();
+        services.AddSingleton<IGeneradorPdfCuentaCobro, PdfCuentaCobro>();
+        services.AddSingleton<IAlmacenDocumentosFacturacion, AlmacenDocumentosDisco>();
+        services.AddOptions<OpcionesAlmacenFacturacion>();
+        services.AddOptions<OpcionesFacturacion>();
+        services.AddSingleton<EnviosFacturacion>();
+        services.AddSingleton<IManejadorTrabajo, ManejadorGenerarPdfCuentaCobro>();
+        services.AddSingleton<IManejadorTrabajo, ManejadorEnviarCorreo>();
+        services.AddSingleton<IManejadorTrabajo, ManejadorResumenAlertas>();
+        return services;
+    }
+
+    /// <summary>
+    /// Correo saliente por SMTP genérico (08 §32.3), solo configuración de despliegue en la sección <c>Correo:Smtp</c>; la clave por Key Vault / User Secrets.
+    /// Sin configuración el sistema arranca igual y los envíos quedan FALLIDO / SMTP_NO_CONFIGURADO. <c>Seguridad = None</c> fuera de desarrollo impide arrancar.
+    /// </summary>
+    public static IServiceCollection AddCorreoSaliente(this IServiceCollection services, Microsoft.Extensions.Configuration.IConfiguration configuracion, bool esDesarrollo)
+    {
+        var seccion = configuracion.GetSection("Correo:Smtp");
+        var errores = (seccion.Get<IAnalitica.Infrastructure.Correo.OpcionesCorreoSmtp>() ?? new()).Validar(esDesarrollo);
+        if (errores.Count > 0) throw new InvalidOperationException("Configuración de correo inválida: " + string.Join(" ", errores));
+
+        services.Configure<IAnalitica.Infrastructure.Correo.OpcionesCorreoSmtp>(seccion);
+        services.Configure<OpcionesFacturacion>(configuracion.GetSection("Facturacion"));
+        services.Configure<OpcionesAlmacenFacturacion>(configuracion.GetSection("Facturacion:Almacen"));
+        services.AddSingleton<ICorreoSaliente>(sp => sp.GetRequiredService<IOptions<IAnalitica.Infrastructure.Correo.OpcionesCorreoSmtp>>().Value.Modo switch
+        {
+            IAnalitica.Infrastructure.Correo.ModoCorreo.Smtp => ActivatorUtilities.CreateInstance<IAnalitica.Infrastructure.Correo.CorreoSmtp>(sp),
+            IAnalitica.Infrastructure.Correo.ModoCorreo.Archivo => ActivatorUtilities.CreateInstance<IAnalitica.Infrastructure.Correo.CorreoArchivo>(sp),
+            _ => new IAnalitica.Infrastructure.Correo.CorreoNoConfigurado(),
+        });
         return services;
     }
 

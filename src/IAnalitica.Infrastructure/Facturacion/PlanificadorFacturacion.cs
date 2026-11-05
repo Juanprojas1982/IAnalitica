@@ -11,13 +11,14 @@ internal sealed record Parametro(string Clave, string Valor);
 
 /// <summary>
 /// Programador de facturación (08 §32.4). Cada llamada revisa la hora de Bogotá (UTC-5) y encola lo que ya venció y no se ha hecho:
-/// el día <c>DIA_PREVALIDACION</c> a las 08:00 la prevalidación del mes en curso, y el día 1 a <c>HORA_GENERACION</c> la generación del mes vencido.
+/// el día <c>DIA_PREVALIDACION</c> a las 08:00 la prevalidación del mes en curso, y el día 1 a <c>HORA_GENERACION</c> la generación del mes vencido, y cada día a las 07:30 el resumen de alertas.
 /// La idempotencia real está en <c>fac.TareaProgramada</c> (no repite) y en <c>UX_FacCC_Periodo</c>; si el worker estuvo caído, se pone al día
 /// en la llamada siguiente (mejor tarde que nunca). Se llama cada pocos minutos desde el worker.
 /// </summary>
 public sealed class PlanificadorFacturacion(IFabricaConexionesEtl etl, IColaTrabajos cola, TimeProvider reloj, ILogger<PlanificadorFacturacion> log)
 {
     private static readonly TimeSpan HoraPrevalidacion = TimeSpan.FromHours(8);
+    private static readonly TimeSpan HoraResumen = new(7, 30, 0);
 
     /// <returns>Trabajos encolados en esta llamada.</returns>
     public async Task<int> EjecutarAsync(CancellationToken ct)
@@ -36,6 +37,9 @@ public sealed class PlanificadorFacturacion(IFabricaConexionesEtl etl, IColaTrab
         // Prevalidación del mes en curso, desde el día configurado a las 08:00.
         if (ahora.Day > diaPre || (ahora.Day == diaPre && ahora.TimeOfDay >= HoraPrevalidacion))
             encolados += await UnaVezAsync(cn, $"FAC:PRE|PER:{mes}", TiposTrabajo.PrevalidarFacturacion, mes, ct).ConfigureAwait(false);
+        // Resumen diario de alertas abiertas para el prestador (07:30); el manejador no envía nada si no hay alertas.
+        if (ahora.TimeOfDay >= HoraResumen)
+            encolados += await UnaVezAsync(cn, $"FAC:RES|DIA:{ahora:yyyyMMdd}", TiposTrabajo.ResumenAlertas, mes, ct).ConfigureAwait(false);
         // Generación del mes vencido: el día 1 desde la hora configurada; si se perdió, en cualquier momento posterior del mes.
         if (ahora.Day > 1 || ahora.TimeOfDay >= horaGen)
             encolados += await UnaVezAsync(cn, $"FAC:GEN|PER:{anterior}", TiposTrabajo.GenerarCuentasCobro, anterior, ct).ConfigureAwait(false);
