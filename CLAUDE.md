@@ -1,3 +1,6 @@
+## Contexto del proyecto (leer primero)
+Índice: `docs/CONTEXTO.md`. Cargar solo el archivo de `docs/contexto/` que aplique al cambio; `01_reglas_arquitectura_seguridad.md` siempre. DDL: manda `database/scripts`. `docs/archivo/` es histórico: no usar como fuente. Hay supuestos marcados `[S]` y pendientes en `06_plan_pendientes_decisiones.md`; no inventar lo que no esté ahí.
+
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 

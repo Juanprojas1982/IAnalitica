@@ -2,7 +2,7 @@
 
 Plataforma de analítica gerencial para el sector salud.
 
-**Punto de entrada:** [`docs/CONTEXTO.md`](docs/CONTEXTO.md) — contexto vigente (precedencia, arquitectura, estado por fase, pendientes y decisiones). Histórico en `docs/archivo/`.
+**Punto de entrada:** [`docs/CONTEXTO.md`](docs/CONTEXTO.md) — índice del contexto vigente, partido por tema en `docs/contexto/`. Histórico en `docs/archivo/`.
 
 ## Requisitos locales
 - .NET SDK 10
