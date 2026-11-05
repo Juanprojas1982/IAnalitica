@@ -45,6 +45,10 @@ public interface IRepositorioFacturacion
     Task<Result> ReversarAplicacionAsync(int aplicacionId, string motivo, int usuarioId, CancellationToken ct);
     Task<Result> AnularPagoAsync(int pagoId, string motivo, int usuarioId, CancellationToken ct);
     Task<Result> AtenderAlertaAsync(int alertaId, int usuarioId, CancellationToken ct);
+
+    /// <summary>Ruta del PDF y estado de la cuenta, leídos con la RLS de quien consulta.</summary>
+    Task<(string? Ruta, string? Numero, string Estado)?> ObtenerPdfAsync(int cuentaCobroId, CancellationToken ct);
+    Task RegistrarDescargaPdfAsync(int usuarioId, int? empresaId, int cuentaCobroId, string? ip, CancellationToken ct);
 }
 
 internal static class Cartera
@@ -324,4 +328,28 @@ public sealed class AnularPagoHandler(ISesionUsuario sesion, IRepositorioFactura
 {
     public Task<Result> Handle(AnularPagoCommand r, CancellationToken ct)
         => Cartera.Superadmin(sesion, out var u) ? repo.AnularPagoAsync(r.PagoId, r.Motivo!.Trim(), u, ct) : Task.FromResult(Result.Falla(Error.NoAutorizado()));
+}
+
+// ---------- Descarga del PDF ----------
+public sealed record ArchivoCuentaCobro(Stream Contenido, string NombreArchivo);
+
+/// <summary>Descarga el PDF emitido. El cliente solo accede al de su empresa (RLS) y nunca a un borrador; cada descarga queda en <c>aud.Acceso</c>.</summary>
+[RequierePermiso("fac.consultar")]
+public sealed record DescargarCuentaCobroPdfQuery(int CuentaCobroId, string? Ip) : IRequest<Result<ArchivoCuentaCobro>>;
+
+public sealed class DescargarCuentaCobroPdfHandler(ISesionUsuario sesion, IRepositorioFacturacion repo, IAlmacenDocumentosFacturacion almacen)
+    : IRequestHandler<DescargarCuentaCobroPdfQuery, Result<ArchivoCuentaCobro>>
+{
+    public async Task<Result<ArchivoCuentaCobro>> Handle(DescargarCuentaCobroPdfQuery r, CancellationToken ct)
+    {
+        if (sesion.UsuarioId is not { } usuarioId) return Result<ArchivoCuentaCobro>.Falla(Error.NoAutorizado("Debe iniciar sesión."));
+        var pdf = await repo.ObtenerPdfAsync(r.CuentaCobroId, ct).ConfigureAwait(false);   // la RLS oculta lo de otras empresas
+        if (pdf is null || (!sesion.EsSuperAdmin && !EstadosCuentaCobro.VisibleParaCliente(pdf.Value.Estado)))
+            return Result<ArchivoCuentaCobro>.Falla(Error.NoEncontrado("La cuenta de cobro no existe."));
+        if (pdf.Value.Ruta is null) return Result<ArchivoCuentaCobro>.Falla(Error.Conflicto("PDF_NO_DISPONIBLE", "El PDF todavía no está disponible."));
+        var flujo = await almacen.AbrirAsync(pdf.Value.Ruta, ct).ConfigureAwait(false);
+        if (flujo is null) return Result<ArchivoCuentaCobro>.Falla(Error.Conflicto("PDF_NO_DISPONIBLE", "El archivo ya no está disponible."));
+        await repo.RegistrarDescargaPdfAsync(usuarioId, sesion.EmpresaId, r.CuentaCobroId, r.Ip, ct).ConfigureAwait(false);
+        return new ArchivoCuentaCobro(flujo, $"{pdf.Value.Numero ?? "cuenta-de-cobro"}.pdf");
+    }
 }

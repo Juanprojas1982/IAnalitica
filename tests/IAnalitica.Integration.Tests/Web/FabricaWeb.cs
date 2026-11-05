@@ -13,6 +13,9 @@ public sealed class FabricaWeb(BaseDeDatosFixture bd, int limiteIngresoPorMinuto
     /// <summary>Carpeta de los reportes generados: la comparten el portal y el worker de la prueba.</summary>
     public static readonly string RutaReportes = Path.Combine(Path.GetTempPath(), "ianalitica-pruebas-reportes");
 
+    /// <summary>Carpeta de los PDF de las cuentas de cobro: la comparten el portal y las pruebas de facturación.</summary>
+    public static readonly string RutaFacturacion = Path.Combine(Path.GetTempPath(), "ianalitica-pruebas-facturacion");
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Development");
@@ -22,6 +25,7 @@ public sealed class FabricaWeb(BaseDeDatosFixture bd, int limiteIngresoPorMinuto
         builder.UseSetting("Observabilidad:Exportador", "ninguno");
         builder.UseSetting("Portal:UrlPortal", "https://portal.prueba.test");
         builder.UseSetting("Reportes:Almacen:Ruta", RutaReportes);
+        builder.UseSetting("Facturacion:Almacen:Ruta", RutaFacturacion);
         builder.UseSetting("Portal:UrlApi", "https://api.prueba.test");
         // El asistente no llama a ningún proveedor real en las pruebas: el cliente de chat lo fija cada prueba
         builder.ConfigureServices(s => s.AddSingleton<IAsistenteChatClientFactory, AsistenteDePrueba>());

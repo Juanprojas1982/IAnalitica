@@ -69,6 +69,12 @@ internal sealed class RepositorioFacturacionConfig(IFabricaConexiones conexiones
         return (await cn.QueryAsync<ParametroVista>(new CommandDefinition("SELECT Clave, Valor, Descripcion FROM fac.Parametro ORDER BY Clave", cancellationToken: ct)).ConfigureAwait(false)).ToList();
     }
 
+    public async Task<IReadOnlyList<EmpresaFacturacionVista>> ListarEmpresasAsync(CancellationToken ct)
+    {
+        await using var cn = await conexiones.AbrirAsync(ct).ConfigureAwait(false);
+        return (await cn.QueryAsync<EmpresaFacturacionVista>(new CommandDefinition("SELECT EmpresaId, Nit, RazonSocial, Activa FROM seg.Empresa ORDER BY RazonSocial", cancellationToken: ct)).ConfigureAwait(false)).ToList();
+    }
+
     public Task<Result> GuardarParametroAsync(string clave, string valor, int usuarioId, CancellationToken ct)
         => EjecutarAsync("fac.usp_GuardarParametro", new { Clave = clave, Valor = valor, UsuarioId = usuarioId }, ct);
 

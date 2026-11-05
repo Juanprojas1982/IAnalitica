@@ -1,0 +1,90 @@
+@page "/admin/facturacion/pagos"
+@attribute [Authorize(Policy = "fac.administrar")]
+@using IAnalitica.Application.Facturacion
+@using IAnalitica.Application.Mediacion
+@inject ISender Enviar
+
+<PageTitle>Pagos · IAnalitica</PageTitle>
+<h1>Pagos recibidos</h1>
+<p class="text-muted">Registro manual de recaudos y retenciones. La referencia es el número del comprobante: nunca números de cuenta ni de tarjeta. <a href="/admin/facturacion">Volver</a></p>
+
+@if (!string.IsNullOrEmpty(Error)) { <div class="alert alert-warning" role="alert">@Error</div> }
+@if (!string.IsNullOrEmpty(Ok)) { <div class="alert alert-success" role="status">@Ok</div> }
+
+<section class="mb-4">
+    <h2 class="h5">Registrar un pago</h2>
+    <form method="post" action="/admin/facturacion/pagos" class="row g-2" style="max-width:56rem">
+        <AntiforgeryToken />
+        <div class="col-md-6"><label class="form-label">Empresa
+            <select class="form-select" name="empresa" required>
+                <option value="">Elija…</option>
+                @foreach (var e in empresas) { <option value="@e.EmpresaId">@e.RazonSocial (@e.Nit)</option> }
+            </select></label></div>
+        <div class="col-md-3"><label class="form-label">Clase
+            <select class="form-select" name="clase"><option value="RECAUDO">Recaudo</option><option value="RETENCION">Retención</option><option value="OTRO">Otro</option></select></label></div>
+        <div class="col-md-3"><label class="form-label">Medio (recaudo)
+            <select class="form-select" name="medio"><option value="">—</option><option>TRANSFERENCIA</option><option>CONSIGNACION</option><option>PSE</option><option>CHEQUE</option><option>OTRO</option></select></label></div>
+        <div class="col-md-3"><label class="form-label">Fecha<input class="form-control" type="date" name="fecha" required /></label></div>
+        <div class="col-md-3"><label class="form-label">Valor (COP)<input class="form-control" name="valor" inputmode="decimal" required /></label></div>
+        <div class="col-md-3"><label class="form-label">Referencia<input class="form-control" name="referencia" maxlength="60" /></label></div>
+        <div class="col-md-3"><label class="form-label">Observación (la ve el cliente)<input class="form-control" name="observacion" maxlength="300" /></label></div>
+        <div class="col-12"><label class="form-check-label"><input class="form-check-input" type="checkbox" name="automatico" checked /> Aplicar automáticamente a las cuentas más antiguas; lo que sobre queda como saldo a favor</label></div>
+        <div class="col-12"><button class="btn btn-primary" type="submit">Registrar</button></div>
+    </form>
+</section>
+
+<section>
+    <h2 class="h5">Últimos pagos</h2>
+    @if (pagos.Count == 0) { <p class="text-muted">Sin pagos registrados.</p> }
+    else
+    {
+        <div class="tabla-scroll"><table class="table table-sm align-middle">
+            <thead><tr><th scope="col">Fecha</th><th scope="col">Empresa</th><th scope="col">Clase</th><th scope="col" class="text-end">Valor</th><th scope="col" class="text-end">Sin aplicar</th><th scope="col">Referencia</th><th scope="col">Estado</th><th scope="col" class="text-end">Acciones</th></tr></thead>
+            <tbody>
+            @foreach (var p in pagos)
+            {
+                <tr>
+                    <td>@p.FechaPago.ToString("yyyy-MM-dd")</td><td>@p.EmpresaNombre</td><td>@p.Clase</td><td class="text-end">@p.ValorCop.ToString("N0")</td>
+                    <td class="text-end">@p.SaldoSinAplicarCop.ToString("N0")</td><td>@p.Referencia</td><td>@p.Estado</td>
+                    <td class="text-end">
+                        @if (p.Estado == "VIGENTE")
+                        {
+                            <details class="d-inline">
+                                <summary>Aplicar</summary>
+                                <form method="post" action="/admin/facturacion/pagos/@p.PagoId/aplicar" class="d-flex gap-2 align-items-end">
+                                    <AntiforgeryToken />
+                                    <input class="form-control form-control-sm" name="cuenta" inputmode="numeric" placeholder="Id de la cuenta" required />
+                                    <input class="form-control form-control-sm" name="valor" inputmode="decimal" placeholder="Valor" required />
+                                    <button class="btn btn-sm btn-primary" type="submit">Aplicar</button>
+                                </form>
+                            </details>
+                            <details class="d-inline">
+                                <summary>Anular</summary>
+                                <form method="post" action="/admin/facturacion/pagos/@p.PagoId/anular" class="d-flex gap-2 align-items-end">
+                                    <AntiforgeryToken />
+                                    <input class="form-control form-control-sm" name="motivo" placeholder="Motivo (mín. 10 caracteres)" minlength="10" maxlength="300" required />
+                                    <button class="btn btn-sm btn-outline-danger" type="submit">Anular</button>
+                                </form>
+                            </details>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table></div>
+    }
+</section>
+
+@code {
+    [SupplyParameterFromQuery(Name = "error")] public string? Error { get; set; }
+    [SupplyParameterFromQuery(Name = "ok")] public string? Ok { get; set; }
+
+    private IReadOnlyList<PagoVista> pagos = [];
+    private IReadOnlyList<EmpresaFacturacionVista> empresas = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        pagos = (await Enviar.Send(new ListarPagosQuery(null))).Valor;
+        empresas = (await Enviar.Send(new ListarEmpresasFacturacionQuery())).Valor;
+    }
+}

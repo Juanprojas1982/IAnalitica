@@ -1,0 +1,44 @@
+@page "/facturacion/{Id:int}"
+@attribute [Authorize(Policy = "fac.consultar")]
+@using IAnalitica.Application.Facturacion
+@using IAnalitica.Application.Mediacion
+@inject ISender Enviar
+
+<PageTitle>Cuenta de cobro · IAnalitica</PageTitle>
+@if (detalle is null)
+{
+    <h1>Cuenta de cobro</h1>
+    <p>La cuenta de cobro no existe.</p>
+}
+else
+{
+    var c = detalle.Cuenta;
+    <h1>Cuenta de cobro @c.Numero</h1>
+    <p class="text-muted">Periodo @c.PeriodoKey · @(c.EnMora ? "Vencida" : c.Estado switch { "EMITIDA" => "Pendiente de pago", "PAGADA" => "Pagada", "ANULADA" => "Anulada", _ => c.Estado })
+        · Vence el @c.FechaVencimiento?.ToString("yyyy-MM-dd")
+        @if (detalle.PdfDisponible) { <text> · <a href="/facturacion/@c.CuentaCobroId/pdf">Descargar PDF</a></text> }</p>
+    @if (c.Estado == "ANULADA") { <div class="alert alert-secondary" role="status">Esta cuenta fue anulada@(string.IsNullOrEmpty(detalle.MotivoAnulacion) ? "" : ": " + detalle.MotivoAnulacion).</div> }
+
+    <div class="tabla-scroll"><table class="table table-sm">
+        <thead><tr><th scope="col">Concepto</th><th scope="col">Días</th><th scope="col" class="text-end">Valor (COP)</th></tr></thead>
+        <tbody>
+        @foreach (var l in detalle.Lineas) { <tr><td>@l.Concepto</td><td>@(l.DiasFacturados == l.DiasPeriodo ? "mes completo" : $"{l.DiasFacturados}/{l.DiasPeriodo}")</td><td class="text-end">@l.ValorCop.ToString("N0")</td></tr> }
+        </tbody>
+        <tfoot><tr><th colspan="2">Total</th><th class="text-end">@c.TotalCop.ToString("N0")</th></tr><tr><td colspan="2">Pagado</td><td class="text-end">@c.PagadoCop.ToString("N0")</td></tr><tr><td colspan="2">Saldo</td><td class="text-end">@c.SaldoCop.ToString("N0")</td></tr></tfoot>
+    </table></div>
+
+    <h2 class="h5">Envíos</h2>
+    @if (detalle.Envios.Count == 0) { <p class="text-muted">Sin envíos registrados.</p> }
+    else { <ul>@foreach (var e in detalle.Envios) { <li>@e.CreadoEn.ToString("yyyy-MM-dd HH:mm") · @e.Tipo.Replace('_', ' ').ToLowerInvariant() · @e.Estado.ToLowerInvariant()</li> }</ul> }
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private CuentaCobroDetalle? detalle;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var r = await Enviar.Send(new ObtenerCuentaCobroQuery(Id));
+        detalle = r.EsExitoso ? r.Valor : null;
+    }
+}

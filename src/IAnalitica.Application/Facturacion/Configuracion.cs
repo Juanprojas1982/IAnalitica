@@ -11,6 +11,7 @@ public sealed record CanonPlanVista(short PlanId, DateTime VigenteDesde, decimal
 public sealed record CondicionVista(int CondicionId, int EmpresaId, DateTime VigenteDesde, DateTime? VigenteHasta, short PlanId, string PlanNombre,
     decimal? CanonPactadoCop, short? DiasPago, bool? RequiereAprobacion, bool Facturable, string? ReferenciaContrato);
 public sealed record ParametroVista(string Clave, string Valor, string? Descripcion);
+public sealed record EmpresaFacturacionVista(int EmpresaId, string Nit, string RazonSocial, bool Activa);
 
 public static class CodigosFacturacion
 {
@@ -34,6 +35,7 @@ public interface IRepositorioFacturacionConfig
     Task<IReadOnlyList<CondicionVista>> ListarCondicionesAsync(int empresaId, CancellationToken ct);
     Task<Result<int>> GuardarCondicionAsync(GuardarCondicionComercialCommand c, int usuarioId, CancellationToken ct);
     Task<IReadOnlyList<ParametroVista>> ListarParametrosAsync(CancellationToken ct);
+    Task<IReadOnlyList<EmpresaFacturacionVista>> ListarEmpresasAsync(CancellationToken ct);
     Task<Result> GuardarParametroAsync(string clave, string valor, int usuarioId, CancellationToken ct);
 }
 
@@ -148,4 +150,13 @@ public sealed class ListarParametrosFacturacionHandler(ISesionUsuario sesion, IR
 {
     public async Task<Result<IReadOnlyList<ParametroVista>>> Handle(ListarParametrosFacturacionQuery r, CancellationToken ct)
         => sesion.EsSuperAdmin ? Result<IReadOnlyList<ParametroVista>>.Ok(await repo.ListarParametrosAsync(ct).ConfigureAwait(false)) : Result<IReadOnlyList<ParametroVista>>.Falla(Error.NoAutorizado());
+}
+
+[RequierePermiso("fac.administrar")]
+public sealed record ListarEmpresasFacturacionQuery : IRequest<Result<IReadOnlyList<EmpresaFacturacionVista>>>;
+
+public sealed class ListarEmpresasFacturacionHandler(ISesionUsuario sesion, IRepositorioFacturacionConfig repo) : IRequestHandler<ListarEmpresasFacturacionQuery, Result<IReadOnlyList<EmpresaFacturacionVista>>>
+{
+    public async Task<Result<IReadOnlyList<EmpresaFacturacionVista>>> Handle(ListarEmpresasFacturacionQuery r, CancellationToken ct)
+        => sesion.EsSuperAdmin ? Result<IReadOnlyList<EmpresaFacturacionVista>>.Ok(await repo.ListarEmpresasAsync(ct).ConfigureAwait(false)) : Result<IReadOnlyList<EmpresaFacturacionVista>>.Falla(Error.NoAutorizado());
 }

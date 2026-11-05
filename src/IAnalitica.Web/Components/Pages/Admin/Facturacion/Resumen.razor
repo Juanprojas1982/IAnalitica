@@ -1,0 +1,158 @@
+@page "/admin/facturacion"
+@attribute [Authorize(Policy = "fac.administrar")]
+@using IAnalitica.Application.Facturacion
+@using IAnalitica.Application.Mediacion
+@inject ISender Enviar
+
+<PageTitle>Facturación · IAnalitica</PageTitle>
+<h1>Facturación del servicio</h1>
+<p class="text-muted">
+    Cuentas de cobro mensuales (mes vencido), alertas y envíos. El documento es una cuenta de cobro, no una factura electrónica.
+    <a href="/admin/facturacion/pagos">Pagos</a> · <a href="/admin/facturacion/configuracion">Configuración</a>
+</p>
+
+@if (!string.IsNullOrEmpty(Error)) { <div class="alert alert-warning" role="alert">@Error</div> }
+@if (!string.IsNullOrEmpty(Ok)) { <div class="alert alert-success" role="status">@Ok</div> }
+
+<section class="mb-4">
+    <h2 class="h5">Alertas abiertas (@alertas.Count)</h2>
+    @if (alertas.Count == 0) { <p class="text-muted">Sin alertas.</p> }
+    else
+    {
+        <div class="tabla-scroll"><table class="table table-sm align-middle">
+            <thead><tr><th scope="col">Código</th><th scope="col">Empresa</th><th scope="col">Periodo</th><th scope="col">Desde</th><th scope="col" class="text-end">Acción</th></tr></thead>
+            <tbody>
+            @foreach (var a in alertas)
+            {
+                <tr>
+                    <td>@a.Codigo</td><td>@(a.EmpresaNombre ?? "Global")</td><td>@(a.PeriodoKey?.ToString() ?? "—")</td><td>@a.CreadaEn.ToString("yyyy-MM-dd HH:mm")</td>
+                    <td class="text-end">
+                        <form method="post" action="/admin/facturacion/alertas/@a.AlertaId/atender" class="d-inline"><AntiforgeryToken /><button class="btn btn-sm btn-outline-secondary" type="submit">Atendida</button></form>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table></div>
+    }
+</section>
+
+<section class="mb-4">
+    <h2 class="h5">Cuentas retenidas (borrador)</h2>
+    @{ var borradores = cuentas.Where(c => c.Estado == "BORRADOR").ToList(); }
+    @if (borradores.Count == 0) { <p class="text-muted">No hay borradores.</p> }
+    else
+    {
+        <div class="tabla-scroll"><table class="table table-sm align-middle">
+            <thead><tr><th scope="col">Empresa</th><th scope="col">Periodo</th><th scope="col" class="text-end">Total</th><th scope="col">Motivos</th><th scope="col" class="text-end">Acciones</th></tr></thead>
+            <tbody>
+            @foreach (var c in borradores)
+            {
+                <tr>
+                    <td>@c.EmpresaNombre</td><td>@c.PeriodoKey</td><td class="text-end">@c.TotalCop.ToString("N0")</td><td>@c.MotivosRetencion</td>
+                    <td class="text-end">
+                        <form method="post" action="/admin/facturacion/cuentas/@c.CuentaCobroId/emitir" class="d-inline"><AntiforgeryToken /><button class="btn btn-sm btn-primary" type="submit">Emitir</button></form>
+                        <form method="post" action="/admin/facturacion/cuentas/@c.CuentaCobroId/regenerar" class="d-inline"><AntiforgeryToken /><button class="btn btn-sm btn-outline-primary" type="submit">Recalcular</button></form>
+                        <details class="d-inline">
+                            <summary>Descartar</summary>
+                            <form method="post" action="/admin/facturacion/cuentas/@c.CuentaCobroId/descartar" class="d-flex gap-2 align-items-end">
+                                <AntiforgeryToken />
+                                <input class="form-control form-control-sm" name="motivo" placeholder="Motivo (mín. 10 caracteres)" minlength="10" maxlength="500" required />
+                                <button class="btn btn-sm btn-outline-danger" type="submit">Descartar</button>
+                            </form>
+                        </details>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table></div>
+    }
+</section>
+
+<section class="mb-4">
+    <h2 class="h5">Cuentas emitidas</h2>
+    @{ var emitidas = cuentas.Where(c => c.Estado != "BORRADOR" && c.Estado != "DESCARTADA").Take(60).ToList(); }
+    @if (emitidas.Count == 0) { <p class="text-muted">Todavía no hay cuentas emitidas.</p> }
+    else
+    {
+        <div class="tabla-scroll"><table class="table table-sm align-middle">
+            <thead><tr><th scope="col">Número</th><th scope="col">Empresa</th><th scope="col">Periodo</th><th scope="col">Estado</th><th scope="col" class="text-end">Total</th><th scope="col" class="text-end">Saldo</th><th scope="col">Vence</th><th scope="col" class="text-end">Acciones</th></tr></thead>
+            <tbody>
+            @foreach (var c in emitidas)
+            {
+                <tr>
+                    <td><a href="/facturacion/@c.CuentaCobroId">@c.Numero</a></td><td>@c.EmpresaNombre</td><td>@c.PeriodoKey</td>
+                    <td>@c.Estado@(c.EnMora ? " · en mora (" + c.Edad + ")" : "")</td>
+                    <td class="text-end">@c.TotalCop.ToString("N0")</td><td class="text-end">@c.SaldoCop.ToString("N0")</td><td>@c.FechaVencimiento?.ToString("yyyy-MM-dd")</td>
+                    <td class="text-end">
+                        <a class="btn btn-sm btn-outline-secondary" href="/facturacion/@c.CuentaCobroId/pdf">PDF</a>
+                        @if (c.Estado != "ANULADA")
+                        {
+                            <form method="post" action="/admin/facturacion/cuentas/@c.CuentaCobroId/reenviar" class="d-inline"><AntiforgeryToken /><button class="btn btn-sm btn-outline-primary" type="submit">Reenviar</button></form>
+                            <details class="d-inline">
+                                <summary>Anular</summary>
+                                <form method="post" action="/admin/facturacion/cuentas/@c.CuentaCobroId/anular" class="d-flex flex-wrap gap-2 align-items-end">
+                                    <AntiforgeryToken />
+                                    <input class="form-control form-control-sm" name="motivo" placeholder="Motivo (mín. 10 caracteres)" minlength="10" maxlength="500" required />
+                                    <label class="form-check-label"><input class="form-check-input" type="checkbox" name="reemplazo" checked /> Emitir una que la reemplace</label>
+                                    <button class="btn btn-sm btn-outline-danger" type="submit">Anular</button>
+                                </form>
+                            </details>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table></div>
+    }
+</section>
+
+<section class="mb-4">
+    <h2 class="h5">Envíos fallidos</h2>
+    @if (envios.Count == 0) { <p class="text-muted">Sin envíos fallidos.</p> }
+    else
+    {
+        <div class="tabla-scroll"><table class="table table-sm align-middle">
+            <thead><tr><th scope="col">Cuenta</th><th scope="col">Tipo</th><th scope="col">Estado</th><th scope="col">Código</th><th scope="col">Fecha</th><th scope="col" class="text-end">Acción</th></tr></thead>
+            <tbody>
+            @foreach (var e in envios)
+            {
+                <tr>
+                    <td>@e.CuentaNumero</td><td>@e.Tipo</td><td>@e.Estado</td><td>@e.CodigoError</td><td>@e.CreadoEn.ToString("yyyy-MM-dd HH:mm")</td>
+                    <td class="text-end">
+                        <form method="post" action="/admin/facturacion/envios/@e.EnvioId/reintentar" class="d-inline"><AntiforgeryToken /><button class="btn btn-sm btn-outline-primary" type="submit">Reintentar</button></form>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table></div>
+    }
+</section>
+
+<section>
+    <h2 class="h5">Cartera por edades</h2>
+    @if (cartera is null || cartera.Cuentas.Count == 0) { <p class="text-muted">Sin saldos pendientes.</p> }
+    else
+    {
+        <p>Saldo total: <strong>@cartera.TotalSaldoCop.ToString("N0")</strong> COP al @cartera.Corte.ToString("yyyy-MM-dd")</p>
+        <ul>@foreach (var (rango, valor) in cartera.PorEdad.OrderBy(x => x.Key)) { <li>@rango.Replace('_', ' '): @valor.ToString("N0")</li> }</ul>
+    }
+</section>
+
+@code {
+    [SupplyParameterFromQuery(Name = "error")] public string? Error { get; set; }
+    [SupplyParameterFromQuery(Name = "ok")] public string? Ok { get; set; }
+
+    private IReadOnlyList<AlertaVista> alertas = [];
+    private IReadOnlyList<CuentaCobroResumen> cuentas = [];
+    private IReadOnlyList<EnvioVista> envios = [];
+    private CarteraFacturacion? cartera;
+
+    protected override async Task OnInitializedAsync()
+    {
+        alertas = (await Enviar.Send(new ListarAlertasQuery())).Valor;
+        cuentas = (await Enviar.Send(new ListarCuentasCobroQuery(null, null, null, false))).Valor;
+        envios = (await Enviar.Send(new ListarEnviosQuery(SoloFallidos: true))).Valor;
+        var c = await Enviar.Send(new CarteraFacturacionQuery(null));
+        cartera = c.EsExitoso ? c.Valor : null;
+    }
+}

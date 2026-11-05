@@ -1,0 +1,48 @@
+@page "/facturacion/contactos"
+@attribute [Authorize(Policy = "admin.usuarios")]
+@using IAnalitica.Application.Facturacion
+@using IAnalitica.Application.Mediacion
+@inject ISender Enviar
+
+<PageTitle>Contactos de facturación · IAnalitica</PageTitle>
+<h1>Contactos de facturación</h1>
+<p class="text-muted">La cuenta de cobro se envía el día 1 de cada mes a los contactos de facturación (para) y al contador (copia). Si no hay ninguno de facturación, la cuenta queda retenida y no se envía. Máximo @ContactosFacturacion.MaxFacturacion de facturación y @ContactosFacturacion.MaxContador contadores. <a href="/facturacion">Volver</a></p>
+
+@if (!string.IsNullOrEmpty(Error)) { <div class="alert alert-warning" role="alert">@Error</div> }
+@if (!string.IsNullOrEmpty(Ok)) { <div class="alert alert-success" role="status">@Ok</div> }
+
+<section class="mb-4">
+    @if (contactos.Count == 0) { <p>No hay contactos registrados.</p> }
+    else
+    {
+        <div class="tabla-scroll"><table class="table table-sm align-middle">
+            <thead><tr><th scope="col">Tipo</th><th scope="col">Nombre</th><th scope="col">Correo</th><th scope="col" class="text-end">Acción</th></tr></thead>
+            <tbody>
+            @foreach (var c in contactos)
+            {
+                <tr><td>@(c.Tipo == "FACTURACION" ? "Facturación" : "Contador")</td><td>@c.Nombre</td><td>@c.Email</td>
+                    <td class="text-end"><form method="post" action="/facturacion/contactos/@c.ContactoId/quitar" class="d-inline"><AntiforgeryToken /><button class="btn btn-sm btn-outline-danger" type="submit">Quitar</button></form></td></tr>
+            }
+            </tbody>
+        </table></div>
+    }
+</section>
+
+<section>
+    <h2 class="h5">Agregar un contacto</h2>
+    <form method="post" action="/facturacion/contactos" class="row g-2" style="max-width:48rem">
+        <AntiforgeryToken />
+        <div class="col-md-3"><label class="form-label">Tipo<select class="form-select" name="tipo"><option value="FACTURACION">Facturación</option><option value="CONTADOR">Contador</option></select></label></div>
+        <div class="col-md-4"><label class="form-label">Nombre<input class="form-control" name="nombre" maxlength="150" required /></label></div>
+        <div class="col-md-5"><label class="form-label">Correo<input class="form-control" type="email" name="email" maxlength="256" required /></label></div>
+        <div class="col-12"><button class="btn btn-primary" type="submit">Agregar</button></div>
+    </form>
+</section>
+
+@code {
+    [SupplyParameterFromQuery(Name = "error")] public string? Error { get; set; }
+    [SupplyParameterFromQuery(Name = "ok")] public string? Ok { get; set; }
+    private IReadOnlyList<ContactoFacturacionVista> contactos = [];
+
+    protected override async Task OnInitializedAsync() => contactos = (await Enviar.Send(new ListarContactosFacturacionQuery())).Valor;
+}

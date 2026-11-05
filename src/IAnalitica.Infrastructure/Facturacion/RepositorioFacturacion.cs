@@ -24,6 +24,7 @@ internal sealed class RepositorioFacturacion(IFabricaConexiones conexiones) : IR
     private sealed record FilaExtra(int? ReemplazaA, bool Pdf, string? MotivoAnulacion);
     private sealed record FilaPeriodo(int EmpresaId, int PeriodoKey);
     private sealed record FilaSaldo(int CuentaCobroId, decimal Saldo);
+    private sealed record FilaPdf(string? Ruta, string? Numero, string Estado);
 
     // ------------------------------------------------------------------ consultas
     public async Task<IReadOnlyList<CuentaCobroResumen>> ListarCuentasAsync(FiltroCuentas f, CancellationToken ct)
@@ -244,6 +245,20 @@ internal sealed class RepositorioFacturacion(IFabricaConexiones conexiones) : IR
 
     public Task<Result> AnularPagoAsync(int pagoId, string motivo, int usuarioId, CancellationToken ct)
         => ProcAsync("fac.usp_AnularPago", new { PagoId = pagoId, Motivo = motivo, UsuarioId = usuarioId }, ct);
+
+    public async Task<(string? Ruta, string? Numero, string Estado)?> ObtenerPdfAsync(int cuentaCobroId, CancellationToken ct)
+    {
+        await using var cn = await conexiones.AbrirAsync(ct).ConfigureAwait(false);
+        var f = await cn.QueryFirstOrDefaultAsync<FilaPdf>(new CommandDefinition("SELECT PdfRuta AS Ruta, Numero, Estado FROM fac.CuentaCobro WHERE CuentaCobroId = @cuentaCobroId", new { cuentaCobroId }, cancellationToken: ct)).ConfigureAwait(false);
+        return f is null ? null : (f.Ruta, f.Numero, f.Estado);
+    }
+
+    public async Task RegistrarDescargaPdfAsync(int usuarioId, int? empresaId, int cuentaCobroId, string? ip, CancellationToken ct)
+    {
+        await using var cn = await conexiones.AbrirAsync(ct).ConfigureAwait(false);
+        await cn.ExecuteAsync(new CommandDefinition("INSERT aud.Acceso (UsuarioId, EmpresaId, Accion, Detalle, Ip) VALUES (@usuarioId, @empresaId, 'DESCARGA_CUENTA_COBRO', @detalle, @ip)",
+            new { usuarioId, empresaId, detalle = cuentaCobroId.ToString(), ip = ip?[..Math.Min(ip.Length, 45)] }, cancellationToken: ct)).ConfigureAwait(false);
+    }
 
     // ------------------------------------------------------------------ utilidades
     private async Task<Result> ProcAsync(string procedimiento, object parametros, CancellationToken ct)

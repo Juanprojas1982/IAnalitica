@@ -142,6 +142,9 @@ public static class DependencyInjection
     {
         services.AddScoped<IRepositorioFacturacionConfig, RepositorioFacturacionConfig>();
         services.AddScoped<IRepositorioFacturacion, RepositorioFacturacion>();
+        services.AddScoped<IRepositorioContactosFacturacion, RepositorioContactosFacturacion>();
+        services.TryAddSingleton<IAlmacenDocumentosFacturacion, AlmacenDocumentosDisco>();
+        services.AddOptions<OpcionesAlmacenFacturacion>();
         services.TryAddSingleton(TimeProvider.System);
         return services;
     }
