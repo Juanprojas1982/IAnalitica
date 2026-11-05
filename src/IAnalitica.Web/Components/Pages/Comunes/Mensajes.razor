@@ -1,0 +1,15 @@
+@if (Errores is { Count: > 0 })
+{
+    <div class="alert alert-danger" role="alert">
+        <ul class="mb-0">
+            @foreach (var e in Errores)
+            {
+                <li>@e</li>
+            }
+        </ul>
+    </div>
+}
+
+@code {
+    [Parameter] public IReadOnlyList<string>? Errores { get; set; }
+}

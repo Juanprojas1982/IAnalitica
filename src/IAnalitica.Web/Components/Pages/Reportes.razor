@@ -1,0 +1,89 @@
+@page "/reportes"
+@attribute [Authorize]
+@using IAnalitica.Application.Mediacion
+@using IAnalitica.Application.Reportes
+@using IAnalitica.Application.Semantica
+@using IAnalitica.Domain.Modulos
+@inject ISender Enviar
+@inject INotificaciones Notificaciones
+@inject CatalogoAnalitico Catalogo
+@inject IHttpContextAccessor Http
+
+<PageTitle>Mis reportes · IAnalitica</PageTitle>
+<h1>Mis reportes</h1>
+<p class="text-muted">Los reportes se generan en segundo plano: puede cerrar la sesión y volver. Los archivos se conservan @Dias días.</p>
+
+@if (!string.IsNullOrEmpty(Error)) { <div class="alert alert-warning" role="alert">@Error</div> }
+@if (Nuevo == "1") { <div class="alert alert-success" role="status">Su reporte quedó en cola. Esta página se actualiza sola mientras se genera.</div> }
+@if (Reutilizado == "1") { <div class="alert alert-info" role="status">Ya tenía un reporte idéntico y reciente: aquí está.</div> }
+@if (activos) { <meta http-equiv="refresh" content="8" /> }
+
+@if (lista is null) { }
+else if (lista.Count == 0)
+{
+    <p>Todavía no ha pedido reportes. Abra un dashboard y use «Descargar reporte».</p>
+}
+else
+{
+    <table class="table table-sm align-middle">
+        <thead><tr><th scope="col">Reporte</th><th scope="col">Formato</th><th scope="col">Pedido</th><th scope="col">Estado</th><th scope="col" class="text-end">Acciones</th></tr></thead>
+        <tbody>
+            @foreach (var s in lista)
+            {
+                var p = ParametrosReporte.DeJson(s.ParametrosJson);
+                var titulo = p is not null && Catalogo.Dashboards.TryGetValue(p.Dashboard, out var d) ? d.Titulo : "Reporte";
+                <tr>
+                    <td>@titulo</td>
+                    <td>@s.Formato</td>
+                    <td>@s.SolicitadoEn.ToString("yyyy-MM-dd HH:mm") UTC</td>
+                    <td class="@(s.Estado == "ERROR" ? "text-danger" : s.Estado is "CANCELADO" or "EXPIRADO" ? "text-muted" : "")">@TextoEstado(s)</td>
+                    <td class="text-end">
+                        @if (s.Estado == "LISTO") { <a class="btn btn-sm btn-primary" href="/reportes/@s.SolicitudId/descargar">Descargar</a> }
+                        @if (s.Estado == "PENDIENTE")
+                        {
+                            <form method="post" action="/reportes/@s.SolicitudId/cancelar" class="d-inline"><AntiforgeryToken /><button class="btn btn-sm btn-outline-secondary" type="submit">Cancelar</button></form>
+                        }
+                        @if (s.Estado is "LISTO" or "ERROR" or "EXPIRADO" or "CANCELADO")
+                        {
+                            <form method="post" action="/reportes/@s.SolicitudId/regenerar" class="d-inline"><AntiforgeryToken /><button class="btn btn-sm btn-outline-primary" type="submit">Volver a generar</button></form>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    [SupplyParameterFromQuery(Name = "error")] public string? Error { get; set; }
+    [SupplyParameterFromQuery(Name = "nuevo")] public string? Nuevo { get; set; }
+    [SupplyParameterFromQuery(Name = "reutilizado")] public string? Reutilizado { get; set; }
+
+    private const int Dias = 7;
+    private IReadOnlyList<SolicitudReporte>? lista;
+    private bool activos;
+
+    protected override async Task OnInitializedAsync()
+    {
+        lista = (await Enviar.Send(new ListarMisReportesQuery())).Valor ?? [];
+        activos = lista.Any(s => s.Estado is "PENDIENTE" or "EN_PROCESO");
+        await Notificaciones.MarcarLeidasAsync("REPORTE", default);   // la campana se apaga al ver la lista
+    }
+
+    private static string Tamano(long bytes)
+    {
+        if (bytes < 1024) return bytes + " B";
+        if (bytes < 1024 * 1024) return (bytes / 1024) + " KB";
+        return (bytes / 1024.0 / 1024.0).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + " MB";
+    }
+
+    private static string TextoEstado(SolicitudReporte s) => s.Estado switch
+    {
+        EstadosReporte.Pendiente => "En cola",
+        EstadosReporte.EnProceso => "Generando…",
+        EstadosReporte.Listo => s.TamanoBytes is { } b ? "Listo (" + Tamano(b) + ")" : "Listo",
+        EstadosReporte.Error => s.Error ?? "Error",
+        EstadosReporte.Cancelado => "Cancelado",
+        _ => "Expirado",
+    };
+}

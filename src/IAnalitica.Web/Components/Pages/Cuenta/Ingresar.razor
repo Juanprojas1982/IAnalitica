@@ -1,0 +1,109 @@
+@page "/ingresar"
+@attribute [AllowAnonymous]
+@attribute [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("ingreso")]
+@using IAnalitica.Application.Abstracciones
+@using IAnalitica.Application.Seguridad
+@using IAnalitica.Infrastructure.Identity
+@using IAnalitica.Web.Components.Pages.Comunes
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<UsuarioAplicacion> Sesion
+@inject UserManager<UsuarioAplicacion> Usuarios
+@inject IAuditoriaSeguridad Auditoria
+@inject TimeProvider Reloj
+@inject NavigationManager Nav
+
+<PageTitle>Ingresar · IAnalitica</PageTitle>
+<div class="row justify-content-center">
+    <div class="col-md-5 col-lg-4">
+        <h1 class="h3 mb-3">Ingresar</h1>
+        @if (Aviso is { Length: > 0 })
+        {
+            <div class="alert alert-info" role="alert">@Aviso</div>
+        }
+        <Mensajes Errores="errores" />
+        <EditForm Model="Entrada" FormName="ingresar" OnValidSubmit="IngresarAsync" method="post">
+            <DataAnnotationsValidator />
+            <div class="mb-3">
+                <label class="form-label" for="usuario">Usuario</label>
+                <InputText id="usuario" class="form-control" @bind-Value="Entrada.Usuario" autocomplete="username" />
+                <ValidationMessage For="() => Entrada.Usuario" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="clave">Contraseña</label>
+                <InputText id="clave" type="password" class="form-control" @bind-Value="Entrada.Clave" autocomplete="current-password" />
+                <ValidationMessage For="() => Entrada.Clave" />
+            </div>
+            <button class="btn btn-primary w-100" type="submit">Ingresar</button>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private const string Generico = "Usuario o contraseña incorrectos.";
+    private List<string>? errores;
+
+    [CascadingParameter] private HttpContext? Http { get; set; }
+    [SupplyParameterFromQuery] private string? ReturnUrl { get; set; }
+    [SupplyParameterFromQuery(Name = "aviso")] private string? CodigoAviso { get; set; }
+    [SupplyParameterFromForm(Name = "Entrada")] private EntradaIngreso? EntradaPublicada { get; set; }
+    private EntradaIngreso Entrada => EntradaPublicada ??= new();
+
+    private string? Aviso => CodigoAviso switch
+    {
+        "clave-vencida" => "La contraseña inicial venció. Pida al administrador que la regenere.",
+        "desactivado" => "Su cuenta está desactivada. Comuníquese con el administrador de su empresa.",
+        _ => null,
+    };
+
+    private async Task IngresarAsync()
+    {
+        var ip = Http?.Connection.RemoteIpAddress?.ToString();
+        var nombre = Entrada.Usuario.Trim();
+        var usuario = await Usuarios.FindByNameAsync(nombre);
+
+        // Mismo mensaje para «no existe», «desactivado» y «clave incorrecta»: no se revela qué usuarios existen.
+        if (usuario is null || !usuario.Activo)
+        {
+            await Auditoria.RegistrarAsync("LOGIN_FALLIDO", usuario?.EmpresaId, usuario?.Id, nombre, usuario is null ? "Usuario inexistente" : "Usuario desactivado", ip, default);
+            errores = [Generico];
+            return;
+        }
+
+        var resultado = await Sesion.PasswordSignInAsync(usuario, Entrada.Clave, isPersistent: false, lockoutOnFailure: true);
+        if (resultado.Succeeded)
+        {
+            var paso = PoliticaAcceso.Evaluar(new DatosAcceso(usuario.Activo, usuario.DebeCambiarClave, usuario.ClaveTemporalVenceEn, false, false, true),
+                Reloj.GetUtcNow().UtcDateTime);
+            if (paso == PasoAcceso.ClaveTemporalVencida)
+            {
+                await Sesion.SignOutAsync();
+                errores = ["La contraseña inicial venció. Pida al administrador que la regenere."];
+                return;
+            }
+            Nav.NavigateTo(UrlLocal.Segura(ReturnUrl), forceLoad: true);
+            return;
+        }
+
+        if (resultado.RequiresTwoFactor)
+        {
+            Nav.NavigateTo("/ingresar/2fa?returnUrl=" + Uri.EscapeDataString(UrlLocal.Segura(ReturnUrl)), forceLoad: true);
+            return;
+        }
+
+        if (resultado.IsLockedOut)
+        {
+            await Auditoria.RegistrarAsync("BLOQUEO", usuario.EmpresaId, usuario.Id, nombre, "5 intentos fallidos: bloqueo de 15 minutos", ip, default);
+            errores = ["Cuenta bloqueada por intentos fallidos. Intente de nuevo en 15 minutos."];
+            return;
+        }
+
+        await Auditoria.RegistrarAsync("LOGIN_FALLIDO", usuario.EmpresaId, usuario.Id, nombre, "Contraseña incorrecta", ip, default);
+        errores = [Generico];
+    }
+
+    private sealed class EntradaIngreso
+    {
+        [Required(ErrorMessage = "Escriba su usuario.")] public string Usuario { get; set; } = "";
+        [Required(ErrorMessage = "Escriba su contraseña.")] public string Clave { get; set; } = "";
+    }
+}

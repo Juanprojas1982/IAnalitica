@@ -1,0 +1,38 @@
+@using IAnalitica.Application.Empresas
+
+<div class="card border-success my-3" id="kit-entrega">
+    <div class="card-header bg-success text-white">Kit de entrega · @Kit.RazonSocial</div>
+    <div class="card-body">
+        <div class="alert alert-warning" role="alert">
+            <strong>Se muestra una sola vez.</strong> Si cierra o recarga esta página no podrá volver a verlo (la contraseña y el secreto no se guardan en claro).
+            No lo guarde en correos sin protección; entregue el usuario y la contraseña por canales distintos.
+        </div>
+        <dl class="row mb-0">
+            <dt class="col-sm-4">Portal</dt>
+            <dd class="col-sm-8"><span id="kit-portal">@Kit.UrlPortal</span></dd>
+            <dt class="col-sm-4">Usuario administrador</dt>
+            <dd class="col-sm-8"><code id="kit-usuario">@Kit.UsuarioAdministrador</code> <button type="button" class="btn btn-outline-secondary btn-sm" data-copiar="kit-usuario">Copiar</button></dd>
+            <dt class="col-sm-4">Contraseña inicial</dt>
+            <dd class="col-sm-8"><code id="kit-clave">@Kit.ClaveInicial</code> <button type="button" class="btn btn-outline-secondary btn-sm" data-copiar="kit-clave">Copiar</button>
+                <div class="text-muted small">Vence el @Kit.ClaveVenceEnUtc.ToString("yyyy-MM-dd HH:mm") UTC (72 horas).</div></dd>
+            <dt class="col-sm-4">URL de la API (conector)</dt>
+            <dd class="col-sm-8"><span id="kit-api">@Kit.UrlApi</span></dd>
+            <dt class="col-sm-4">ClientId del conector</dt>
+            <dd class="col-sm-8"><code id="kit-clientid">@Kit.ClientId</code> <button type="button" class="btn btn-outline-secondary btn-sm" data-copiar="kit-clientid">Copiar</button></dd>
+            <dt class="col-sm-4">Secreto del conector</dt>
+            <dd class="col-sm-8"><code id="kit-secreto">@Kit.ClientSecret</code> <button type="button" class="btn btn-outline-secondary btn-sm" data-copiar="kit-secreto">Copiar</button></dd>
+        </dl>
+        <hr />
+        <h2 class="h6">Instrucciones de primer ingreso</h2>
+        <ol class="mb-0">
+            @foreach (var i in Kit.InstruccionesPrimerIngreso)
+            {
+                <li>@i</li>
+            }
+        </ol>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public KitEntrega Kit { get; set; } = default!;
+}

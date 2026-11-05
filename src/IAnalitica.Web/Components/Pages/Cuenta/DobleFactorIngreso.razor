@@ -1,0 +1,92 @@
+@page "/ingresar/2fa"
+@attribute [AllowAnonymous]
+@attribute [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("ingreso")]
+@using IAnalitica.Application.Abstracciones
+@using IAnalitica.Infrastructure.Identity
+@using IAnalitica.Web.Components.Pages.Comunes
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<UsuarioAplicacion> Sesion
+@inject IAuditoriaSeguridad Auditoria
+@inject NavigationManager Nav
+
+<PageTitle>Verificación en dos pasos · IAnalitica</PageTitle>
+<div class="row justify-content-center">
+    <div class="col-md-5 col-lg-4">
+        <h1 class="h3 mb-3">Verificación en dos pasos</h1>
+        <Mensajes Errores="errores" />
+        <p>Escriba el código de 6 dígitos de su aplicación autenticadora.</p>
+        <EditForm Model="Codigo" FormName="codigo" OnValidSubmit="VerificarAsync" method="post">
+            <DataAnnotationsValidator />
+            <div class="mb-3">
+                <label class="form-label" for="codigo">Código</label>
+                <InputText id="codigo" class="form-control" @bind-Value="Codigo.Valor" autocomplete="one-time-code" inputmode="numeric" />
+                <ValidationMessage For="() => Codigo.Valor" />
+            </div>
+            <button class="btn btn-primary w-100" type="submit">Verificar</button>
+        </EditForm>
+        <hr />
+        <p class="mb-1">¿Perdió su teléfono? Use un código de recuperación.</p>
+        <EditForm Model="Recuperacion" FormName="recuperacion" OnValidSubmit="RecuperarAsync" method="post">
+            <DataAnnotationsValidator />
+            <div class="mb-3">
+                <InputText class="form-control" @bind-Value="Recuperacion.Valor" aria-label="Código de recuperación" />
+                <ValidationMessage For="() => Recuperacion.Valor" />
+            </div>
+            <button class="btn btn-outline-secondary w-100" type="submit">Usar código de recuperación</button>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private List<string>? errores;
+
+    [CascadingParameter] private HttpContext? Http { get; set; }
+    [SupplyParameterFromQuery] private string? ReturnUrl { get; set; }
+    [SupplyParameterFromForm(FormName = "codigo", Name = "Codigo")] private EntradaCodigo? CodigoPublicado { get; set; }
+    private EntradaCodigo Codigo => CodigoPublicado ??= new();
+    [SupplyParameterFromForm(FormName = "recuperacion", Name = "Recuperacion")] private EntradaCodigo? RecuperacionPublicada { get; set; }
+    private EntradaCodigo Recuperacion => RecuperacionPublicada ??= new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Sin la primera etapa (usuario y contraseña) no hay nada que verificar.
+        if (await Sesion.GetTwoFactorAuthenticationUserAsync() is null) Nav.NavigateTo("/ingresar", forceLoad: true);
+    }
+
+    private async Task VerificarAsync()
+    {
+        var limpio = Codigo.Valor.Replace(" ", "").Replace("-", "");
+        var r = await Sesion.TwoFactorAuthenticatorSignInAsync(limpio, isPersistent: false, rememberClient: false);
+        await ResolverAsync(r, "Código incorrecto.");
+    }
+
+    private async Task RecuperarAsync()
+    {
+        var r = await Sesion.TwoFactorRecoveryCodeSignInAsync(Recuperacion.Valor.Replace(" ", ""));
+        await ResolverAsync(r, "Código de recuperación incorrecto.");
+    }
+
+    private async Task ResolverAsync(Microsoft.AspNetCore.Identity.SignInResult r, string mensajeFallo)
+    {
+        var usuario = await Sesion.GetTwoFactorAuthenticationUserAsync();
+        if (r.Succeeded)
+        {
+            Nav.NavigateTo(UrlLocal.Segura(ReturnUrl), forceLoad: true);
+            return;
+        }
+        var ip = Http?.Connection.RemoteIpAddress?.ToString();
+        if (r.IsLockedOut)
+        {
+            if (usuario is not null) await Auditoria.RegistrarAsync("BLOQUEO", usuario.EmpresaId, usuario.Id, usuario.UserName, "Intentos fallidos en el segundo factor", ip, default);
+            errores = ["Cuenta bloqueada por intentos fallidos. Intente de nuevo en 15 minutos."];
+            return;
+        }
+        if (usuario is not null) await Auditoria.RegistrarAsync("LOGIN_FALLIDO", usuario.EmpresaId, usuario.Id, usuario.UserName, "Segundo factor incorrecto", ip, default);
+        errores = [mensajeFallo];
+    }
+
+    private sealed class EntradaCodigo
+    {
+        [Required(ErrorMessage = "Escriba el código.")] public string Valor { get; set; } = "";
+    }
+}

@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\IAnalitica.Application\IAnalitica.Application.csproj" />
+    <ProjectReference Include="..\IAnalitica.Infrastructure\IAnalitica.Infrastructure.csproj" />
+    <ProjectReference Include="..\IAnalitica.Domain\IAnalitica.Domain.csproj" />
+    <ProjectReference Include="..\IAnalitica.Modulos.Financiero\IAnalitica.Modulos.Financiero.csproj" />
+    <ProjectReference Include="..\IAnalitica.Modulos.Ingreso\IAnalitica.Modulos.Ingreso.csproj" />
+    <ProjectReference Include="..\IAnalitica.Modulos.Operacion\IAnalitica.Modulos.Operacion.csproj" />
+    <ProjectReference Include="..\IAnalitica.Modulos.Farmacia\IAnalitica.Modulos.Farmacia.csproj" />
+    <ProjectReference Include="..\IAnalitica.Modulos.Ese\IAnalitica.Modulos.Ese.csproj" />
+    <ProjectReference Include="..\IAnalitica.Modulos.Auditor\IAnalitica.Modulos.Auditor.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+  </PropertyGroup>
+
+</Project>

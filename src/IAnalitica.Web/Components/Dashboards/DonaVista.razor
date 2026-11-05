@@ -1,0 +1,41 @@
+@using IAnalitica.Application.Semantica
+@using System.Globalization
+
+@{
+    var resultado = Datos.Series[0].Resultado;
+    var dim = resultado.Dimensiones[0];
+    var filas = resultado.Filas.Where(f => f.Valor is > 0).OrderByDescending(f => f.Valor).ToList();
+    var principales = filas.Take(6).Select(f => (Etiqueta: f.Dimensiones[dim].Etiqueta, Valor: f.Valor!.Value)).ToList();
+    if (filas.Count > 6) principales.Add(("Otros", filas.Skip(6).Sum(f => f.Valor!.Value)));
+    var total = principales.Sum(p => p.Valor);
+    const double R = 70, C = 2 * Math.PI * R;
+    var acumulado = 0.0;
+}
+<figure class="grafico dona">
+    <svg viewBox="0 0 200 200" role="img" aria-labelledby="t-@Datos.Widget">
+        <title id="t-@Datos.Widget">@Datos.Titulo: @string.Join("; ", principales.Select(p => $"{p.Etiqueta} {Formato.Valor(p.Valor, resultado.Unidad)}"))</title>
+        <g transform="rotate(-90 100 100)">
+            @for (var i = 0; i < principales.Count; i++)
+            {
+                var largo = (double)(principales[i].Valor / total) * C;
+                <circle cx="100" cy="100" r="@R" fill="none" stroke="@Paleta.De(i)" stroke-width="28"
+                        stroke-dasharray="@largo.ToString("0.##", CultureInfo.InvariantCulture) @((C - largo).ToString("0.##", CultureInfo.InvariantCulture))"
+                        stroke-dashoffset="@((-acumulado).ToString("0.##", CultureInfo.InvariantCulture))">
+                    <title>@principales[i].Etiqueta: @Formato.Valor(principales[i].Valor, resultado.Unidad)</title>
+                </circle>
+                acumulado += largo;
+            }
+        </g>
+        <text x="100" y="106" text-anchor="middle" class="dona-total">@Formato.Numero(total)</text>
+    </svg>
+    <ul class="leyenda vertical">
+        @for (var i = 0; i < principales.Count; i++)
+        {
+            <li><i style="background:@Paleta.De(i)"></i>@principales[i].Etiqueta: <strong>@Formato.Numero(principales[i].Valor)</strong> (@Formato.Valor(principales[i].Valor / total * 100, "%"))</li>
+        }
+    </ul>
+</figure>
+
+@code {
+    [Parameter, EditorRequired] public DatosWidget Datos { get; set; } = default!;
+}

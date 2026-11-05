@@ -1,0 +1,55 @@
+@using IAnalitica.Application.Semantica
+@using IAnalitica.Domain.Modulos
+
+<form method="get" action="/d/@Codigo" class="barra-filtros" aria-label="Filtros del dashboard">
+    @if (MuestraPeriodo)
+    {
+        <label>Desde <input type="month" name="desde" value="@PeriodoTexto(Efectivos.PeriodoDesde)" /></label>
+        <label>Hasta <input type="month" name="hasta" value="@PeriodoTexto(Efectivos.PeriodoHasta)" /></label>
+    }
+    @if (MuestraCorte)
+    {
+        <label>Corte de cartera <input type="date" name="corte" value="@Filtros.Corte" /></label>
+    }
+    @if (MuestraSede && Opciones.Sedes.Count > 1) { @Selector("sede", "Sede", Opciones.Sedes, Filtros.Sede) }
+    @if (MuestraPagador) { @Selector("pagador", "Pagador", Opciones.Pagadores, Filtros.Pagador) }
+    @if (MuestraCentro) { @Selector("cc", "Centro de costo", Opciones.CentrosCosto, Filtros.CentroCosto) }
+    <button type="submit" class="btn btn-primary btn-sm">Aplicar</button>
+    <a class="btn btn-outline-secondary btn-sm" href="/d/@Codigo">Limpiar</a>
+</form>
+
+@code {
+    [Parameter, EditorRequired] public string Codigo { get; set; } = "";
+    [Parameter, EditorRequired] public FiltrosPagina Filtros { get; set; } = new();
+    [Parameter, EditorRequired] public FiltrosDashboard Efectivos { get; set; } = FiltrosDashboard.Ninguno;
+    [Parameter, EditorRequired] public OpcionesFiltros Opciones { get; set; } = default!;
+    [Parameter] public bool MuestraPeriodo { get; set; }
+    [Parameter] public bool MuestraCorte { get; set; }
+    [Parameter] public bool MuestraSede { get; set; }
+    [Parameter] public bool MuestraPagador { get; set; }
+    [Parameter] public bool MuestraCentro { get; set; }
+
+    private static string? PeriodoTexto(int? p) => p is { } v ? FiltrosPagina.TextoPeriodo(v) : null;
+
+    private static RenderFragment Selector(string nombre, string etiqueta, IReadOnlyList<OpcionFiltro> opciones, int? actual) => b =>
+    {
+        b.OpenElement(0, "label");
+        b.AddContent(1, etiqueta + " ");
+        b.OpenElement(2, "select");
+        b.AddAttribute(3, "name", nombre);
+        b.OpenElement(4, "option");
+        b.AddAttribute(5, "value", "");
+        b.AddContent(6, "Todos");
+        b.CloseElement();
+        foreach (var o in opciones)
+        {
+            b.OpenElement(7, "option");
+            b.AddAttribute(8, "value", o.Id.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            if (actual == o.Id) b.AddAttribute(9, "selected", true);
+            b.AddContent(10, o.Nombre);
+            b.CloseElement();
+        }
+        b.CloseElement();
+        b.CloseElement();
+    };
+}

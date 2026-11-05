@@ -1,0 +1,82 @@
+@page "/cuenta/cambiar-clave"
+@attribute [Authorize]
+@using IAnalitica.Application.Abstracciones
+@using IAnalitica.Infrastructure.Identity
+@using IAnalitica.Web.Components.Pages.Comunes
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<UsuarioAplicacion> Sesion
+@inject UserManager<UsuarioAplicacion> Usuarios
+@inject IAuditoriaSeguridad Auditoria
+@inject NavigationManager Nav
+
+<PageTitle>Cambiar contraseña · IAnalitica</PageTitle>
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <h1 class="h3 mb-3">Cambiar contraseña</h1>
+        @if (Obligatorio)
+        {
+            <div class="alert alert-warning" role="alert">Debe cambiar la contraseña inicial antes de continuar.</div>
+        }
+        <p class="text-muted">Mínimo 10 caracteres, con mayúscula, minúscula, número y carácter especial. No puede repetir sus últimas 5 contraseñas.</p>
+        <Mensajes Errores="errores" />
+        <EditForm Model="Entrada" FormName="cambiar-clave" OnValidSubmit="CambiarAsync" method="post">
+            <DataAnnotationsValidator />
+            <div class="mb-3">
+                <label class="form-label" for="actual">Contraseña actual</label>
+                <InputText id="actual" type="password" class="form-control" @bind-Value="Entrada.Actual" autocomplete="current-password" />
+                <ValidationMessage For="() => Entrada.Actual" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="nueva">Contraseña nueva</label>
+                <InputText id="nueva" type="password" class="form-control" @bind-Value="Entrada.Nueva" autocomplete="new-password" />
+                <ValidationMessage For="() => Entrada.Nueva" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="confirmar">Confirme la contraseña nueva</label>
+                <InputText id="confirmar" type="password" class="form-control" @bind-Value="Entrada.Confirmar" autocomplete="new-password" />
+                <ValidationMessage For="() => Entrada.Confirmar" />
+            </div>
+            <button class="btn btn-primary" type="submit">Cambiar contraseña</button>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private List<string>? errores;
+    private bool Obligatorio;
+
+    [CascadingParameter] private HttpContext? Http { get; set; }
+    [SupplyParameterFromForm(Name = "Entrada")] private EntradaClave? EntradaPublicada { get; set; }
+    private EntradaClave Entrada => EntradaPublicada ??= new();
+
+    protected override async Task OnInitializedAsync()
+        => Obligatorio = (await Usuarios.GetUserAsync(Http!.User))?.DebeCambiarClave == true;
+
+    private async Task CambiarAsync()
+    {
+        var usuario = await Usuarios.GetUserAsync(Http!.User);
+        if (usuario is null) { Nav.NavigateTo("/ingresar", forceLoad: true); return; }
+
+        var r = await Usuarios.ChangePasswordAsync(usuario, Entrada.Actual, Entrada.Nueva);
+        if (!r.Succeeded)
+        {
+            errores = r.Errors.Select(e => e.Description).ToList();
+            return;
+        }
+
+        usuario.DebeCambiarClave = false;
+        usuario.ClaveTemporalVenceEn = null;
+        await Usuarios.UpdateAsync(usuario);
+        await Sesion.RefreshSignInAsync(usuario);   // el cambio renueva el sello de seguridad: se reemite el cookie de esta sesión
+        await Auditoria.RegistrarAsync("CLAVE_CAMBIADA", usuario.EmpresaId, usuario.Id, usuario.UserName, null, Http.Connection.RemoteIpAddress?.ToString(), default);
+        Nav.NavigateTo("/", forceLoad: true);
+    }
+
+    private sealed class EntradaClave
+    {
+        [Required(ErrorMessage = "Escriba la contraseña actual.")] public string Actual { get; set; } = "";
+        [Required(ErrorMessage = "Escriba la contraseña nueva.")] public string Nueva { get; set; } = "";
+        [Required(ErrorMessage = "Confirme la contraseña nueva.")]
+        [Compare(nameof(Nueva), ErrorMessage = "Las contraseñas no coinciden.")] public string Confirmar { get; set; } = "";
+    }
+}

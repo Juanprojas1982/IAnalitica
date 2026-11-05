@@ -1,0 +1,127 @@
+@page "/auditor"
+@attribute [Authorize(Policy = "dash.auditor_config")]
+@using IAnalitica.Application.Auditoria
+@using IAnalitica.Application.Mediacion
+@inject ISender Enviar
+
+<PageTitle>Salud de la configuración · IAnalitica</PageTitle>
+<h1>Salud de la configuración</h1>
+<p class="text-muted">Revisión automática de la configuración de SaludIPS. Se actualiza cada vez que el conector envía una foto nueva.</p>
+
+@if (!string.IsNullOrEmpty(Error)) { <div class="alert alert-warning" role="alert">@Error</div> }
+@if (Ok == "1") { <div class="alert alert-success" role="status">Hallazgo actualizado.</div> }
+
+@if (salud is null) { }
+else if (modulo is not null) { <div class="alert alert-info" role="status">@modulo</div> }
+else if (salud.Total is null)
+{
+    <p>Todavía no hay una revisión: el conector aún no ha enviado la configuración de SaludIPS.</p>
+}
+else
+{
+    <section class="indice-salud" aria-label="Índice de salud">
+        <div class="indice-total @Clase(salud.Total.Indice)">
+            <p class="indice-valor">@salud.Total.Indice<span>/100</span></p>
+            <p class="indice-texto">Índice de salud @Tendencia(salud.Total) · @salud.Total.Abiertos pendientes · @salud.Fecha?.ToString("yyyy-MM-dd")</p>
+        </div>
+        <ul class="indice-areas">
+            @foreach (var a in salud.Areas.Where(a => a.Area != "TOTAL"))
+            {
+                <li class="@Clase(a.Indice)"><strong>@a.Indice</strong> <span>@a.Area</span> <small>@Tendencia(a) · @a.Abiertos pendientes</small></li>
+            }
+        </ul>
+    </section>
+
+    <form method="get" action="/auditor" class="mb-3">
+        <label><input type="checkbox" name="cerrados" value="1" checked="@Cerrados" onchange="this.form.submit()" /> Mostrar también los corregidos, aceptados y falsos positivos</label>
+        <noscript><button class="btn btn-sm btn-outline-secondary" type="submit">Actualizar</button></noscript>
+    </form>
+
+    @if (salud.Hallazgos.Count == 0)
+    {
+        <p>No hay hallazgos pendientes.</p>
+    }
+    @foreach (var h in salud.Hallazgos)
+    {
+        <article class="hallazgo sev-@h.Severidad.ToLowerInvariant()">
+            <header>
+                <span class="sev">@TextoSeveridad(h.Severidad)</span>
+                <strong>@h.Titulo</strong>
+                <small class="text-muted">@h.Codigo · @h.Area · @TextoEstado(h.Estado)</small>
+                @if (h.PorVerificar) { <small class="badge text-bg-secondary" title="La regla descansa en un supuesto que aún no se ha confirmado con el usuario funcional.">por verificar</small> }
+            </header>
+            @if (!string.IsNullOrEmpty(h.NombreEntidad)) { <p class="entidad">@h.NombreEntidad</p> }
+            <dl>
+                @if (h.ValorEncontrado is not null) { <dt>Encontrado</dt><dd>@h.ValorEncontrado</dd> }
+                @if (h.ValorEsperado is not null) { <dt>Esperado</dt><dd>@h.ValorEsperado</dd> }
+                @if (h.ImpactoCantidad is not null || h.ImpactoValor is not null)
+                {
+                    <dt>Impacto</dt>
+                    <dd>
+                        @if (h.ImpactoCantidad is { } c) { <span>@c.ToString("N0", Cultura)</span> }
+                        @if (h.ImpactoValor is { } v) { <span> · $ @v.ToString("N0", Cultura)</span> }
+                        @if (h.ImpactoDetalle is not null) { <small class="text-muted"> — @h.ImpactoDetalle</small> }
+                    </dd>
+                }
+                <dt>Por qué importa</dt><dd>@h.PorQueImporta</dd>
+                <dt>Cómo corregirlo</dt><dd>@h.ComoCorregir @if (h.RutaSaludIPS is not null) { <em>(@h.RutaSaludIPS)</em> }</dd>
+                @if (h.Justificacion is not null) { <dt>Justificación</dt><dd>@h.Justificacion</dd> }
+            </dl>
+            <AuthorizeView Policy="hallazgos.gestionar" Context="gestor">
+                @if (EstadosHallazgo.EstaAbierto(h.Estado))
+                {
+                    <details>
+                        <summary>Aceptar o marcar como falso positivo</summary>
+                        <form method="post" action="/auditor/hallazgos/@h.HallazgoId/estado">
+                            <AntiforgeryToken />
+                            <input type="hidden" name="cerrados" value="@(Cerrados ? "1" : "0")" />
+                            <label>Justificación (obligatoria, mínimo 10 caracteres)
+                                <textarea name="justificacion" maxlength="500" rows="2" required minlength="10" class="form-control"></textarea>
+                            </label>
+                            <button class="btn btn-sm btn-outline-primary" type="submit" name="accion" value="ACEPTAR">Aceptar el riesgo</button>
+                            <button class="btn btn-sm btn-outline-secondary" type="submit" name="accion" value="FALSO_POSITIVO">Es un falso positivo</button>
+                        </form>
+                    </details>
+                }
+                else if (h.Estado is EstadosHallazgo.Aceptado or EstadosHallazgo.FalsoPositivo)
+                {
+                    <form method="post" action="/auditor/hallazgos/@h.HallazgoId/estado">
+                        <AntiforgeryToken />
+                        <input type="hidden" name="cerrados" value="1" />
+                        <button class="btn btn-sm btn-outline-primary" type="submit" name="accion" value="REABRIR">Reabrir</button>
+                    </form>
+                }
+            </AuthorizeView>
+        </article>
+    }
+}
+
+@code {
+    [SupplyParameterFromQuery(Name = "error")] public string? Error { get; set; }
+    [SupplyParameterFromQuery(Name = "ok")] public string? Ok { get; set; }
+    [SupplyParameterFromQuery(Name = "cerrados")] public string? CerradosParam { get; set; }
+
+    private static readonly System.Globalization.CultureInfo Cultura = System.Globalization.CultureInfo.GetCultureInfo("es-CO");
+    private SaludConfiguracion? salud;
+    private string? modulo;
+    private bool Cerrados => CerradosParam == "1";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var r = await Enviar.Send(new ObtenerSaludConfiguracionQuery(Cerrados));
+        if (r.EsExitoso) salud = r.Valor;
+        else { modulo = r.Errores[0].Mensaje; salud = new SaludConfiguracion(null, [], []); }
+    }
+
+    private static string Clase(int indice) => indice >= 80 ? "ok" : indice >= 50 ? "regular" : "mal";
+
+    private static string Tendencia(IndiceArea a)
+        => a.Anterior is not { } p || p == a.Indice ? "" : a.Indice > p ? $"▲ +{a.Indice - p}" : $"▼ −{p - a.Indice}";
+
+    private static string TextoSeveridad(string s) => s switch { "CRITICA" => "Crítica", "ALTA" => "Alta", "MEDIA" => "Media", _ => "Baja" };
+
+    private static string TextoEstado(string e) => e switch
+    {
+        "NUEVO" => "nuevo", "ABIERTO" => "abierto", "CORREGIDO" => "corregido", "ACEPTADO" => "aceptado", _ => "falso positivo",
+    };
+}

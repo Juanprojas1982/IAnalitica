@@ -1,0 +1,80 @@
+@using IAnalitica.Application.Semantica
+@using IAnalitica.Domain.Modulos
+@using System.Globalization
+
+@{
+    var series = Datos.Series;
+    var dim = series[0].Resultado.Dimensiones[0];
+    var categorias = Formato.Ordenar(dim, series.SelectMany(s => s.Resultado.Filas.Select(f => f.Dimensiones[dim].Clave)).Distinct()).ToList();
+    var etiquetas = series.SelectMany(s => s.Resultado.Filas).GroupBy(f => f.Dimensiones[dim].Clave).ToDictionary(g => g.Key, g => g.First().Dimensiones[dim].Etiqueta);
+    var unidad = series[0].Resultado.Unidad;
+    var rellenaCeros = unidad is Unidades.Pesos or Unidades.Unidades_;
+    var valores = series.Select(s => categorias.Select(c => s.Resultado.Filas.FirstOrDefault(f => f.Dimensiones[dim].Clave == c) is { } f ? f.Valor : (rellenaCeros ? 0m : (decimal?)null)).ToList()).ToList();
+    var todos = valores.SelectMany(v => v).Where(v => v is not null).Select(v => v!.Value).ToList();
+    const double W = 640, H = 240, ML = 64, MR = 14, MT = 14, MB = 30;
+    var (min, max, ticks) = Escala.Bonita(todos.Count == 0 ? 0m : Math.Min(0m, todos.Min()), todos.Count == 0 ? 1m : todos.Max());
+    double X(int i) => categorias.Count == 1 ? ML + (W - ML - MR) / 2 : ML + i * (W - ML - MR) / (categorias.Count - 1);
+    double Y(decimal v) => MT + (double)(max - v) / (double)(max - min) * (H - MT - MB);
+    var paso = Math.Max(1, (int)Math.Ceiling(categorias.Count / 8.0));
+    // si la última categoría no cae en el paso se muestra igual (es la más reciente)
+    bool Muestra(int i) => i % paso == 0 || i == categorias.Count - 1 && categorias.Count - 1 - (categorias.Count - 1) / paso * paso >= paso / 2;
+}
+<figure class="grafico">
+    <svg viewBox="0 0 @W @H" role="img" aria-labelledby="t-@Datos.Widget d-@Datos.Widget">
+        <title id="t-@Datos.Widget">@Datos.Titulo</title>
+        <desc id="d-@Datos.Widget">Gráfico de líneas: @string.Join("; ", series.Select(s => s.Resultado.Nombre)) por @dim.Replace('_', ' ').</desc>
+        @foreach (var v in ticks)
+        {
+            var y = Y(v);
+            <line x1="@ML.ToString(CultureInfo.InvariantCulture)" x2="@((W - MR).ToString(CultureInfo.InvariantCulture))" y1="@y.ToString("0.#", CultureInfo.InvariantCulture)" y2="@y.ToString("0.#", CultureInfo.InvariantCulture)" class="eje" />
+            @Svg.Texto((ML - 6).ToString(CultureInfo.InvariantCulture), (y + 4).ToString("0.#", CultureInfo.InvariantCulture), "end", "etiqueta", Formato.Corto(v, unidad))
+        }
+        @for (var i = 0; i < categorias.Count; i++)
+        {
+            if (!Muestra(i)) continue;
+            @Svg.Texto(X(i).ToString("0.#", CultureInfo.InvariantCulture), (H - 8).ToString(CultureInfo.InvariantCulture), Escala.Ancla(i, categorias.Count), "etiqueta", etiquetas[categorias[i]])
+        }
+        @for (var s = 0; s < series.Count; s++)
+        {
+            var puntos = new List<string>();
+            for (var i = 0; i < categorias.Count; i++)
+                if (valores[s][i] is { } v) puntos.Add($"{X(i).ToString("0.#", CultureInfo.InvariantCulture)},{Y(v).ToString("0.#", CultureInfo.InvariantCulture)}");
+            if (puntos.Count > 1)
+            {
+                <polyline points="@string.Join(' ', puntos)" fill="none" stroke="@Paleta.De(s)" stroke-width="2.5" />
+            }
+            for (var i = 0; i < categorias.Count; i++)
+            {
+                if (valores[s][i] is not { } v) continue;
+                <circle cx="@X(i).ToString("0.#", CultureInfo.InvariantCulture)" cy="@Y(v).ToString("0.#", CultureInfo.InvariantCulture)" r="4" fill="@Paleta.De(s)">
+                    <title>@series[s].Resultado.Nombre · @etiquetas[categorias[i]]: @Formato.Valor(v, series[s].Resultado.Unidad)</title>
+                </circle>
+            }
+        }
+    </svg>
+    @if (series.Count > 1)
+    {
+        <figcaption class="leyenda">
+            @for (var s = 0; s < series.Count; s++)
+            {
+                <span><i style="background:@Paleta.De(s)"></i>@series[s].Resultado.Nombre</span>
+            }
+        </figcaption>
+    }
+    <details class="datos">
+        <summary>Ver los datos</summary>
+        <table class="table table-sm">
+            <thead><tr><th scope="col">@Dimensiones.Buscar(dim)?.Nombre</th>@foreach (var s in series) { <th scope="col" class="num">@s.Resultado.Nombre</th> }</tr></thead>
+            <tbody>
+                @for (var i = 0; i < categorias.Count; i++)
+                {
+                    <tr><th scope="row">@etiquetas[categorias[i]]</th>@for (var s = 0; s < series.Count; s++) { <td class="num">@Formato.Valor(valores[s][i], series[s].Resultado.Unidad)</td> }</tr>
+                }
+            </tbody>
+        </table>
+    </details>
+</figure>
+
+@code {
+    [Parameter, EditorRequired] public DatosWidget Datos { get; set; } = default!;
+}

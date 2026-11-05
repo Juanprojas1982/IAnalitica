@@ -1,0 +1,55 @@
+# CI de IAnalitica (24_SPEC_MAESTRA §11–12): compilar sin advertencias + pruebas (incluye SQL Server en contenedor).
+# No crea ni toca recursos de Azure (D32). El despliegue (migrador DbUp → desplegar) se agrega en F6, con aprobación de costo.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Los minutos de Actions son limitados en repos privados: una ejecución por rama, la anterior se cancela.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  compilar-y-probar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      DOTNET_NOLOGO: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restaurar
+        run: dotnet restore
+
+      # TreatWarningsAsErrors está en Directory.Build.props: una advertencia nueva rompe la compilación.
+      - name: Compilar
+        run: dotnet build --no-restore --configuration Release
+
+      - name: El script 0005 de Identity coincide con las migraciones de EF
+        run: |
+          dotnet tool restore
+          database/generar-identidad.sh 0 "" "$RUNNER_TEMP/0005_identidad.sql"
+          diff -u database/scripts/0005_identidad.sql "$RUNNER_TEMP/0005_identidad.sql"
+
+      # Testcontainers usa el Docker del runner (SQL Server 2022 en contenedor, sin costo).
+      - name: Pruebas (unitarias, integración, aislamiento entre empresas)
+        run: dotnet test --no-build --configuration Release --logger "trx;LogFileName=resultados.trx" --results-directory "$RUNNER_TEMP/resultados"
+
+      - name: Resultados
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultados-pruebas
+          path: ${{ runner.temp }}/resultados
+          retention-days: 7
