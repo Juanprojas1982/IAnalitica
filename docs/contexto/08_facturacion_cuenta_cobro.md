@@ -1,7 +1,7 @@
 # IAnalitica — Facturación del SaaS: cuenta de cobro, control de pagos y envío por correo
 
 Parte de `docs/CONTEXTO.md` (índice). La numeración §N es global y se conserva entre archivos. Precedencia y reglas de uso: `01_reglas_arquitectura_seguridad.md` §0.
-**Estado (rev. 3, 2026-11-05): paso 1 del plan implementado (`1040_facturacion.sql`, rama `fac` en `siempre/9000_rls.sql`, pruebas); el resto es diseño.** Decisiones nuevas del dueño: **prorrateo por días** (D48) y **el canon se cobra siempre, también en suspensión** (D51). Incorpora las decisiones vinculantes del dueño: sin DIAN, sin IVA, mes vencido, envío automático, SMTP genérico.
+**Estado (rev. 4, 2026-11-05): pasos 1 a 9 implementados en la rama `feature/f6-facturacion-cuenta-cobro`; el paso 10 (excedente de IA) está diferido hasta la decisión D50.** Las pruebas de integración están escritas pero no se han ejecutado contra SQL Server real (el entorno de desarrollo no tenía Docker); compilan y pasan las unitarias, el PDF, el `.eml` y la validación de SMTP. Decisiones del dueño: **prorrateo por días** (D48) y **el canon se cobra siempre, también en suspensión** (D51). Incorpora las decisiones vinculantes del dueño: sin DIAN, sin IVA, mes vencido, envío automático, SMTP genérico.
 Convención: **[H]** = hecho verificado en el repo · **[S]** = supuesto no confirmado (§0.3) · **[NV]** = afirmación externa no verificada.
 El repo usa el **mediador propio** `Application/Mediacion` (D34), no MediatR.
 
@@ -356,15 +356,23 @@ Cada paso es un PR, compila sin advertencias y trae sus pruebas (regla 0.7). Ant
 | # | Paso | Archivos (capa) | Pruebas |
 |---|---|---|---|
 | 1 ✅ | DDL + RLS (hecho; prorrateo en líneas y condiciones) | `1040_facturacion.sql`; rama `fac` en `siempre/9000_rls.sql`; `FacturacionEsquemaTests.cs` | Integración: `sys.security_predicates` cubre `fac`; el `Admin{NIT}` de A no lee B ni escribe en `fac`; no ve `fac.Alerta`; sin contexto no ve nada; CHECK de estado y número |
-| 2 | Procedimientos | `1041_facturacion_procedimientos.sql` | 20 emisiones concurrentes → números distintos y sin huecos; rollback sin consumo; sin sobreaplicación; un no superadmin recibe `THROW 50100` |
-| 3 | Dominio | `Domain/Facturacion/*.cs` | Unitarias: transiciones, canon pactado vs plan, `ReglasEmision` (cada fila de §33), excedente, vencimiento, edades |
-| 4 | Configuración comercial | contratos + comandos de canon, condición y parámetros + `RepositorioFacturacion` + páginas de planes y condiciones + políticas | No superadmin → `NoAutorizado`; solapamiento de vigencias rechazado; `aud` escrito |
-| 5 | Programador + generación + emisión | `ProgramadorFacturacion.cs`, `GeneradorCuentas.cs`, manejadores `PREVALIDAR`/`GENERAR_*`; `fac.Alerta` | Reloj falso: día 1 06:00 → una cuenta por empresa; dos corridas → una; cada regla de retención crea `BORRADOR` + alerta; con el interruptor → `BORRADOR`; prevalidación sin escribir cuentas |
-| 6 | PDF + descarga | `PdfCuentaCobro.cs`, `AlmacenDocumentosDisco.cs`, `EndpointsFacturacion.cs` | Bytes que empiezan con `%PDF`; el DTO no tiene campos de usuario ni de texto; descarga en `aud.Acceso`; el `Admin{NIT}` de B → 404 |
-| 7 | Correo | `Correo/CorreoSmtp.cs`, `OpcionesCorreoSmtp`, modo `Archivo`, `ENVIAR_CORREO`, `RESUMEN_ALERTAS`, página de correo; instalar MailKit (versión confirmada) | `ICorreoSaliente` falso: transitoria → reintento; permanente → `FALLIDO` + alerta; ya enviado → no reenvía; `None` fuera de `Development` → falla al arrancar; **la prueba de PII en logs**; modo `Archivo` produce .eml con adjunto |
-| 8 | Pagos y portal del cliente | comandos de pago, aplicación, reverso y anulación; páginas de pagos, `/facturacion/*` y contactos | Recaudo + retención → `PAGADA`; reverso → `EMITIDA`; referencia duplicada rechazada; el `Admin{NIT}` no ve borradores ni otra empresa |
-| 9 | Mora, anulación y reemplazo | `REVISAR_MORA`; anular + reemplazar + correo `ANULACION` | Hitos idempotentes; recordatorios sin adjunto; anular con pagos → rechazado |
-| 10 | (Al activar la IA a clientes) Excedente | `1042_ia_periodo_colombia.sql`, `RepositorioAsistente`, `CERRAR_PERIODO_IA`, línea IA en `GeneradorCuentas` | Llamada a las 23:30 Bogotá del día 31 → periodo M; el cierre es idempotente; tarifa cambiada a mitad de mes → 2 filas de detalle; las pruebas del asistente siguen verdes |
+| 2 ✅ | Procedimientos | `1041_facturacion_procedimientos.sql` | 20 emisiones concurrentes → números distintos y sin huecos; rollback sin consumo; sin sobreaplicación; un no superadmin recibe `THROW 50100` |
+| 3 ✅ | Dominio | `Domain/Facturacion/*.cs` | Unitarias: transiciones, canon pactado vs plan, `ReglasEmision` (cada fila de §33), excedente, vencimiento, edades |
+| 4 ✅ | Configuración comercial | contratos + comandos de canon, condición y parámetros + `RepositorioFacturacion` + páginas de planes y condiciones + políticas | No superadmin → `NoAutorizado`; solapamiento de vigencias rechazado; `aud` escrito |
+| 5 ✅ | Programador + generación + emisión | `ProgramadorFacturacion.cs`, `GeneradorCuentas.cs`, manejadores `PREVALIDAR`/`GENERAR_*`; `fac.Alerta` | Reloj falso: día 1 06:00 → una cuenta por empresa; dos corridas → una; cada regla de retención crea `BORRADOR` + alerta; con el interruptor → `BORRADOR`; prevalidación sin escribir cuentas |
+| 6 ✅ | PDF + descarga | `PdfCuentaCobro.cs`, `AlmacenDocumentosDisco.cs`, `EndpointsFacturacion.cs` | Bytes que empiezan con `%PDF`; el DTO no tiene campos de usuario ni de texto; descarga en `aud.Acceso`; el `Admin{NIT}` de B → 404 |
+| 7 ✅ | Correo | `Correo/CorreoSmtp.cs`, `OpcionesCorreoSmtp`, modo `Archivo`, `ENVIAR_CORREO`, `RESUMEN_ALERTAS`, página de correo; instalar MailKit (versión confirmada) | `ICorreoSaliente` falso: transitoria → reintento; permanente → `FALLIDO` + alerta; ya enviado → no reenvía; `None` fuera de `Development` → falla al arrancar; **la prueba de PII en logs**; modo `Archivo` produce .eml con adjunto |
+| 8 ✅ | Pagos y portal del cliente | comandos de pago, aplicación, reverso y anulación; páginas de pagos, `/facturacion/*` y contactos | Recaudo + retención → `PAGADA`; reverso → `EMITIDA`; referencia duplicada rechazada; el `Admin{NIT}` no ve borradores ni otra empresa |
+| 9 ✅ | Mora, anulación y reemplazo | `REVISAR_MORA`; anular + reemplazar + correo `ANULACION` | Hitos idempotentes; recordatorios sin adjunto; anular con pagos → rechazado |
+| 10 ⏸ | (Diferido hasta D50: al activar la IA a clientes) Excedente | `1042_ia_periodo_colombia.sql`, `RepositorioAsistente`, `CERRAR_PERIODO_IA`, línea IA en `GeneradorCuentas` | Llamada a las 23:30 Bogotá del día 31 → periodo M; el cierre es idempotente; tarifa cambiada a mitad de mes → 2 filas de detalle; las pruebas del asistente siguen verdes |
+
+**Implementación (lo que difiere o se agregó respecto del diseño)**
+- **Trabajos nuevos:** `ENCOLAR_ENVIO` (la aplicación con `rol_app` pide un reenvío o el aviso de anulación; el worker con `rol_etl` crea el envío y su correo) y `REGENERAR_BORRADOR`. `GENERAR_CUENTA` admite `reemplazaA` en el payload.
+- **Programador:** resumen de alertas cada día 07:30, revisión de mora 08:00, prevalidación el día 25 08:00 y generación el día 1 desde `HORA_GENERACION`. Si el worker estuvo caído, se pone al día en cualquier momento posterior del mes.
+- **Contactos:** el administrador de la empresa (`admin.usuarios`) mantiene sus contactos `FACTURACION` (máx. 3) y `CONTADOR` (máx. 2) en `/facturacion/contactos`; la auditoría no guarda correos ni nombres.
+- **SMTP:** sección `Correo:Smtp` del despliegue (servidor, puerto, `Seguridad` = `None`/`StartTls`/`SslOnConnect`, usuario, remitente, timeout); la clave solo por Key Vault, User Secrets o `Correo__Smtp__Clave`. `None` fuera de desarrollo impide arrancar. Modos `Deshabilitado` (por defecto), `Archivo` (`.eml`) y `Smtp`. Sin configurar, los envíos quedan `FALLIDO` con alerta global.
+- **Mora:** recordatorio `PREVIO_n` (`RECORDATORIO_DIAS_ANTES`) y avisos `MORA_n` (`AVISOS_MORA_DIAS`), una vez por hito y solo el aviso más alto alcanzado; sin adjunto; campana a los administradores.
+- **Fuera de este PR:** ninguna llamada a DIAN, IVA ni notas; no se tocó nada de `ia.*`.
 
 **Resueltas (registrar en `06`)**
 - **D39:** una sola serie global CC, asignada al emitir, sin reutilización; la anulación conserva el número.

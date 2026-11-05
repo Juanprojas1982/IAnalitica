@@ -13,5 +13,6 @@ Precedencia: este contexto → código y `database/scripts` (el DDL manda) → `
 | `contexto/05_infraestructura_operacion.md` | §8, §23–§26 | Azure, costos, CI, observabilidad, colas, reportes |
 | `contexto/06_plan_pendientes_decisiones.md` | §9–§13 | Planear: fases, pendientes, riesgos, decisiones D01–D38, divergencias spec↔código |
 | `contexto/07_usuarios_landing.md` | §27, §28 | Alta de empresas/usuarios, landing |
+| `contexto/08_facturacion_cuenta_cobro.md` | §29–§35 | Cobro mensual del SaaS: cuenta de cobro, pagos, mora, correo SMTP (esquema `fac`) |
 
 Fuera de este contexto (siguen aparte): `02_mapeo_SaludIPS.md`, `03_analisis_reportes_SaludIPS.md`, `06_extraccion_saludips.sql`, `11_extraccion_operativa_saludips.sql`, `08_consentimiento_proveedor_ia.md`, `30_DIAGNOSTICO_SIPS108_vs_SIPS550.md`, `legal/`, `fuentes-saludips/`.
