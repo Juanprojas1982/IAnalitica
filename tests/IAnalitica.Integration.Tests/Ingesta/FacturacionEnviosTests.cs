@@ -192,7 +192,7 @@ public class FacturacionEnviosTests(BaseDeDatosFixture bd)
         Assert.Equal(0, await Etl<int>($"SELECT CAST(ConAdjunto AS int) FROM fac.Envio WHERE EnvioId = '{recordatorio}'"));
         await x.Envios.EnviarAsync(recordatorio!.Value, esUltimoIntento: false, default);
         var mensajes = Directory.GetFiles(x.RutaCorreo, "*.eml").Select(f => MimeKit.MimeMessage.Load(f)).ToList();
-        var recordado = Assert.Single(mensajes, m => m.Subject.StartsWith("Recordatorio"));
+        var recordado = Assert.Single(mensajes, m => (m.Subject ?? "").StartsWith("Recordatorio"));
         Assert.Empty(recordado.Attachments);   // D42: solo la cuenta de cobro lleva adjunto
 
         // El mismo hito no se duplica (índice único por cuenta, tipo y hito).
