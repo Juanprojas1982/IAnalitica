@@ -141,6 +141,8 @@ public static class DependencyInjection
     public static IServiceCollection AddFacturacion(this IServiceCollection services)
     {
         services.AddScoped<IRepositorioFacturacionConfig, RepositorioFacturacionConfig>();
+        services.AddScoped<IRepositorioFacturacion, RepositorioFacturacion>();
+        services.TryAddSingleton(TimeProvider.System);
         return services;
     }
 
@@ -161,6 +163,10 @@ public static class DependencyInjection
         services.AddSingleton<IManejadorTrabajo, ManejadorGenerarPdfCuentaCobro>();
         services.AddSingleton<IManejadorTrabajo, ManejadorEnviarCorreo>();
         services.AddSingleton<IManejadorTrabajo, ManejadorResumenAlertas>();
+        services.AddSingleton<RevisorMora>();
+        services.AddSingleton<IManejadorTrabajo, ManejadorRevisarMora>();
+        services.AddSingleton<IManejadorTrabajo, ManejadorEncolarEnvio>();
+        services.AddSingleton<IManejadorTrabajo, ManejadorRegenerarBorrador>();
         return services;
     }
 

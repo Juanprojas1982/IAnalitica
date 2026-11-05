@@ -18,6 +18,9 @@ public static class TiposTrabajo
     public const string ResumenAlertas = "RESUMEN_ALERTAS";
     public const string RevisarMora = "REVISAR_MORA";
     public const string CerrarPeriodoIa = "CERRAR_PERIODO_IA";
+    /// <summary>Crea fac.Envio + destinatarios + ENVIAR_CORREO (reenvío, anulación): lo pide la aplicación (rol_app) y lo ejecuta el worker (rol_etl).</summary>
+    public const string EncolarEnvio = "ENCOLAR_ENVIO";
+    public const string RegenerarBorrador = "REGENERAR_BORRADOR";
 }
 
 /// <summary>Trabajo por encolar. El payload lleva solo identificadores, nunca datos (spec 20 §2).</summary>

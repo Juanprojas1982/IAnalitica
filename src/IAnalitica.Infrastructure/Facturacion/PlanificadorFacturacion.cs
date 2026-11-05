@@ -19,6 +19,7 @@ public sealed class PlanificadorFacturacion(IFabricaConexionesEtl etl, IColaTrab
 {
     private static readonly TimeSpan HoraPrevalidacion = TimeSpan.FromHours(8);
     private static readonly TimeSpan HoraResumen = new(7, 30, 0);
+    private static readonly TimeSpan HoraMora = TimeSpan.FromHours(8);
 
     /// <returns>Trabajos encolados en esta llamada.</returns>
     public async Task<int> EjecutarAsync(CancellationToken ct)
@@ -40,6 +41,9 @@ public sealed class PlanificadorFacturacion(IFabricaConexionesEtl etl, IColaTrab
         // Resumen diario de alertas abiertas para el prestador (07:30); el manejador no envía nada si no hay alertas.
         if (ahora.TimeOfDay >= HoraResumen)
             encolados += await UnaVezAsync(cn, $"FAC:RES|DIA:{ahora:yyyyMMdd}", TiposTrabajo.ResumenAlertas, mes, ct).ConfigureAwait(false);
+        // Recordatorios y avisos de mora (08:00).
+        if (ahora.TimeOfDay >= HoraMora)
+            encolados += await UnaVezAsync(cn, $"FAC:MORA|DIA:{ahora:yyyyMMdd}", TiposTrabajo.RevisarMora, mes, ct).ConfigureAwait(false);
         // Generación del mes vencido: el día 1 desde la hora configurada; si se perdió, en cualquier momento posterior del mes.
         if (ahora.Day > 1 || ahora.TimeOfDay >= horaGen)
             encolados += await UnaVezAsync(cn, $"FAC:GEN|PER:{anterior}", TiposTrabajo.GenerarCuentasCobro, anterior, ct).ConfigureAwait(false);

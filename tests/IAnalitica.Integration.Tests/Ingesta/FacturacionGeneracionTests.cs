@@ -279,9 +279,10 @@ public class FacturacionGeneracionTests(BaseDeDatosFixture bd)
 
         // Día 25 a las 08:00 de Bogotá: prevalidación del mes en curso (y la generación ya hecha no se repite).
         reloj.SetUtcNow(new DateTimeOffset(2026, 11, 25, 13, 0, 0, TimeSpan.Zero));
-        Assert.Equal(2, await plan.EjecutarAsync(default));   // prevalidación + resumen diario de alertas (07:30)
+        Assert.Equal(3, await plan.EjecutarAsync(default));   // prevalidación + resumen de alertas (07:30) + revisión de mora (08:00)
         Assert.Equal(1, await Etl<int>("SELECT COUNT(*) FROM etl.Trabajo WHERE Tipo = 'PREVALIDAR_FACTURACION' AND ClaveExclusion = 'FAC:PRE|PER:202611'"));
         Assert.Equal(1, await Etl<int>("SELECT COUNT(*) FROM etl.Trabajo WHERE Tipo = 'RESUMEN_ALERTAS' AND ClaveExclusion = 'FAC:RES|DIA:20261125'"));
+        Assert.Equal(1, await Etl<int>("SELECT COUNT(*) FROM etl.Trabajo WHERE Tipo = 'REVISAR_MORA' AND ClaveExclusion = 'FAC:MORA|DIA:20261125'"));
         Assert.Equal(0, await plan.EjecutarAsync(default));
 
         // El 1 de enero a las 00:30 Bogotá (05:30 UTC) la generación del mes vencido (diciembre) todavía espera a las 06:00.

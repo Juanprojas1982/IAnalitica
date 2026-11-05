@@ -81,7 +81,7 @@ public sealed class GeneradorCuentas(IFabricaConexionesEtl etl, IColaTrabajos co
     }
 
     // ------------------------------------------------------------------ generación
-    public async Task<ResultadoGeneracion> GenerarAsync(int empresaId, int periodoKey, CancellationToken ct)
+    public async Task<ResultadoGeneracion> GenerarAsync(int empresaId, int periodoKey, CancellationToken ct, int? reemplazaA = null)
     {
         await using var cn = await etl.AbrirAsync(ct).ConfigureAwait(false);
         await using var tx = (SqlTransaction)await cn.BeginTransactionAsync(ct).ConfigureAwait(false);
@@ -116,10 +116,10 @@ public sealed class GeneradorCuentas(IFabricaConexionesEtl etl, IColaTrabajos co
         }
 
         var cuentaId = await cn.ExecuteScalarAsync<int>(new CommandDefinition("""
-            INSERT fac.CuentaCobro (EmpresaId, PeriodoKey, CondicionId, DiasPago, TotalCop, MotivosRetencion)
-            VALUES (@EmpresaId, @PeriodoKey, @CondicionId, @DiasPago, @Total, @Motivos);
+            INSERT fac.CuentaCobro (EmpresaId, PeriodoKey, CondicionId, DiasPago, TotalCop, MotivosRetencion, ReemplazaA)
+            VALUES (@EmpresaId, @PeriodoKey, @CondicionId, @DiasPago, @Total, @Motivos, @reemplazaA);
             SELECT CAST(SCOPE_IDENTITY() AS int)
-            """, new { plan.EmpresaId, plan.PeriodoKey, plan.CondicionId, plan.DiasPago, plan.Total, Motivos = plan.Motivos.Count == 0 ? null : string.Join(',', plan.Motivos) },
+            """, new { plan.EmpresaId, plan.PeriodoKey, plan.CondicionId, plan.DiasPago, plan.Total, reemplazaA, Motivos = plan.Motivos.Count == 0 ? null : string.Join(',', plan.Motivos) },
             tx, cancellationToken: ct)).ConfigureAwait(false);
 
         var orden = (byte)0;
@@ -262,7 +262,8 @@ internal sealed class ManejadorGenerarCuenta(GeneradorCuentas generador) : IMane
     public async Task<(ResultadoTrabajo, TimeSpan)> EjecutarAsync(TrabajoTomado trabajo, CancellationToken ct)
     {
         using var doc = JsonDocument.Parse(trabajo.Payload ?? throw new InvalidOperationException("El trabajo no trae payload."));
-        await generador.GenerarAsync(doc.RootElement.GetProperty("empresaId").GetInt32(), doc.RootElement.GetProperty("periodo").GetInt32(), ct).ConfigureAwait(false);
+        int? reemplazaA = doc.RootElement.TryGetProperty("reemplazaA", out var r) && r.ValueKind == JsonValueKind.Number ? r.GetInt32() : null;
+        await generador.GenerarAsync(doc.RootElement.GetProperty("empresaId").GetInt32(), doc.RootElement.GetProperty("periodo").GetInt32(), ct, reemplazaA).ConfigureAwait(false);
         return (ResultadoTrabajo.Completado, TimeSpan.Zero);
     }
 }
