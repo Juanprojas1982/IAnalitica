@@ -61,7 +61,7 @@ WITH t AS (
     FROM sys.tables o
     JOIN sys.schemas s ON s.schema_id = o.schema_id
     JOIN sys.columns c ON c.object_id = o.object_id AND c.name = N'EmpresaId'
-    WHERE s.name IN (N'seg', N'cfg', N'etl', N'stg', N'dim', N'fact', N'ia', N'rpt', N'reg', N'saludips', N'aud')
+    WHERE s.name IN (N'seg', N'cfg', N'etl', N'stg', N'dim', N'fact', N'ia', N'rpt', N'reg', N'saludips', N'aud', N'fac')
 ),
 p AS (   -- predicados por tabla
     SELECT CASE
@@ -75,6 +75,16 @@ p AS (   -- predicados por tabla
                  N'ADD FILTER PREDICATE seg.fn_SoloSuperadmin(EmpresaId) ON ' + Tabla
              WHEN Nombre LIKE N'aud.%' THEN   -- solo inserción por permisos; sin BLOCK: hay eventos antes de iniciar sesión
                  N'ADD FILTER PREDICATE seg.fn_FiltroAuditoria(EmpresaId) ON ' + Tabla
+             WHEN Nombre = N'fac.Alerta' THEN   -- facturación (08 §30.4): alertas solo del superadmin
+                 N'ADD FILTER PREDICATE seg.fn_SoloSuperadmin(EmpresaId) ON ' + Tabla
+               + N', ADD BLOCK PREDICATE seg.fn_SoloSuperadmin(EmpresaId) ON ' + Tabla + N' AFTER INSERT'
+               + N', ADD BLOCK PREDICATE seg.fn_SoloSuperadmin(EmpresaId) ON ' + Tabla + N' AFTER UPDATE'
+             WHEN Nombre LIKE N'fac.%' THEN   -- el Admin{NIT} solo lee lo suyo; escriben el superadmin y rol_etl
+                 N'ADD FILTER PREDICATE seg.fn_FiltroEmpresa(EmpresaId) ON ' + Tabla
+               + N', ADD BLOCK PREDICATE seg.fn_SoloSuperadmin(EmpresaId) ON ' + Tabla + N' AFTER INSERT'
+               + N', ADD BLOCK PREDICATE seg.fn_SoloSuperadmin(EmpresaId) ON ' + Tabla + N' AFTER UPDATE'
+               + N', ADD BLOCK PREDICATE seg.fn_SoloSuperadmin(EmpresaId) ON ' + Tabla + N' BEFORE UPDATE'
+               + N', ADD BLOCK PREDICATE seg.fn_SoloSuperadmin(EmpresaId) ON ' + Tabla + N' BEFORE DELETE'
              WHEN Nombre IN (N'seg.Usuario', N'seg.ApiClienteEmpresa') THEN
                  N'ADD FILTER PREDICATE seg.fn_FiltroIdentidad(EmpresaId) ON ' + Tabla
                + N', ADD BLOCK PREDICATE seg.fn_FiltroIdentidad(EmpresaId) ON ' + Tabla + N' AFTER INSERT'

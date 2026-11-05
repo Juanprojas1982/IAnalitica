@@ -134,5 +134,5 @@ public static class Escenarios
     public static async Task<string> ColumnaActualizable(SqlConnection c, string tabla)
         => await Escalar<string>(c, $"SELECT TOP (1) name FROM sys.columns WHERE object_id = OBJECT_ID('{tabla}') AND is_identity = 0 AND is_computed = 0 AND system_type_id <> 189 ORDER BY column_id");
 
-    public const string EsquemasConRls = "'seg','cfg','etl','stg','dim','fact','ia','rpt','reg','saludips','aud'";
+    public const string EsquemasConRls = "'seg','cfg','etl','stg','dim','fact','ia','rpt','reg','saludips','aud','fac'";
 }
