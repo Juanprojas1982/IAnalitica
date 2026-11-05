@@ -12,6 +12,8 @@ using IAnalitica.Application.Semantica;
 using IAnalitica.Application.Asistente;
 using IAnalitica.Application.Auditoria;
 using IAnalitica.Application.Costos;
+using IAnalitica.Application.Facturacion;
+using IAnalitica.Infrastructure.Facturacion;
 using IAnalitica.Application.Regulacion;
 using IAnalitica.Application.Reportes;
 using IAnalitica.Infrastructure.Reportes;
@@ -131,6 +133,25 @@ public static class DependencyInjection
         services.TryAddSingleton<IAlmacenReportes, AlmacenReportesDisco>();
         services.AddOptions<OpcionesAlmacenReportes>();
         services.AddSingleton<ExpiradorReportes>();
+        return services;
+    }
+
+    /// <summary>Configuración comercial de la facturación del SaaS (portal): canon, condiciones y parámetros. Requiere <see cref="AddInfrastructure"/>.</summary>
+    public static IServiceCollection AddFacturacion(this IServiceCollection services)
+    {
+        services.AddScoped<IRepositorioFacturacionConfig, RepositorioFacturacionConfig>();
+        return services;
+    }
+
+    /// <summary>Procesamiento de la facturación en el worker (generación, prevalidación y programador). Requiere <see cref="AddProcesamiento"/>.</summary>
+    public static IServiceCollection AddProcesamientoFacturacion(this IServiceCollection services)
+    {
+        services.TryAddSingleton(TimeProvider.System);
+        services.AddSingleton<GeneradorCuentas>();
+        services.AddSingleton<PlanificadorFacturacion>();
+        services.AddSingleton<IManejadorTrabajo, ManejadorPrevalidarFacturacion>();
+        services.AddSingleton<IManejadorTrabajo, ManejadorGenerarCuentasCobro>();
+        services.AddSingleton<IManejadorTrabajo, ManejadorGenerarCuenta>();
         return services;
     }
 

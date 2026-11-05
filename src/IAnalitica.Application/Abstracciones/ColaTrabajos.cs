@@ -8,6 +8,16 @@ public static class TiposTrabajo
     public const string AuditarConfig = "AUDITAR_CONFIG";
     public const string CalcularCostos = "CALCULAR_COSTOS";
     public const string ValidarPrecios = "VALIDAR_PRECIOS";
+
+    // Facturación del SaaS (08 §32.4)
+    public const string PrevalidarFacturacion = "PREVALIDAR_FACTURACION";
+    public const string GenerarCuentasCobro = "GENERAR_CUENTAS_COBRO";
+    public const string GenerarCuenta = "GENERAR_CUENTA";
+    public const string GenerarPdfCuentaCobro = "GENERAR_PDF_CUENTA_COBRO";
+    public const string EnviarCorreo = "ENVIAR_CORREO";
+    public const string ResumenAlertas = "RESUMEN_ALERTAS";
+    public const string RevisarMora = "REVISAR_MORA";
+    public const string CerrarPeriodoIa = "CERRAR_PERIODO_IA";
 }
 
 /// <summary>Trabajo por encolar. El payload lleva solo identificadores, nunca datos (spec 20 §2).</summary>

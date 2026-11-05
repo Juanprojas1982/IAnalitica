@@ -28,11 +28,13 @@ builder.Services.AddApplication(ModuloFinanciero.Ensamblado, ModuloIngreso.Ensam
     ModuloFarmacia.Ensamblado, ModuloEse.Ensamblado, ModuloAuditor.Ensamblado);
 builder.Services.AddCapaSemantica(new[] { ModuloFinanciero.Modulo }.Concat(ModuloIngreso.Modulos));
 builder.Services.AddProcesamiento(cadenaEtl);
+builder.Services.AddProcesamientoFacturacion();
 builder.Services.AddReglasAuditor(ModuloAuditor.Reglas());
 builder.Services.AddGeneracionReportes();
 builder.Services.Configure<LimitesReportes>(builder.Configuration.GetSection("Reportes:Limites"));
 builder.Services.Configure<OpcionesAlmacenReportes>(builder.Configuration.GetSection("Reportes:Almacen"));
 builder.Services.AddSingleton(builder.Configuration.GetSection("Worker").Get<OpcionesWorker>() ?? new());
 builder.Services.AddHostedService<ServicioTrabajos>();
+builder.Services.AddHostedService<ProgramadorFacturacion>();
 
 builder.Build().Run();
