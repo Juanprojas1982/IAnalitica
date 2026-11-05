@@ -2,10 +2,7 @@
 
 Plataforma de analítica gerencial para el sector salud.
 
-**Punto de entrada:** [`docs/24_SPEC_MAESTRA.md`](docs/24_SPEC_MAESTRA.md) — especificación maestra (precedencia, arquitectura, fases y decisiones).
-Notas de la implementación de F0: [`docs/25_NOTAS_IMPLEMENTACION_F0.md`](docs/25_NOTAS_IMPLEMENTACION_F0.md).
-Notas de F2 (ingesta): [`docs/26_NOTAS_IMPLEMENTACION_F2.md`](docs/26_NOTAS_IMPLEMENTACION_F2.md).
-Notas de F3 (dashboards): [`docs/27_NOTAS_IMPLEMENTACION_F3.md`](docs/27_NOTAS_IMPLEMENTACION_F3.md).
+**Punto de entrada:** [`docs/CONTEXTO.md`](docs/CONTEXTO.md) — índice del contexto vigente, partido por tema en `docs/contexto/`. Histórico en `docs/archivo/`.
 
 ## Requisitos locales
 - .NET SDK 10
@@ -38,4 +35,4 @@ dotnet run
 Las cadenas de conexión y los secretos van en User Secrets (local) o Key Vault (Azure); nunca en `appsettings` ni en el repositorio.
 
 ## Estructura
-`src/` capas y hosts (§3.2) · `database/scripts` DDL único (fuente de verdad, §6) · `database/IAnalitica.Database.Migrator` DbUp · `tests/` · `docs/` especificaciones.
+`src/` capas y hosts · `database/scripts` DDL único (fuente de verdad) · `database/IAnalitica.Database.Migrator` DbUp · `tests/` · `docs/` especificaciones.

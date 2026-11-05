@@ -23,6 +23,7 @@ internal sealed class ModuloFinancieroAnalitico : IModuloAnalitico
 
     private const string Resultados = "rpt.vw_EstadoResultados";
     private const string Balance = "rpt.vw_SaldoBalance";
+    private const string Rentabilidad = "rpt.vw_RentabilidadCentroCosto";
 
     public void Registrar(IRegistroModulo r)
     {
@@ -48,6 +49,16 @@ internal sealed class ModuloFinancieroAnalitico : IModuloAnalitico
             "SUM(ActivoCorrienteSinInv)/NULLIF(SUM(PasivoCorriente),0)", dimsBalance, Acumulado: true));
         r.Metrica(new("financiero.endeudamiento", "Endeudamiento", Porcentaje, SentidoMejora.MenorEsMejor, Codigo, Balance,
             "100.0*SUM(PasivoTotal)/NULLIF(SUM(ActivoTotal),0)", dimsBalance, KpiMeta: "ENDEUDAMIENTO", Acumulado: true));
+
+        // ---- Rentabilidad por centro de costo con distribución (vw_RentabilidadCentroCosto; la llena el motor de costos, F5) ----
+        var dimsRentabilidad = Dims(("periodo", "PeriodoKey"), ("centro_costo", "CentroCostoId"));
+        r.Metrica(new("financiero.ingreso_centro", "Ingreso del centro de costo", Pesos, SentidoMejora.MayorEsMejor, Codigo, Rentabilidad, "SUM(Ingreso)", dimsRentabilidad));
+        r.Metrica(new("financiero.costo_directo_centro", "Costo directo", Pesos, SentidoMejora.MenorEsMejor, Codigo, Rentabilidad, "SUM(CostoDirecto)", dimsRentabilidad));
+        r.Metrica(new("financiero.costo_recibido_centro", "Costo recibido por distribución", Pesos, SentidoMejora.MenorEsMejor, Codigo, Rentabilidad, "SUM(CostoRecibido)", dimsRentabilidad));
+        r.Metrica(new("financiero.costo_total_centro", "Costo total (directo + recibido − entregado)", Pesos, SentidoMejora.MenorEsMejor, Codigo, Rentabilidad, "SUM(CostoTotal)", dimsRentabilidad));
+        r.Metrica(new("financiero.margen_centro", "Margen con distribución", Pesos, SentidoMejora.MayorEsMejor, Codigo, Rentabilidad, "SUM(Margen)", dimsRentabilidad));
+        r.Metrica(new("financiero.margen_centro_pct", "Margen con distribución (%)", Porcentaje, SentidoMejora.MayorEsMejor, Codigo, Rentabilidad,
+            "100.0*SUM(Margen)/NULLIF(SUM(Ingreso),0)", dimsRentabilidad));
 
         // ---- Dashboards ----
         r.DashboardDeFabrica(new("financiero.gerencial", "Gerencial", Codigo, "dash.financiero", 1, new[]
@@ -83,6 +94,20 @@ internal sealed class ModuloFinancieroAnalitico : IModuloAnalitico
             Grafico("composicion", "Activo, pasivo y patrimonio", TipoWidget.Tabla,
                 new[] { "financiero.activo_total", "financiero.pasivo_total", "financiero.patrimonio" }, Array.Empty<string>(), 2, 6, 6, 4),
             Grafico("detalle", "Saldo por grupo del PUC", TipoWidget.Tabla, new[] { "financiero.saldo_balance" }, new[] { "grupo_puc" }, 6, 0, 12, 5),
+        }));
+
+        r.DashboardDeFabrica(new("financiero.pyg_distribuido", "Estado de resultados con distribución de costos", Codigo, "dash.financiero", 1, new[]
+        {
+            Kpi("ingresos", "Ingresos de los centros", "financiero.ingreso_centro", 0, 0),
+            Kpi("costo_total", "Costo total distribuido", "financiero.costo_total_centro", 0, 3),
+            Kpi("margen", "Margen con distribución", "financiero.margen_centro", 0, 6),
+            Kpi("margen_pct", "Margen con distribución (%)", "financiero.margen_centro_pct", 0, 9),
+            Grafico("margen_centros", "Margen por centro de costo", TipoWidget.Barras, new[] { "financiero.margen_centro" }, new[] { "centro_costo" }, 2, 0, 6, 4),
+            Grafico("tendencia", "Ingresos y costo total por periodo", TipoWidget.Linea,
+                new[] { "financiero.ingreso_centro", "financiero.costo_total_centro" }, new[] { "periodo" }, 2, 6, 6, 4),
+            Grafico("detalle", "Del costo directo al costo total, por centro de costo", TipoWidget.Tabla,
+                new[] { "financiero.ingreso_centro", "financiero.costo_directo_centro", "financiero.costo_recibido_centro", "financiero.costo_total_centro", "financiero.margen_centro", "financiero.margen_centro_pct" },
+                new[] { "centro_costo" }, 6, 0, 12, 6),
         }));
     }
 }

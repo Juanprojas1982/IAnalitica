@@ -71,6 +71,7 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy("dash.auditor_config", p => p.RequireClaim(Reclamos.Permiso, "dash.auditor_config"))
     .AddPolicy("admin.catalogos", p => p.RequireClaim(Reclamos.Permiso, "admin.catalogos"))
     .AddPolicy("dash.farmacia", p => p.RequireClaim(Reclamos.Permiso, "dash.farmacia"))
+    .AddPolicy("ia.usar", p => p.RequireClaim(Reclamos.Permiso, "ia.usar"))
     .AddPolicy("hallazgos.gestionar", p => p.RequireClaim(Reclamos.Permiso, "hallazgos.gestionar"));
 builder.Services.AddCascadingAuthenticationState();
 
@@ -134,6 +135,7 @@ app.MapConsultasQ();
 app.MapReportes();
 app.MapAuditor();
 app.MapRegulacion();
+app.MapCostos();
 
 app.MapRazorComponents<App>();
 
