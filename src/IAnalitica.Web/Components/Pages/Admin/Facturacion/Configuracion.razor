@@ -1,0 +1,112 @@
+@page "/admin/facturacion/configuracion"
+@attribute [Authorize(Policy = "fac.administrar")]
+@using IAnalitica.Application.Facturacion
+@using IAnalitica.Application.Mediacion
+@inject ISender Enviar
+
+<PageTitle>Configuración de facturación · IAnalitica</PageTitle>
+<h1>Configuración de facturación</h1>
+<p class="text-muted"><a href="/admin/facturacion">Volver</a> · Un solo concepto: el canon mensual. Sin IVA. El canon del plan cambia por mes completo; la condición de cada empresa puede empezar o terminar a mitad de mes y se prorratea por días.</p>
+
+@if (!string.IsNullOrEmpty(Error)) { <div class="alert alert-warning" role="alert">@Error</div> }
+@if (!string.IsNullOrEmpty(Ok)) { <div class="alert alert-success" role="status">@Ok</div> }
+
+<section class="mb-5">
+    <h2 class="h5">Canon por plan</h2>
+    <div class="tabla-scroll"><table class="table table-sm align-middle">
+        <thead><tr><th scope="col">Plan</th><th scope="col" class="text-end">Canon vigente (COP)</th><th scope="col">Desde</th></tr></thead>
+        <tbody>
+        @foreach (var p in planes) { <tr><td>@p.Nombre (@p.Codigo)</td><td class="text-end">@(p.CanonVigenteCop?.ToString("N0") ?? "sin canon")</td><td>@p.CanonDesde?.ToString("yyyy-MM-dd")</td></tr> }
+        </tbody>
+    </table></div>
+    <form method="post" action="/admin/facturacion/configuracion/canon" class="row g-2" style="max-width:48rem">
+        <AntiforgeryToken />
+        <div class="col-md-4"><label class="form-label">Plan<select class="form-select" name="plan">@foreach (var p in planes) { <option value="@p.PlanId">@p.Nombre</option> }</select></label></div>
+        <div class="col-md-4"><label class="form-label">Rige desde (día 1)<input class="form-control" type="date" name="desde" required /></label></div>
+        <div class="col-md-4"><label class="form-label">Canon mensual (COP)<input class="form-control" name="canon" inputmode="decimal" required /></label></div>
+        <div class="col-12"><button class="btn btn-primary" type="submit">Guardar canon</button></div>
+    </form>
+</section>
+
+<section class="mb-5">
+    <h2 class="h5">Condición comercial de una empresa</h2>
+    <form method="get" class="d-flex gap-2 align-items-end mb-3">
+        <label class="form-label">Empresa
+            <select class="form-select" name="empresa">
+                <option value="">Elija…</option>
+                @foreach (var e in empresas) { <option value="@e.EmpresaId" selected="@(e.EmpresaId == Empresa)">@e.RazonSocial (@e.Nit)</option> }
+            </select></label>
+        <button class="btn btn-outline-primary" type="submit">Ver</button>
+    </form>
+    @if (Empresa is not null)
+    {
+        <div class="tabla-scroll"><table class="table table-sm align-middle">
+            <thead><tr><th scope="col">Desde</th><th scope="col">Hasta</th><th scope="col">Plan</th><th scope="col" class="text-end">Canon pactado</th><th scope="col">Días de pago</th><th scope="col">Aprobación</th><th scope="col">Facturable</th></tr></thead>
+            <tbody>
+            @foreach (var c in condiciones)
+            {
+                <tr><td>@c.VigenteDesde.ToString("yyyy-MM-dd")</td><td>@(c.VigenteHasta?.ToString("yyyy-MM-dd") ?? "abierta")</td><td>@c.PlanNombre</td>
+                    <td class="text-end">@(c.CanonPactadoCop?.ToString("N0") ?? "del plan")</td><td>@(c.DiasPago?.ToString() ?? "defecto")</td>
+                    <td>@(c.RequiereAprobacion is null ? "global" : c.RequiereAprobacion.Value ? "sí" : "no")</td><td>@(c.Facturable ? "sí" : "no (piloto)")</td></tr>
+            }
+            </tbody>
+        </table></div>
+        <form method="post" action="/admin/facturacion/configuracion/condicion" class="row g-2" style="max-width:56rem">
+            <AntiforgeryToken />
+            <input type="hidden" name="empresa" value="@Empresa" />
+            <div class="col-md-4"><label class="form-label">Nueva condición desde<input class="form-control" type="date" name="desde" required /></label></div>
+            <div class="col-md-4"><label class="form-label">Plan<select class="form-select" name="plan">@foreach (var p in planes) { <option value="@p.PlanId">@p.Nombre</option> }</select></label></div>
+            <div class="col-md-4"><label class="form-label">Canon pactado (vacío = el del plan)<input class="form-control" name="canon" inputmode="decimal" /></label></div>
+            <div class="col-md-3"><label class="form-label">Días de pago (vacío = defecto)<input class="form-control" name="dias" inputmode="numeric" /></label></div>
+            <div class="col-md-3"><label class="form-label">Requiere aprobación
+                <select class="form-select" name="aprobacion"><option value="">Según el global</option><option value="1">Sí</option><option value="0">No</option></select></label></div>
+            <div class="col-md-3"><label class="form-label">Referencia del contrato<input class="form-control" name="referencia" maxlength="60" /></label></div>
+            <div class="col-md-3 d-flex align-items-end"><label class="form-check-label"><input class="form-check-input" type="checkbox" name="facturable" checked /> Se factura (desmarcar = piloto)</label></div>
+            <div class="col-12"><p class="text-muted mb-1">Cierra la condición abierta el día anterior. No se puede cambiar un mes que ya tiene cuenta de cobro. La empresa suspendida por mora se sigue facturando.</p>
+                <button class="btn btn-primary" type="submit">Guardar condición</button></div>
+        </form>
+    }
+</section>
+
+<section class="mb-5">
+    <h2 class="h5">Parámetros</h2>
+    <div class="tabla-scroll"><table class="table table-sm align-middle">
+        <thead><tr><th scope="col">Clave</th><th scope="col">Valor</th><th scope="col">Descripción</th><th scope="col" class="text-end">Cambiar</th></tr></thead>
+        <tbody>
+        @foreach (var p in parametros)
+        {
+            <tr><td><code>@p.Clave</code></td><td>@p.Valor</td><td>@p.Descripcion</td>
+                <td class="text-end"><form method="post" action="/admin/facturacion/configuracion/parametro" class="d-flex gap-2 justify-content-end">
+                    <AntiforgeryToken /><input type="hidden" name="clave" value="@p.Clave" />
+                    <input class="form-control form-control-sm" style="max-width:14rem" name="valor" value="@p.Valor" maxlength="500" required />
+                    <button class="btn btn-sm btn-outline-primary" type="submit">Guardar</button></form></td></tr>
+        }
+        </tbody>
+    </table></div>
+    <p class="text-muted">«Requiere aprobación» en 1 deja todas las cuentas en borrador hasta emitirlas a mano (recomendado en el primer ciclo real). Los datos bancarios cambian solo aquí y quedan auditados.</p>
+</section>
+
+<section>
+    <h2 class="h5">Correo (SMTP)</h2>
+    <p class="text-muted">El servidor, el puerto, el modo SSL, el usuario y la contraseña se configuran en el despliegue (<code>Correo:Smtp</code>; la contraseña en Key Vault o User Secrets), nunca desde esta pantalla.</p>
+    <form method="post" action="/admin/facturacion/configuracion/correo/probar"><AntiforgeryToken /><button class="btn btn-outline-primary" type="submit">Probar la conexión</button></form>
+</section>
+
+@code {
+    [SupplyParameterFromQuery(Name = "error")] public string? Error { get; set; }
+    [SupplyParameterFromQuery(Name = "ok")] public string? Ok { get; set; }
+    [SupplyParameterFromQuery(Name = "empresa")] public int? Empresa { get; set; }
+
+    private IReadOnlyList<PlanFacturacionVista> planes = [];
+    private IReadOnlyList<EmpresaFacturacionVista> empresas = [];
+    private IReadOnlyList<CondicionVista> condiciones = [];
+    private IReadOnlyList<ParametroVista> parametros = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        planes = (await Enviar.Send(new ListarPlanesFacturacionQuery())).Valor;
+        empresas = (await Enviar.Send(new ListarEmpresasFacturacionQuery())).Valor;
+        parametros = (await Enviar.Send(new ListarParametrosFacturacionQuery())).Valor;
+        if (Empresa is { } e) condiciones = (await Enviar.Send(new ListarCondicionesComercialesQuery(e))).Valor;
+    }
+}

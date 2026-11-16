@@ -32,6 +32,8 @@ var cadena = builder.Configuration.GetConnectionString("App")
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddInfrastructure(cadena);
+builder.Services.AddFacturacion();   // cuentas de cobro, pagos y configuración comercial (08)
+builder.Services.AddCorreoSaliente(builder.Configuration, builder.Environment.IsDevelopment());   // solo para «probar conexión»; el envío lo hace el worker
 builder.Services.AddApplication(ModuloFinanciero.Ensamblado, ModuloIngreso.Ensamblado, ModuloOperacion.Ensamblado,
     ModuloFarmacia.Ensamblado, ModuloEse.Ensamblado, ModuloAuditor.Ensamblado);
 builder.Services.Configure<IAnalitica.Application.Regulacion.MapeoPreciosMaximos>(builder.Configuration.GetSection("Regulacion:PreciosMaximos:Mapeo"));
@@ -72,7 +74,9 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy("admin.catalogos", p => p.RequireClaim(Reclamos.Permiso, "admin.catalogos"))
     .AddPolicy("dash.farmacia", p => p.RequireClaim(Reclamos.Permiso, "dash.farmacia"))
     .AddPolicy("ia.usar", p => p.RequireClaim(Reclamos.Permiso, "ia.usar"))
-    .AddPolicy("hallazgos.gestionar", p => p.RequireClaim(Reclamos.Permiso, "hallazgos.gestionar"));
+    .AddPolicy("hallazgos.gestionar", p => p.RequireClaim(Reclamos.Permiso, "hallazgos.gestionar"))
+    .AddPolicy("fac.administrar", p => p.RequireClaim(Reclamos.Permiso, "fac.administrar"))
+    .AddPolicy("fac.consultar", p => p.RequireClaim(Reclamos.Permiso, "fac.consultar"));
 builder.Services.AddCascadingAuthenticationState();
 
 builder.Services.AddRateLimiter(o =>
@@ -136,6 +140,7 @@ app.MapReportes();
 app.MapAuditor();
 app.MapRegulacion();
 app.MapCostos();
+app.MapFacturacion();
 
 app.MapRazorComponents<App>();
 

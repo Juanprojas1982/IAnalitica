@@ -1,0 +1,48 @@
+@page "/facturacion"
+@attribute [Authorize(Policy = "fac.consultar")]
+@using IAnalitica.Application.Facturacion
+@using IAnalitica.Application.Mediacion
+@inject ISender Enviar
+
+<PageTitle>Facturación · IAnalitica</PageTitle>
+<h1>Facturación del servicio</h1>
+<p class="text-muted">Cuentas de cobro mensuales (mes vencido). La cuenta de cobro es un documento no tributario.
+    <AuthorizeView Policy="admin.usuarios" Context="admin"><a href="/facturacion/contactos">Contactos para recibir la cuenta de cobro</a></AuthorizeView></p>
+
+@if (estado is null) { <p>No se pudo cargar el estado de cuenta.</p> }
+else
+{
+    <div class="row g-3 mb-4">
+        <div class="col-md-4"><div class="card"><div class="card-body"><div class="text-muted">Saldo pendiente</div><div class="fs-4">@estado.SaldoCop.ToString("N0") COP</div></div></div></div>
+        <div class="col-md-4"><div class="card"><div class="card-body"><div class="text-muted">Vencido</div><div class="fs-4">@estado.VencidoCop.ToString("N0") COP</div></div></div></div>
+        <div class="col-md-4"><div class="card"><div class="card-body"><div class="text-muted">Saldo a favor</div><div class="fs-4">@estado.SaldoAFavorCop.ToString("N0") COP</div></div></div></div>
+    </div>
+    @if (estado.Cuentas.Count == 0) { <p>Todavía no tiene cuentas de cobro.</p> }
+    else
+    {
+        <div class="tabla-scroll"><table class="table table-sm align-middle">
+            <thead><tr><th scope="col">Número</th><th scope="col">Periodo</th><th scope="col">Estado</th><th scope="col" class="text-end">Total</th><th scope="col" class="text-end">Saldo</th><th scope="col">Vence</th><th scope="col"></th></tr></thead>
+            <tbody>
+            @foreach (var c in estado.Cuentas)
+            {
+                <tr>
+                    <td><a href="/facturacion/@c.CuentaCobroId">@c.Numero</a></td><td>@c.PeriodoKey</td>
+                    <td>@(c.EnMora ? "Vencida" : c.Estado switch { "EMITIDA" => "Pendiente", "PAGADA" => "Pagada", "ANULADA" => "Anulada", _ => c.Estado })</td>
+                    <td class="text-end">@c.TotalCop.ToString("N0")</td><td class="text-end">@c.SaldoCop.ToString("N0")</td><td>@c.FechaVencimiento?.ToString("yyyy-MM-dd")</td>
+                    <td class="text-end"><a class="btn btn-sm btn-outline-secondary" href="/facturacion/@c.CuentaCobroId/pdf">PDF</a></td>
+                </tr>
+            }
+            </tbody>
+        </table></div>
+    }
+}
+
+@code {
+    private EstadoCuentaEmpresa? estado;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var r = await Enviar.Send(new EstadoCuentaEmpresaQuery());
+        estado = r.EsExitoso ? r.Valor : null;
+    }
+}

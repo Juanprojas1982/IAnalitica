@@ -31,6 +31,8 @@ var cadena = builder.Configuration.GetConnectionString("App")
 builder.Services.AddObservabilidad("IAnalitica.Api", builder.Configuration.GetSection("Observabilidad").Get<OpcionesObservabilidad>() ?? new());
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddInfrastructure(cadena);
+builder.Services.AddFacturacion();   // los manejadores de facturación se registran con AddApplication: necesitan sus repositorios
+builder.Services.AddCorreoSaliente(builder.Configuration, builder.Environment.IsDevelopment());
 builder.Services.AddApplication(ModuloFinanciero.Ensamblado, ModuloIngreso.Ensamblado, ModuloOperacion.Ensamblado,
     ModuloFarmacia.Ensamblado, ModuloEse.Ensamblado, ModuloAuditor.Ensamblado);
 builder.Services.AddCapaSemantica(new[] { ModuloFinanciero.Modulo }.Concat(ModuloIngreso.Modulos));

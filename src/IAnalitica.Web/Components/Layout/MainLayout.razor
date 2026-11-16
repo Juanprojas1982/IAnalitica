@@ -1,4 +1,5 @@
 @inherits LayoutComponentBase
+@using IAnalitica.Infrastructure.Identity
 @inject IAnalitica.Application.Reportes.INotificaciones Notificaciones
 
 <header class="navbar navbar-expand bg-dark navbar-dark px-3">
@@ -30,6 +31,15 @@
                 </AuthorizeView>
                 <AuthorizeView Policy="admin.usuarios" Context="admin">
                     <li class="nav-item"><a class="nav-link" href="/admin/usuarios">Usuarios</a></li>
+                </AuthorizeView>
+                <AuthorizeView Policy="fac.administrar" Context="facAdmin">
+                    <li class="nav-item"><a class="nav-link" href="/admin/facturacion">Facturación</a></li>
+                </AuthorizeView>
+                <AuthorizeView Policy="fac.consultar" Context="facCliente">
+                    @if (!facCliente.User.HasClaim(Reclamos.Permiso, "fac.administrar"))
+                    {
+                        <li class="nav-item"><a class="nav-link" href="/facturacion">Facturación</a></li>
+                    }
                 </AuthorizeView>
             </ul>
             <span class="navbar-text me-3">@context.User.Identity?.Name</span>
