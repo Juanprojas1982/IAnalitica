@@ -1,6 +1,7 @@
 # PL-07 · Comparativos: mismo periodo del año anterior y acumulado del año
 
 Estado: diseñado, no implementado. Sin script de BD. Sin decisiones pendientes: es el plan más barato y da valor con los datos de hoy.
+Preparación (2026-11-16): **listo para implementar.**
 
 ## Objetivo
 Que cada KPI muestre, además del valor, su variación frente al periodo anterior (ya existe), frente al mismo periodo del año anterior y el acumulado del año con su comparación.

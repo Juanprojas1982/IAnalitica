@@ -1,6 +1,7 @@
 # PL-03 · Atendido no facturado y dinero detenido por etapa
 
 Estado: diseñado, no implementado. Módulo `CICLO_INGRESO` (existente). Script `1070_ciclo_ingreso.sql`.
+Preparación (2026-11-16): **listo para implementar.** DP-3 aprobada (D55): diarias 35 días + última de cada mes.
 Prioridad 1 del MVP gerencial (`03` §18).
 
 ## Objetivo

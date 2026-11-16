@@ -1,6 +1,7 @@
 # PL-14 · Paquete ESE (sector público)
 
 Estado: diseñado, no implementado. Módulo `ESE_PRESUPUESTO` (permiso `dash.ese_presupuesto`, sembrado). Script `1160_ese.sql`.
+Preparación (2026-11-16): **no listo.** Espera la fase 0 con la ESE piloto; ninguna decisión del dueño la reemplaza.
 Es el paquete de la **ESE piloto**. Decisión del dueño (2026-11-16): el sector público entra al alcance porque aún no se ha salido con ningún piloto.
 
 ## Objetivo

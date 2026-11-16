@@ -1,6 +1,7 @@
 # PL-06 · Presupuesto vs. real
 
 Estado: diseñado, no implementado. Módulo `FINANCIERO`. Script `1090_presupuesto.sql`.
+Preparación (2026-11-16): **listo para implementar.** DP-4 (D56: `admin.usuarios`) y DP-6 (D58: CSV) aprobadas.
 Alcance: presupuesto **gerencial** por cuenta contable. El presupuesto público de la ESE (CDP, RP, obligaciones) es otro modelo (`03` §22) y no entra aquí.
 
 ## Objetivo
@@ -30,12 +31,12 @@ Comparar lo ejecutado contra lo presupuestado por cuenta, centro de costo y sede
 - Dashboard `financiero.presupuesto`: 4 KPI · línea real vs. presupuesto por periodo · tabla por grupo del PUC · tabla por centro de costo. Estado vacío: «No se ha cargado un presupuesto».
 - Actualizar el comentario «Pendiente» de la clase.
 
-### 4. Carga por portal (DP-6: CSV)
+### 4. Carga por portal (CSV, D58)
 - Página `Components/Pages/Presupuesto.razor`: descargar plantilla CSV (`periodo;cuenta;centro_costo;sede;valor`), elegir año y versión, subir archivo.
 - Application `Ingesta/PresupuestoPortal.cs`: `CargarPresupuestoCommand(Anio, Version, Stream)` → valida tamaño (≤ 2 MB) y filas (≤ 50.000), convierte a filas del contrato y **reutiliza el flujo existente** (`IRepositorioCargas`: crear carga, guardar lotes, cerrar con suma de control). No hay camino paralelo.
 - Decimales: aceptar punto o coma según cultura `es-CO`, rechazar notación científica. Neutralizar celdas que empiecen por `= + - @` al mostrar errores.
 - Resultado: enlace al estado de la carga y a sus rechazos (lista existente).
-- Permiso según DP-4; auditoría en `aud.CambioAdministrativo` (quién cargó qué versión y año, sin valores).
+- Permiso `admin.usuarios` (D56); auditoría en `aud.CambioAdministrativo` (quién cargó qué versión y año, sin valores).
 - Versión: v1 solo escribe `APROBADO` (la vista solo lee esa). Otras versiones quedan para cuando el tablero permita elegir.
 
 ## Archivos por capa

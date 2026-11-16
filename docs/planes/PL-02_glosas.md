@@ -1,6 +1,7 @@
 # PL-02 · Glosas
 
 Estado: diseñado, no implementado. Módulo `GLOSAS` (permiso `dash.glosas`, ya sembrado para FINANCIERO y CARTERA). Script `1060_glosas.sql`.
+Preparación (2026-11-16): **listo para implementar.** DP-2 sigue abierta y solo afecta la clasificación de motivos (se guarda el código de origen).
 
 ## Objetivo
 Responder: ¿cuánto me glosan sobre lo facturado?, ¿qué EPS y qué causa?, ¿cuánto acepto y cuánto defiendo?, ¿cuánto sigue sin respuesta y hace cuántos días?

@@ -1,6 +1,7 @@
 # PL-16 · Asistente IA: proveedor real y salida a clientes
 
 Estado: diseñado, **bloqueado por D32 (costo) y P11**. Scripts `1180_asistente.sql` y el reservado `1042_ia_periodo_colombia.sql` (D44: periodo de IA en hora Colombia; es el requisito previo del excedente D50, no el excedente).
+Preparación (2026-11-16): **no listo.** Sigue bloqueado por D32 (costo y clave) y P11.
 Cierra los pendientes técnicos 1 y 7 (`06` §10).
 
 ## Objetivo

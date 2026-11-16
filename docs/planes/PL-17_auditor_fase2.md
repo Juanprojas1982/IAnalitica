@@ -1,6 +1,7 @@
 # PL-17 · Auditor de configuración, fase 2
 
 Estado: diseñado, no implementado. Módulo `AUDITOR_CONFIG`. Script `1190_auditor_fase2.sql`. Cierra el pendiente técnico 6 (`06` §10).
+Preparación (2026-11-16): **lotes 1 y 3 listos para implementar.** El resto, tras medir falsos positivos con el piloto.
 Es el diferenciador que ya funciona: ampliarlo es lo que menos depende de datos nuevos (la foto `configuracion` ya llega).
 
 ## Objetivo

@@ -1,6 +1,7 @@
 # PL-01 · Flujo de caja, recaudo de cartera, caja y conciliación bancaria
 
 Estado: diseñado, no implementado. Módulo `TESORERIA` (permiso `dash.tesoreria`, ya sembrado). Script `1050_tesoreria.sql`.
+Preparación (2026-11-16): **listo para implementar.** DP-1 aprobada (D54). Partes B y C tras la verificación de módulo de PL-02.
 
 ## Objetivo
 Responder: ¿cuánto entró y salió de caja y bancos?, ¿cuánto pagó cada EPS y a cuántos días?, ¿qué se recaudó en caja y por quién?, ¿qué cuentas bancarias están sin conciliar?
@@ -8,7 +9,7 @@ Responder: ¿cuánto entró y salió de caja y bancos?, ¿cuánto pagó cada EPS
 ## Partes (cada una entregable por separado)
 ### A · Desde `asientos` (sin conector, datos ya ingeridos)
 **Vista `rpt.vw_MovimientoDisponible`** — entradas y salidas de las cuentas de disponible.
-- Fuente: `fact.AsientoLinea` ⨝ `dim.CuentaContable`, `Estado = 1`, cuentas con `EsBanco = 1` o `LEFT(Codigo,2) = '11'` (`[S]` DP-1), comprobantes con `tc.Clase <> 'CIERRE'`.
+- Fuente: `fact.AsientoLinea` ⨝ `dim.CuentaContable`, `Estado = 1`, cuentas con `EsBanco = 1` o `LEFT(Codigo,2) = '11'` (DP-1 aprobada, D54), comprobantes con `tc.Clase <> 'CIERRE'`.
 - **Traslados:** agrupar por `MovimientoSourceKey`; neto = Σ débito − Σ crédito sobre cuentas de disponible. Si el neto del comprobante es 0 es traslado entre cuentas propias y se excluye. Entradas = neto > 0; salidas = −neto cuando < 0.
 - **Saldos iniciales:** los comprobantes con `tc.Clase = 'SALDO_INICIAL'` (valor del `CHECK` de `dim.TipoComprobante`, `0040`) no son flujo: van a la columna `SaldoInicial` y quedan fuera de `Entradas`/`Salidas`/`FlujoNeto` (DP-1). Que SaludIPS marque así la apertura es `[S]`: si llegan como `NORMAL`, el primer periodo mostrará una entrada inflada y el tablero debe rotularlo.
 - Columnas: `EmpresaId, PeriodoKey, FechaKey, SedeId, CuentaId, Entradas, Salidas, FlujoNeto, SaldoInicial`. La sede y la cuenta son las de la línea de disponible de mayor valor del comprobante.
@@ -62,7 +63,7 @@ Símbolos para `impact` antes de editar: `CatalogoEntidades`, `ProcesadorCargas.
 - Aislamiento: empresa A no ve movimientos ni recaudo de B por las 4 vistas.
 
 ## Riesgos y supuestos `[S]`
-- DP-1: definición de disponible (ESE con plan CGN no usa grupo 11 igual).
+- Disponible (D54) vale para el PUC comercial; una ESE con plan CGN no usa el grupo 11 igual: mantener el tablero apagado para ESE hasta PL-14 fase 4.
 - `EsEfectivo` asume que el pago y el cruce van en el mismo comprobante.
 - `PagadorId` por tercero: un tercero con varios pagadores toma el menor (igual que la cartera actual).
 - `recibos` de la extracción solo trae ingresos de caja: el tablero se llama «Recaudo en caja», no «Flujo de caja».

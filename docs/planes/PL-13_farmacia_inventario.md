@@ -1,6 +1,7 @@
 # PL-13 · Farmacia, inventario y validador de precios completo
 
 Estado: diseñado, no implementado. Módulos `FARMACIA` e `INVENTARIO`. Script `1150_farmacia.sql`.
+Preparación (2026-11-16): **parte A lista para implementar** (tras PL-10). B espera el contrato de `ordenes-externas` (P9); C, la confirmación regulatoria.
 Depende de PL-10 (`inventario`). Es el paquete del **operador farmacéutico piloto**. Cierra el pendiente técnico 5 y parte del 8 (`06` §10).
 
 ## Objetivo

@@ -1,6 +1,7 @@
 # PL-10 · Ingesta operativa base y costos confiables
 
 Estado: diseñado, no implementado. Script `1120_ingesta_operativa.sql`. Cierra los pendientes técnicos 2 y 3 (`06` §10).
+Preparación (2026-11-16): **listo para implementar.** `inventario` sin `ModuloRequerido` aprobado (D65).
 Depende de PL-02 solo por la verificación de `ModuloRequerido` (nómina); si PL-02 no está mezclado, se crea aquí con la definición de PL-02 §1. P2 no bloquea el plan: solo impide usar `CostoInsumos` (ver riesgos).
 **Es la base de PL-11, PL-12 y PL-13**: sin `prestaciones`, `nomina` e `inventario` no hay agendas con costo, productividad, margen por servicio ni farmacia.
 
@@ -22,7 +23,7 @@ Depende de PL-02 solo por la verificación de `ModuloRequerido` (nómina); si PL
 | `nomina` | `VENTANA` | `valor` | `NOMINA_COSTOS` |
 | `inventario` | `VENTANA`, `INICIAL` | `valorEntrada`, `valorSalida` | — |
 
-`inventario` va **sin** `ModuloRequerido` a propósito: alimenta la base `CONSUMO_INSUMOS` del costeo (módulo `FINANCIERO`) aunque la empresa no tenga `INVENTARIO`; los tableros de inventario sí exigen el módulo (PL-13). `[S]`: confirmar con el dueño que se acepta recibir el dato sin el módulo contratado.
+`inventario` va **sin** `ModuloRequerido` a propósito: alimenta la base `CONSUMO_INSUMOS` del costeo (módulo `FINANCIERO`) aunque la empresa no tenga `INVENTARIO`; los tableros de inventario sí exigen el módulo (PL-13). Aprobado (D65).
 El pendiente técnico 2 de `06` §10 la llama `movimientos-inventario`; el nombre del contrato (`02` §15) es `inventario` y es el que manda: corregir `06` al cerrar el plan.
 
 `INCREMENTAL` hoy solo lo usan terceros y anulaciones: verificar que `IniciarCargaHandler` y `RepositorioCargas` no asumen ventana para hechos incrementales (marca de agua en `GET /v1/estado`).

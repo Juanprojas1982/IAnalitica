@@ -1,6 +1,7 @@
 # PL-09 · Recaudo sin aplicar (anticipos y giros sin cruzar)
 
 Estado: diseñado a nivel de hipótesis, **bloqueado por DP-8 y por datos reales**. Módulo `CARTERA`. Script `1110_recaudo_sin_aplicar.sql`.
+Preparación (2026-11-16): **no listo.** Sigue bloqueado por DP-8 y el diagnóstico del paso 0; ninguna decisión del dueño lo destraba.
 No implementar hasta ejecutar el diagnóstico del paso 0 contra una base real.
 
 ## Problema

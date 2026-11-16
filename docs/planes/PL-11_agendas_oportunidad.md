@@ -1,6 +1,7 @@
 # PL-11 · Agendas y oportunidad
 
 Estado: diseñado, no implementado. Módulo `AGENDA` (permiso `dash.agenda`, ya sembrado). Script `1130_agenda.sql`.
+Preparación (2026-11-16): **listo para implementar.**
 Depende de PL-10 solo para el costo de la capacidad ociosa (nómina); el resto es independiente.
 
 ## Objetivo

@@ -1,6 +1,6 @@
 # Planes de implementación — producto completo antes del primer piloto
 
-Estado: **diseñados, NO implementados.** No se implementa nada hasta orden explícita del dueño. Fecha: 2026-11-16.
+Estado: **diseñados y revisados contra el DDL y el código; decisiones del dueño registradas el 2026-11-16 (D54–D65 en `06` §12). NO implementados.** La columna «Listo» de la tabla dice qué puede empezar; la implementación de cada plan arranca con orden explícita del dueño. Fecha: 2026-11-16.
 Alcance (decisión del dueño, 2026-11-16): como aún no hay ningún piloto en operación, entra **todo lo que falta**, incluido el sector público (ESE). PL-01 a PL-09 cubren al analista financiero; PL-10 a PL-17, el resto de lo que el producto promete.
 Diseño según D30; implementación con Sonnet, un plan = una rama = un PR. Un cambio de diseño durante la implementación vuelve a diseño.
 
@@ -11,37 +11,39 @@ Diseño según D30; implementación con Sonnet, un plan = una rama = un PR. Un c
 4. **`dim.MotivoGlosa` no tiene semillas** y es global: «glosas por causa» necesita guardar el código de origen (PL-02).
 5. **`EntidadIngesta.ModuloRequerido` existe pero nadie lo verifica** (PL-02 lo hace cumplir).
 6. **`cfg.KpiMeta` se lee (semáforo) pero no hay pantalla para escribirla**; las notificaciones con `UsuarioId NULL` no se cuentan en la campana (PL-04).
-7. **Cerrar un periodo en la plataforma puede tumbar la carga nocturna**: la ventana del conector se calcula con los cierres de SaludIPS, no con los de IAnalitica → `409 PERIODO_CERRADO` (PL-05, requiere decisión).
+7. **Cerrar un periodo en la plataforma puede tumbar la carga nocturna**: la ventana del conector se calcula con los cierres de SaludIPS, no con los de IAnalitica → `409 PERIODO_CERRADO` (PL-05; resuelto con D57: cierre blando primero).
 8. **Los abonos sin cruzar desaparecen de la cartera**: `etl.usp_GenerarCorteCartera` descarta líneas con `ValorOriginal = 0` (un crédito en una cuenta CxC de naturaleza débito). Hoy solo se ven como diferencia en la conciliación (PL-09).
 9. El comparativo contra el periodo anterior **ya existe** en los KPI; falta año anterior y acumulado del año (PL-07).
 
 ## Planes y orden
-| # | Plan | Depende de | Script DbUp | Conector | Bloqueado por |
-|---|---|---|---|---|---|
-| PL-01 | Flujo de caja, recaudo de cartera, caja y conciliación bancaria | PL-02 (solo B y C: verificación de módulo) | 1050 | Parte B y C | DP-1 |
-| PL-02 | Glosas | — | 1060 | Sí | DP-2 |
-| PL-03 | Atendido no facturado y dinero detenido por etapa | PL-02 (opcional) | 1070 | Sí (foto) | DP-3 |
-| PL-04 | Metas de KPI y alertas | — | 1080 | No | DP-4 |
-| PL-05 | Cierre de periodo | — | 1085 | Sí (ventana) | DP-5 |
-| PL-06 | Presupuesto vs. real | — | 1090 | No | DP-4, DP-6 |
-| PL-07 | Comparativos: año anterior y acumulado | — | — | No | — |
-| PL-08 | Deterioro estimado de cartera | PL-04 (versión de configuración en la caché) | 1100 | No | DP-4, DP-7 |
-| PL-09 | Recaudo sin aplicar (anticipos y giros sin cruzar) | PL-01 | 1110 | No | DP-8, datos reales |
-| PL-10 | Ingesta operativa (prestaciones, nómina, inventario) y costos confiables | PL-02 (verificación de módulo, nómina) | 1120 | Sí | — (P2 solo impide usar `CostoInsumos`) |
-| PL-11 | Agendas y oportunidad | PL-10 (solo costo ocioso) | 1130 | Sí | — |
-| PL-12 | Productividad y apoyo diagnóstico | PL-10, PL-11 (dimensiones `profesional`, `especialidad`) | 1140 | Sí | DP-10, DP-12 |
-| PL-13 | Farmacia, inventario y validador de precios completo | PL-10 | 1150 | Sí | Confirmación regulatoria, P9 |
-| PL-14 | Paquete ESE (presupuesto público, plan de cuentas público, riesgo) | PL-02 (verificación de módulo) | 1160 | Sí | Fase 0 con la ESE, P6 |
-| PL-15 | Grupos de instituciones (vista consolidada) | PL-04 (sesión de sistema) | 1170 | No | DP-9 |
-| PL-16 | Asistente IA: proveedor real y salida a clientes | PL-04 (alertas de cupo) | 1180, 1042 (D44) | No | D32, P11, P5 |
-| PL-17 | Auditor de configuración, fase 2 | — | 1190 | Parcial | — |
+| # | Plan | Depende de | Script DbUp | Conector | Listo | Qué falta |
+|---|---|---|---|---|---|---|
+| PL-01 | Flujo de caja, recaudo de cartera, caja y conciliación bancaria | PL-02 (solo B y C: verificación de módulo) | 1050 | Parte B y C | **Sí** | — |
+| PL-02 | Glosas | — | 1060 | Sí | **Sí** | Clasificación de motivos (DP-2): el tablero sale con códigos crudos |
+| PL-03 | Atendido no facturado y dinero detenido por etapa | PL-02 (opcional) | 1070 | Sí (foto) | **Sí** | — |
+| PL-04 | Metas de KPI y alertas | — | 1080 | No | **Sí** | — |
+| PL-05 | Cierre de periodo | PL-04 (trabajo `ALERTAS` y sesión de sistema) | 1085 | Fase 2 (ventana) | **Fase 1 sí** | Fase 2 (cierre duro): conector actualizado en la empresa |
+| PL-06 | Presupuesto vs. real | — | 1090 | No | **Sí** | — |
+| PL-07 | Comparativos: año anterior y acumulado | — | — | No | **Sí** | — |
+| PL-08 | Deterioro estimado de cartera | PL-04 (versión de configuración en la caché) | 1100 | No | **Sí** | — |
+| PL-09 | Recaudo sin aplicar (anticipos y giros sin cruzar) | PL-01 | 1110 | No | No | DP-8 y diagnóstico con datos reales (paso 0) |
+| PL-10 | Ingesta operativa (prestaciones, nómina, inventario) y costos confiables | PL-02 (verificación de módulo, nómina) | 1120 | Sí | **Sí** | P2 solo impide usar `CostoInsumos` |
+| PL-11 | Agendas y oportunidad | PL-10 (solo costo ocioso) | 1130 | Sí | **Sí** | — |
+| PL-12 | Productividad y apoyo diagnóstico | PL-10, PL-11 (dimensiones `profesional`, `especialidad`) | 1140 | Sí | **Sí** | — |
+| PL-13 | Farmacia, inventario y validador de precios completo | PL-10 | 1150 | Sí | **Parte A sí** | B: contrato de `ordenes-externas` (P9). C: confirmación regulatoria |
+| PL-14 | Paquete ESE (presupuesto público, plan de cuentas público, riesgo) | PL-02 (verificación de módulo) | 1160 | Sí | No | Fase 0 con la ESE (datos reales); P6 para la fase 5 |
+| PL-15 | Grupos de instituciones (vista consolidada) | PL-04 (sesión de sistema) | 1170 | No | **Sí** | Para dar de alta un grupo real: consentimiento contractual (P5) |
+| PL-16 | Asistente IA: proveedor real y salida a clientes | PL-04 (alertas de cupo) | 1180, 1042 (D44) | No | No | D32 (costo y clave), P11, P5 |
+| PL-17 | Auditor de configuración, fase 2 | — | 1190 | Parcial | **Lotes 1 y 3 sí** | Resto de lotes: medir falsos positivos con el piloto; reglas `[S]` nacen `PorVerificar` |
+
+«Listo» significa que el diseño no tiene decisiones abiertas y se puede escribir y probar con Testcontainers. **No** significa que haya datos: las entidades que envía el conector (PL-01 B/C, PL-02, PL-03, PL-10, PL-11, PL-12) dependen de extracciones de `docs/06` y `docs/11` que no se han ejecutado contra una base real (P2).
 
 ### Orden sugerido (por oleadas)
-1. **Sin conector:** PL-07 (sin decisiones) → PL-17 (lotes 1 y 3, sin decisiones) → PL-01 parte A (tras DP-1) → PL-04 (tras DP-4).
+1. **Sin conector:** PL-07 → PL-17 (lotes 1 y 3) → PL-01 parte A → PL-04.
 2. **Ciclo del ingreso completo:** PL-02 → PL-03 → PL-06 → PL-01 (B, C).
-3. **Operación:** PL-10 → PL-11 → PL-12.
-4. **Por piloto:** PL-13 (operador farmacéutico) y PL-14 (ESE), cada uno tras su levantamiento. Pueden diseñarse en paralelo, pero se **mezclan en secuencia** (ver «Archivos compartidos»).
-5. **Riesgo alto o bloqueados:** PL-16 → PL-08 → PL-05 → PL-15 → PL-09.
+3. **Operación:** PL-10 → PL-11 → PL-12 → PL-13 parte A.
+4. **Configuración y seguridad:** PL-08 → PL-05 fase 1 → PL-15.
+5. **Esperan algo externo:** PL-09 (datos reales), PL-13 B y C (contrato y regulatorio), PL-14 (fase 0 con la ESE), PL-16 (D32, P11), PL-05 fase 2 (conector), PL-17 lotes 2 y 4–6 (medición con piloto).
 
 Razón: primero lo que da valor con datos ya ingeridos; después lo que exige ampliar el conector; al final lo que cambia seguridad, cuesta dinero o depende de datos reales.
 
@@ -54,22 +56,32 @@ Son 17 planes. El riesgo «alcance creciente» (`06` §11) deja de ser teórico:
 | ESE | Lo ya construido + PL-14 fases 0–2 y 4 |
 El número 1042 está reservado para `1042_ia_periodo_colombia.sql` (D44, `08` §31.2): es el requisito previo del paso 10 de facturación (excedente IA, D50), no el paso 10 mismo; si el paso 10 necesita DDL propio usa 1043. Un script por plan; si un plan necesita otro, usa el siguiente número libre de su decena.
 
-## Decisiones del dueño que bloquean (no inventar la respuesta)
-| # | Decisión | Propuesta | Bloquea |
+## Decisiones del dueño
+Aprobadas el 2026-11-16 y registradas en `06` §12. Lo que una decisión no dice **no se inventa**: vuelve a diseño.
+| # | Decisión | Resuelto | Registro |
 |---|---|---|---|
-| DP-1 | ¿Qué cuentas son «disponible»? ¿Los saldos iniciales se muestran aparte del flujo? | `dim.CuentaContable.EsBanco = 1` o grupo 11 del PUC comercial `[S]`; ESE (plan CGN) por validar. Saldos iniciales (`TipoComprobante.Clase = 'SALDO_INICIAL'`) fuera de entradas, en columna propia | PL-01 A |
-| DP-2 | Codificación de motivos de glosa que usa cada piloto y norma vigente (Res. 3047/2008 anexo 6 vs. Res. 2284/2023: **verificar**) | Guardar el código de origen; clasificar después | PL-02 (solo la clasificación) |
-| DP-3 | Retención de fotos diarias de pendientes | Diarias 35 días + última de cada mes | PL-03 |
-| DP-4 | Permisos nuevos `metas.configurar` y `presupuesto.cargar` (amplía P10) o reutilizar `admin.usuarios` como hace `/costos` | Reutilizar `admin.usuarios` `[S]` hasta cerrar P10 | PL-04, PL-06, PL-08 |
-| DP-5 | Quién cierra periodos y qué pasa con la ventana del conector | Ver PL-05 §Riesgo | PL-05 |
-| DP-6 | Formato de carga del presupuesto por portal | CSV (sin paquetes nuevos); Excel después | PL-06 |
-| DP-7 | Política de deterioro (porcentaje por edad vs. pérdida esperada) y quién la parametriza | Porcentaje por rango de edad, por empresa, etiquetado «estimado, no contable» | PL-08 |
-| DP-8 | Cómo registra SaludIPS anticipos y giros sin identificar (cuenta, relación) | Validar con equipo funcional y datos reales | PL-09 |
-| DP-9 | Modelo de acceso para grupos (contradice D11) **y** cómo lee el servicio la membresía del grupo (PL-15 §RLS) | Opción A de PL-15: el usuario sigue en una empresa; un servicio consulta empresa por empresa; la RLS no cambia. Membresía: lectura técnica acotada (PL-15) | PL-15 |
-| DP-10 | Umbral mínimo de empleados para mostrar costo de personal por cargo, y si se publica productividad individual de administrativos | 3 empleados; productividad individual fuera | PL-12 |
-| DP-11 | Corte de salida por piloto (ver «Advertencia de alcance») | La tabla de arriba | Orden de todo |
-| DP-12 | ¿Módulo nuevo `PRODUCTIVIDAD` o producción por profesional dentro de `AGENDA`? (la lista de módulos es un `CHECK` cerrado en `0020`) | Dentro de `AGENDA`, sin módulo nuevo | PL-12 |
-| DP-13 | Periodo que evalúa el trabajo `ALERTAS` | Último mes completo (no el mes en curso, que está a medias); KPI por corte, sobre el último corte `[S]` | PL-04 |
+| DP-1 | ¿Qué cuentas son «disponible»? | `dim.CuentaContable.EsBanco = 1` o grupo 11 del PUC comercial. Saldos iniciales (`TipoComprobante.Clase = 'SALDO_INICIAL'`) en columna propia, fuera de las entradas. ESE (plan CGN): sigue por validar en PL-14 | D54 |
+| DP-3 | Retención de fotos diarias de pendientes | Diarias 35 días + la última de cada mes | D55 |
+| DP-4 | Permiso para metas, presupuesto y deterioro | Reutilizar `admin.usuarios` hasta cerrar P10 | D56 |
+| DP-5 | Cierre de periodo | **Blando ahora, duro después.** Fase 1: cierre blando (no bloquea la ingesta; guarda foto de los KPI y avisa si cambian). Fase 2: cierre duro por empresa, solo con su conector actualizado. Cierra quien tenga `admin.usuarios` | D57 |
+| DP-6 | Formato de carga del presupuesto por portal | CSV; Excel después | D58 |
+| DP-7 | Política de deterioro | Porcentaje por rango de edad y por empresa, con excepción por pagador; etiquetado «estimado, no contable». Aprueba el plan como alcance nuevo fuera de la spec | D59 |
+| DP-9 | Modelo de acceso para grupos | Opción A: el usuario sigue en una empresa (D11 intacta), un servicio consulta empresa por empresa y la RLS no cambia. La membresía del grupo se lee con una consulta fija por la conexión técnica (`rol_etl`), única excepción y solo sobre `seg.GrupoEmpresa`/`seg.UsuarioGrupo` | D60 |
+| DP-10 | Costo de personal por cargo | Umbral de 3 empleados con supresión complementaria; sin productividad individual de administrativos | D61 |
+| DP-11 | Corte de salida por piloto | La tabla de «Advertencia de alcance» | D62 |
+| DP-12 | Producción por profesional | Dentro de `AGENDA`; no se crea el módulo `PRODUCTIVIDAD` | D63 |
+| DP-13 | Periodo que evalúa `ALERTAS` | Último mes completo; KPI por corte, sobre el último corte | D64 |
+| — | `inventario` sin `ModuloRequerido` | Se recibe aunque la empresa no tenga `INVENTARIO` (alimenta el costeo); los tableros sí exigen el módulo | D65 |
+
+### Siguen abiertas (no dependen solo del dueño)
+| # | Qué falta | Quién | Bloquea |
+|---|---|---|---|
+| DP-2 | Codificación de motivos de glosa de cada piloto y norma vigente (Res. 3047/2008 anexo 6 vs. Res. 2284/2023: **verificar**) | Equipo funcional | Solo la clasificación de PL-02; el plan sale con el código de origen |
+| DP-8 | Cómo registra SaludIPS anticipos y giros sin identificar | Equipo funcional + datos reales | PL-09 |
+| D32, P11, P5 | Costo y clave del proveedor de IA, tarifa y cupo, documentos legales | Dueño, abogado | PL-16 |
+| Fase 0 ESE, P6 | Datos presupuestales reales y fórmulas de riesgo | ESE piloto | PL-14 |
+| P9 | Contrato de `ordenes-externas` | Equipo funcional | PL-13 B |
+| Confirmación regulatoria | Circulares de precios, Res. 1604/2013, plazos | Área regulatoria | PL-13 C |
 
 ## Reglas para quien implemente (además de `01` §0)
 - Antes de editar cualquier símbolo: `impact` de GitNexus (upstream) y reportar riesgo; HIGH/CRITICAL se avisa antes de tocar. Antes de commit: `detect-changes --scope all`. Cada plan lista los símbolos a analizar.
