@@ -11,7 +11,7 @@ Precedencia: este contexto → código y `database/scripts` (el DDL manda) → `
 | `contexto/03_modulos_dashboards_kpi.md` | §6, §17, §18, §20, §21, §22 | Tocar dashboards, métricas, KPI, costos, farmacia/precios, auditor, ESE |
 | `contexto/04_asistente_ia.md` | §7, §19 | Tocar el asistente, cupo, tarifa, proveedor |
 | `contexto/05_infraestructura_operacion.md` | §8, §23–§26 | Azure, costos, CI, observabilidad, colas, reportes |
-| `contexto/06_plan_pendientes_decisiones.md` | §9–§13 | Planear: fases, pendientes, riesgos, decisiones D01–D53, divergencias spec↔código |
+| `contexto/06_plan_pendientes_decisiones.md` | §9–§13 | Planear: fases, pendientes, riesgos, decisiones D01–D65, divergencias spec↔código |
 | `contexto/07_usuarios_landing.md` | §27, §28 | Alta de empresas/usuarios, landing |
 | `contexto/08_facturacion_cuenta_cobro.md` | §29–§35 | Cobro mensual del SaaS: cuenta de cobro, pagos, mora, correo SMTP (esquema `fac`) |
 
