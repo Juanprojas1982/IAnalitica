@@ -1,10 +1,10 @@
 ## Contexto del proyecto (leer primero)
-Índice: `docs/CONTEXTO.md`. Cargar solo el archivo de `docs/contexto/` que aplique al cambio; `01_reglas_arquitectura_seguridad.md` siempre. DDL: manda `database/scripts`. `docs/archivo/` es histórico: no usar como fuente. Hay supuestos marcados `[S]` y pendientes en `06_plan_pendientes_decisiones.md`; no inventar lo que no esté ahí.
+Índice: `docs/CONTEXTO.md`. Cargar solo el archivo de `docs/contexto/` que aplique al cambio; `01_reglas_arquitectura_seguridad.md` siempre. DDL: manda `database/scripts`. `docs/archivo/` es histórico (solo la spec maestra 24): no usar como fuente. Estado: F0–F5 hechas; facturación `fac` pasos 1–9 hechos (paso 10 diferido, D50); F6 despliegue sin iniciar. Hay supuestos marcados `[S]` y pendientes en `06_plan_pendientes_decisiones.md`; no inventar lo que no esté ahí.
 
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **ianalitica** (3343 symbols, 8695 relationships, 199 execution flows).
+This project is indexed by GitNexus as **ianalitica** (4205 symbols, 11832 relationships, 352 execution flows).
 
 > Index stale? Run `node .gitnexus/run.cjs analyze --index-only` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? Bootstrap with `npx`, `bunx`, or `pnpm dlx` — e.g. `bunx gitnexus@latest analyze` (npm 11 npx crash; #1939).
 

@@ -1,4 +1,4 @@
-# IAnalitica — Plan por fases, pendientes, riesgos, decisiones D01–D38, divergencias
+# IAnalitica — Plan por fases, pendientes, riesgos, decisiones D01–D53, divergencias
 
 Parte de `docs/CONTEXTO.md` (índice). La numeración §N es global y se conserva entre archivos. Precedencia y reglas de uso: `01_reglas_arquitectura_seguridad.md` §0.
 
@@ -11,6 +11,7 @@ Parte de `docs/CONTEXTO.md` (índice). La numeración §N es global y se conserv
 | F3 Dashboards | ✅ parcial | Los 3 pilotos los usan | No |
 | F4 Auditor y validador | ✅ parcial | ≥ 80 % de hallazgos confirmados reales | No |
 | F5 Costos e IA | ✅ parcial | Conservación del costo; consumo IA dentro del tope | Conservación y tope: sí (sintético). Pilotos y modelo real: no |
+| Facturación (cuenta de cobro, `fac`) | ✅ parcial | Pasos 1–9 en `feature/f6-facturacion-cuenta-cobro`; paso 10 (excedente IA) diferido a D50. Pruebas de integración escritas, **no ejecutadas** contra SQL Server (sin Docker) | No |
 | F6 Despliegue piloto | ⏳ | 95 % de noches con carga correcta durante 30 días | — (bloqueada por P1 y por datos reales) |
 
 ## 10. Pendientes y decisiones abiertas
@@ -26,6 +27,8 @@ Parte de `docs/CONTEXTO.md` (índice). La numeración §N es global y se conserv
 9. Selector de empresa del superadmin con motivo y registro `aud.AccesoSuperadmin` (no existe); dashboards del superadmin.
 10. Almacenamiento de reportes compartido o Blob si hay varios nodos (`Reportes:Almacen:Ruta`); llaves de Data Protection y de firma de token en Key Vault (F6).
 11. Gráficos en PDF (hoy tablas y KPI); logo en PDF; QR del 2FA.
+
+12. Facturación: ejecutar pruebas de integración de `fac` con Docker; paso 10 (excedente IA, script 1042) al activar la IA a clientes (D50); decisiones D49 y D45 abiertas (detalle en `08` §35).
 
 ### Decisiones de diseño abiertas
 - **Render:** `InteractiveAuto` + MudBlazor (spec original) vs. SSR+SVG actual (F3). Decidir si se quiere interactividad (requiere proyecto `IAnalitica.Web.Client` no previsto en la estructura).
@@ -49,6 +52,13 @@ Parte de `docs/CONTEXTO.md` (índice). La numeración §N es global y se conserv
 | P11 | Planes de IA, tarifa de venta (COP por millón de tokens), cupo, autorización de excedente, visibilidad del costo | Dueño | IA a clientes |
 | — | ¿`CodPlan` es parte del cruce de tarifas? ¿`pSuministros.Costo` y `Valor` son por unidad o por presentación? ¿Tabla de CxP para CON-04? ¿Ruta del menú SaludIPS por hallazgo? ¿Campos del dataset `nauz-qkjw`? | Equipo funcional | TAR-02, validador, CON-04 |
 | — | Homologación `TipoOrigen` → administrativo/apoyo/productivo | Equipo funcional | Reglas por defecto de costos |
+| P13 | Ajustar SEXTA (a), (b), (d) y Anexo A 6(c) del contrato con el texto de `08` §34; fijar [N] días | Abogado + dueño | Primer cobro real |
+| P15 | Cuenta SMTP, dominio con SPF/DKIM/DMARC, secreto en Key Vault, costo (D32) | Dueño (depende de P8) | Primer envío real |
+| P16 | Blob para PDF de cuentas (durabilidad/retención), con cotización | Dueño (D32) | Producción |
+| P17 | Canon por plan y planes comerciales (amplía P11) | Dueño | Primer cobro real |
+| P18 | Datos del emisor, instrucciones de pago, `CORREO_OPERACION` | Dueño | Paso 6 de facturación |
+| P19 | Tarifa de IA publicada para el cliente | Técnico | D50 |
+| P21 | Plazo de retención de cuentas, pagos y destinatarios | Abogado / contador | Política de borrado |
 | — | Diagnóstico SIPS_108 vs SIPS_550_1: ejecutar el script de §4 de `30_DIAGNOSTICO_SIPS108_vs_SIPS550.md` contra una base real; causa probable (sin confirmar) = INNER JOIN a la tarifa del manual | Técnico | — |
 
 ## 11. Riesgos
@@ -60,7 +70,7 @@ Parte de `docs/CONTEXTO.md` (índice). La numeración §N es global y se conserv
 | Costo de nube o IA | D32, presupuesto con alertas, topes de IA, cupo gratuito con pausa |
 | Licencias comerciales | Verificar al instalar; QuestPDF revisión anual (umbral USD 1 M) |
 | Alcance creciente | Lo nuevo entra como fase posterior |
-| Ramas largas sin integrar | PR #7 `feature/f5-costos-ia` → `main` |
+| Ramas largas sin integrar | Cadena apilada f0→f2→f3→f4→f5→f6-facturación sin integrar a `main`; abrir PR(s) y ejecutar las pruebas de integración con Docker antes de fusionar |
 
 ## 12. Decisiones (registro)
 | # | Decisión |
@@ -96,6 +106,16 @@ Parte de `docs/CONTEXTO.md` (índice). La numeración §N es global y se conserv
 | D36 | RLS en script que corre en cada despliegue |
 | D37 | Matriz rol × permiso `[S]` |
 | D38 | Primer superadmin por comando del migrador; plan `PILOTO` con cupo 0 `[S]` |
+| D39 | Una serie global CC asignada al emitir; sin reutilización; la anulación conserva el número |
+| D40 | Emisión y envío automáticos; interruptor «requiere aprobación» global/por empresa, apagado |
+| D42 | PDF adjunto solo para la cuenta de cobro |
+| D44 | Periodo de IA a hora Colombia (1042), previo a cobrar excedente |
+| D47 | Mes vencido; generación y envío el día 1 06:00 Bogotá |
+| D48 | Prorrateo por días calendario en altas, terminaciones y cambios a mitad de mes `[S]` |
+| D51 | El canon se cobra siempre, también en suspensión por mora (confirmar con abogado, P13) |
+| D52 | Sin DIAN, sin IVA, sin notas; corrección = anular + reemitir |
+| D53 | SMTP genérico solo por configuración de despliegue; clave en Key Vault/User Secrets |
+| Abiertas | D45 (motivo para ver facturación como superadmin), D49 (`fac.consultar` a FINANCIERO/TESORERO), D50 (excedente IA); ver `08` |
 
 ## 13. Divergencias spec original ↔ implementación (la implementación manda)
 | Spec original | Realidad |

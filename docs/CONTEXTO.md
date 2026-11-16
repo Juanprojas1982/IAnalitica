@@ -1,6 +1,6 @@
 # IAnalitica — CONTEXTO (índice)
 
-Estado: rama `feature/f5-costos-ia` (PR #7). F0–F5 implementadas; F6 sin iniciar. Actualizado: 2026-11-05.
+Estado: rama `feature/f6-facturacion-cuenta-cobro` (apilada sobre f5; sin PR a `main`). F0–F5 implementadas; facturación (cuenta de cobro) pasos 1–9 implementados, paso 10 diferido (D50); despliegue piloto sin iniciar. Actualizado: 2026-11-16.
 Contexto vigente para humanos y agentes de IA, partido por tema. La numeración §N es global. **Cargar solo el archivo que aplique.**
 Precedencia: este contexto → código y `database/scripts` (el DDL manda) → `docs/archivo/` (histórico, no usar como fuente).
 
@@ -11,7 +11,7 @@ Precedencia: este contexto → código y `database/scripts` (el DDL manda) → `
 | `contexto/03_modulos_dashboards_kpi.md` | §6, §17, §18, §20, §21, §22 | Tocar dashboards, métricas, KPI, costos, farmacia/precios, auditor, ESE |
 | `contexto/04_asistente_ia.md` | §7, §19 | Tocar el asistente, cupo, tarifa, proveedor |
 | `contexto/05_infraestructura_operacion.md` | §8, §23–§26 | Azure, costos, CI, observabilidad, colas, reportes |
-| `contexto/06_plan_pendientes_decisiones.md` | §9–§13 | Planear: fases, pendientes, riesgos, decisiones D01–D38, divergencias spec↔código |
+| `contexto/06_plan_pendientes_decisiones.md` | §9–§13 | Planear: fases, pendientes, riesgos, decisiones D01–D53, divergencias spec↔código |
 | `contexto/07_usuarios_landing.md` | §27, §28 | Alta de empresas/usuarios, landing |
 | `contexto/08_facturacion_cuenta_cobro.md` | §29–§35 | Cobro mensual del SaaS: cuenta de cobro, pagos, mora, correo SMTP (esquema `fac`) |
 
