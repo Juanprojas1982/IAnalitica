@@ -15,3 +15,5 @@ Sitio **estático**, proyecto aparte de la plataforma (spec 13; decisiones D05 y
 - **Analítica**: solo el banner de consentimiento y `window.medir(evento)`, que empuja a `dataLayer` únicamente con consentimiento. No hay proveedor configurado.
 - **Fuente**: pila `Inter, Segoe UI, system-ui…`, sin cargar fuentes externas.
 - Los medios son animaciones de una escena HTML con datos ficticios, no grabaciones del portal real.
+- **Medios desalineados con los textos (pendiente):** la escena (`tools/escena.html`) y las capturas muestran «dinero detenido», «alertas de hoy», ocupación de agenda, glosas y un grupo de IPS consolidado, que el producto aún no ofrece. Los textos ya separan «lo que puede usar hoy» de «próximamente»; falta regenerar videos y capturas con solo lo disponible (o usar capturas reales del portal con empresa ficticia). `dash-grupo.webp` ya no se usa.
+- **Regla de contenido:** una funcionalidad solo pasa de «Próximamente» a «hoy» cuando está en `main` de la plataforma y cuadrada con un piloto.
