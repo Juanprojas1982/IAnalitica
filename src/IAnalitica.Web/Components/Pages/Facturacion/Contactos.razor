@@ -30,7 +30,7 @@
 
 <section>
     <h2 class="h5">Agregar un contacto</h2>
-    <form method="post" action="/facturacion/contactos" class="row g-2" style="max-width:48rem">
+    <form method="post" action="/facturacion/contactos/guardar" class="row g-2" style="max-width:48rem">
         <AntiforgeryToken />
         <div class="col-md-3"><label class="form-label">Tipo<select class="form-select" name="tipo"><option value="FACTURACION">Facturación</option><option value="CONTADOR">Contador</option></select></label></div>
         <div class="col-md-4"><label class="form-label">Nombre<input class="form-control" name="nombre" maxlength="150" required /></label></div>

@@ -187,14 +187,14 @@ public class FacturacionWebTests(BaseDeDatosFixture bd) : IAsyncLifetime
     public async Task El_administrador_de_la_empresa_mantiene_sus_contactos_de_facturacion()
     {
         var n = await ClienteAsync();
-        var (estadoHttp, cuerpo, ok) = await n.PostConTokenAsync("/facturacion/contactos", "/facturacion/contactos", new Dictionary<string, string> { ["tipo"] = "FACTURACION", ["nombre"] = "Tesorería", ["email"] = "tesoreria@clinica-prueba.test" });
+        var (estadoHttp, cuerpo, ok) = await n.PostConTokenAsync("/facturacion/contactos", "/facturacion/contactos/guardar", new Dictionary<string, string> { ["tipo"] = "FACTURACION", ["nombre"] = "Tesorería", ["email"] = "tesoreria@clinica-prueba.test" });
         Assert.True(ok is not null && ok.Contains("ok=", StringComparison.Ordinal), $"Estado {estadoHttp}, ubicación '{ok}', cuerpo: {cuerpo[..Math.Min(400, cuerpo.Length)]}");
         var (_, html, _) = await n.IrAsync("/facturacion/contactos");
         Assert.Contains("tesoreria@clinica-prueba.test", html);
 
-        var (_, _, repetido) = await n.PostConTokenAsync("/facturacion/contactos", "/facturacion/contactos", new Dictionary<string, string> { ["tipo"] = "FACTURACION", ["nombre"] = "Otra", ["email"] = "TESORERIA@clinica-prueba.test" });
+        var (_, _, repetido) = await n.PostConTokenAsync("/facturacion/contactos", "/facturacion/contactos/guardar", new Dictionary<string, string> { ["tipo"] = "FACTURACION", ["nombre"] = "Otra", ["email"] = "TESORERIA@clinica-prueba.test" });
         Assert.Contains("error=", repetido);
-        var (_, _, malo) = await n.PostConTokenAsync("/facturacion/contactos", "/facturacion/contactos", new Dictionary<string, string> { ["tipo"] = "FACTURACION", ["nombre"] = "X", ["email"] = "no-es-un-correo" });
+        var (_, _, malo) = await n.PostConTokenAsync("/facturacion/contactos", "/facturacion/contactos/guardar", new Dictionary<string, string> { ["tipo"] = "FACTURACION", ["nombre"] = "X", ["email"] = "no-es-un-correo" });
         Assert.Contains("error=", malo);
 
         // El correo no queda en la auditoría (datos personales).

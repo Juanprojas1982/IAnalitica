@@ -35,7 +35,7 @@ internal static class EndpointsFacturacion
 
         // Contactos de facturación: los mantiene el administrador de la empresa (la cuenta de cobro se envía a ellos). La empresa sale de la sesión.
         var contactos = app.MapGroup("/facturacion/contactos").RequireAuthorization("admin.usuarios");
-        contactos.MapPost("/", async (HttpContext http, IAntiforgery af, ISender enviar, CancellationToken ct) =>
+        contactos.MapPost("/guardar", async (HttpContext http, IAntiforgery af, ISender enviar, CancellationToken ct) =>
         {
             await af.ValidateRequestAsync(http);
             var f = await http.Request.ReadFormAsync(ct);
