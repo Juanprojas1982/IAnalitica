@@ -19,12 +19,12 @@ Responder: ¿cuánto me glosan sobre lo facturado?, ¿qué EPS y qué causa?, ¿
   - Pagador, sede y motivo opcionales. `Estado = ISNULL(LEFT(estadoOrigen, 15), 'ABIERTA')` (los valores de `dGlosas.Estado` son `[S]`).
   - `CentroCostoId`: NULL (el contrato no lo trae).
 - **Vista `rpt.vw_Glosas`** (grano periodo de la glosa, sede, pagador, motivo, estado):
-  `EmpresaId, PeriodoKey, SedeId, PagadorId, MotivoCodigo` (= `ISNULL(MotivoCodigoOrigen, 'SIN_MOTIVO')`)`, Estado, Glosas, ValorGlosado, ValorAceptado, ValorDefendido` (= `ValorRechazado`: lo que la IPS no aceptó)`, ValorPendiente` (= glosado − aceptado − defendido, piso 0)`, GlosasSinRespuesta, DiasRespuesta` (promedio, solo con respuesta). Excluye `Anulada = 1`.
+  `EmpresaId, PeriodoKey, SedeId, PagadorId, MotivoCodigo` (= `ISNULL(MotivoCodigoOrigen, 'SIN_MOTIVO')`)`, Estado, Glosas, ValorGlosado, ValorAceptado, ValorDefendido` (= `ValorRechazado`: lo que la IPS no aceptó)`, ValorPendiente` (= glosado − aceptado − defendido, piso 0)`, GlosasSinRespuesta, GlosasConRespuesta, DiasRespuestaSuma` (Σ días entre glosa y respuesta, solo con respuesta). Excluye `Anulada = 1`. La vista **no** expone un promedio.
 - **Vista `rpt.vw_GlosaSobreFacturado`** (`UNION ALL` al grano periodo, sede, pagador):
   filas de `fact.Glosa` (`ValorGlosado, ValorAceptado`, `ValorFacturado = 0`) + filas de `fact.FacturaLinea` no anuladas (`ValorFacturado = ValorNeto`, glosas en 0). Permite `100.0*SUM(ValorGlosado)/NULLIF(SUM(ValorFacturado),0)`.
 
 ### 3. Módulo `ModuloGlosas` (en `IAnalitica.Modulos.Ingreso`)
-Métricas: `glosas.valor_glosado`, `glosas.valor_aceptado`, `glosas.valor_defendido`, `glosas.valor_pendiente`, `glosas.cantidad`, `glosas.sin_respuesta`, `glosas.dias_respuesta` (`AVG(DiasRespuesta)`), `glosas.pct_aceptado` = `100.0*SUM(ValorAceptado)/NULLIF(SUM(ValorGlosado),0)`, `glosas.pct_sobre_facturado` (vista 2, `KpiMeta: "PCT_GLOSA"`), `glosas.pct_aceptado_sobre_facturado` (vista 2).
+Métricas: `glosas.valor_glosado`, `glosas.valor_aceptado`, `glosas.valor_defendido`, `glosas.valor_pendiente`, `glosas.cantidad`, `glosas.sin_respuesta`, `glosas.dias_respuesta` = `SUM(DiasRespuestaSuma)/NULLIF(SUM(GlosasConRespuesta),0)` (no `AVG`: sería promedio de promedios), `glosas.pct_aceptado` = `100.0*SUM(ValorAceptado)/NULLIF(SUM(ValorGlosado),0)`, `glosas.pct_sobre_facturado` (vista 2, `KpiMeta: "PCT_GLOSA"`), `glosas.pct_aceptado_sobre_facturado` (vista 2).
 Dimensiones nuevas: `motivo_glosa` y `estado_glosa` (llave legible).
 Dashboard `glosas.resumen`: KPI % glosado sobre facturado, % aceptado, valor pendiente, días de respuesta · línea % glosa por periodo · barras por pagador · barras por motivo · tabla por pagador (glosado, aceptado, defendido, pendiente).
 
@@ -44,6 +44,7 @@ Símbolos para `impact`: `CatalogoEntidades`, `IniciarCargaHandler.Handle`, `Pro
 - Ventana: inserta, actualiza, elimina ausentes, respeta lo de fuera. Rechazos por campo y por valores. Anulada no cuenta en vistas.
 - Módulo inactivo → 422; activo → 201. Las entidades sin `ModuloRequerido` no cambian (regresión de `ApiIngestaTests`).
 - Caso conocido: facturado 1.000, glosado 100, aceptado 30, defendido 50 → % glosa 10, % aceptado 30, pendiente 20.
+- Días de respuesta: grupo A con 1 glosa a 10 días y grupo B con 3 glosas a 2 días → 4 días (16/4), no 6.
 - Aislamiento por ambas vistas.
 
 ## Riesgos y supuestos `[S]`

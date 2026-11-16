@@ -1,6 +1,7 @@
 # PL-10 · Ingesta operativa base y costos confiables
 
 Estado: diseñado, no implementado. Script `1120_ingesta_operativa.sql`. Cierra los pendientes técnicos 2 y 3 (`06` §10).
+Depende de PL-02 solo por la verificación de `ModuloRequerido` (nómina); si PL-02 no está mezclado, se crea aquí con la definición de PL-02 §1. P2 no bloquea el plan: solo impide usar `CostoInsumos` (ver riesgos).
 **Es la base de PL-11, PL-12 y PL-13**: sin `prestaciones`, `nomina` e `inventario` no hay agendas con costo, productividad, margen por servicio ni farmacia.
 
 ## Objetivo
@@ -21,13 +22,16 @@ Estado: diseñado, no implementado. Script `1120_ingesta_operativa.sql`. Cierra 
 | `nomina` | `VENTANA` | `valor` | `NOMINA_COSTOS` |
 | `inventario` | `VENTANA`, `INICIAL` | `valorEntrada`, `valorSalida` | — |
 
+`inventario` va **sin** `ModuloRequerido` a propósito: alimenta la base `CONSUMO_INSUMOS` del costeo (módulo `FINANCIERO`) aunque la empresa no tenga `INVENTARIO`; los tableros de inventario sí exigen el módulo (PL-13). `[S]`: confirmar con el dueño que se acepta recibir el dato sin el módulo contratado.
+El pendiente técnico 2 de `06` §10 la llama `movimientos-inventario`; el nombre del contrato (`02` §15) es `inventario` y es el que manda: corregir `06` al cerrar el plan.
+
 `INCREMENTAL` hoy solo lo usan terceros y anulaciones: verificar que `IniciarCargaHandler` y `RepositorioCargas` no asumen ventana para hechos incrementales (marca de agua en `GET /v1/estado`).
 
 ### 2. Procedimientos (`1120_ingesta_operativa.sql`), patrón de `usp_ProcesarFacturas`
 - `etl.usp_ProcesarPrestaciones`: upsert por `SourceKey`, sin borrado. Obligatorios `sourceKey, admisionSourceKey, anulado, cantidad, valorUnitario, valorTotal`. Calcula `FechaRealizacionKey`. Referencias opcionales a NULL. `valorTotal < 0` → `VALORES_INVALIDOS`.
 - `etl.usp_ProcesarNomina`: ventana por `periodo` (yyyymm). Obligatorios `sourceKey, periodo, contratoCodigo, empleadoTerceroCodigo, concepto, esCosto, valor`. **Privacidad:** rechazar toda la carga si una fila trae un campo `nombre` o `documento` (ampliar `ReglasPrivacidad.Revisar` a `nomina`); el empleado viaja solo como código de tercero.
 - `etl.usp_ProcesarInventario`: ventana por `fecha`. Obligatorios del contrato (`02` §15). `cantidadEntrada` y `cantidadSalida` ≥ 0 y no ambas > 0.
-- Tras `prestaciones`, `nomina` o `inventario`: encolar `CALCULAR_COSTOS` de los meses afectados (ampliar la condición que hoy solo mira `asientos`/`facturas`; para `INCREMENTAL` usar el rango de fechas de las filas aceptadas, que el SP devuelve).
+- Tras `prestaciones`, `nomina` o `inventario`: encolar `CALCULAR_COSTOS` de los meses afectados (ampliar la condición que hoy solo mira `asientos`/`facturas`). Una carga `INCREMENTAL` no tiene ventana en `etl.Carga`: `usp_ProcesarPrestaciones` agrega a la firma del patrón dos salidas, `@FechaMin date OUTPUT` y `@FechaMax date OUTPUT` (mínimo y máximo de la fecha de realización de las filas aceptadas; NULL si no hubo). `AplicarAsync` hoy devuelve `(Ins, Upd, Del, Rech)`: ampliar la tupla con `(DateTime? Desde, DateTime? Hasta)` y que `ProcesarAsync` use ese rango cuando la carga no trae ventana. Es la única desviación del patrón `@Ins/@Upd/@Del/@Rech` y solo para SP incrementales de hechos.
 
 ### 3. Bases de costo
 `etl.usp_CalcularBasesCosto` (versión nueva con `CREATE OR ALTER` en el script 1120):

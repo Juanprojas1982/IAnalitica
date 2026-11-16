@@ -23,13 +23,17 @@ Que la dirección de un grupo con varias empresas (varios NIT) vea indicadores c
 ```sql
 CREATE TABLE seg.Grupo (GrupoId int IDENTITY PRIMARY KEY, Nombre nvarchar(150) NOT NULL, Activo bit NOT NULL DEFAULT 1);
 CREATE TABLE seg.GrupoEmpresa (GrupoId int NOT NULL REFERENCES seg.Grupo, EmpresaId int NOT NULL REFERENCES seg.Empresa, PRIMARY KEY (GrupoId, EmpresaId));
-CREATE TABLE seg.UsuarioGrupo (UsuarioId int NOT NULL REFERENCES seg.Usuario(Id), GrupoId int NOT NULL REFERENCES seg.Grupo, PRIMARY KEY (UsuarioId, GrupoId));
+CREATE TABLE seg.UsuarioGrupo (EmpresaId int NOT NULL REFERENCES seg.Empresa, UsuarioId int NOT NULL REFERENCES seg.Usuario(Id), GrupoId int NOT NULL REFERENCES seg.Grupo, PRIMARY KEY (UsuarioId, GrupoId));   -- EmpresaId = empresa del usuario: la exige la RLS automática
 ```
-- `seg.Grupo` no tiene `EmpresaId` → queda fuera de la RLS automática: lectura solo por la aplicación con verificación explícita; escritura solo superadmin (`admin.empresas`). `seg.GrupoEmpresa` **sí** tiene `EmpresaId` y entra en la política: revisar que el predicado no impida al servicio de grupo leer la membresía (leerla con contexto de superadmin técnico o excluir la tabla con una política propia; decidir en implementación con prueba).
+- **RLS (parte de DP-9; se decide en diseño, no en implementación).** `9000_rls.sql` solo cubre tablas con `EmpresaId`:
+  - `seg.Grupo` y `seg.UsuarioGrupo` tal como están arriba **no tienen `EmpresaId` y quedan sin política**. `seg.UsuarioGrupo` debe llevar `EmpresaId int NOT NULL` (la empresa del usuario, D11) para entrar en la política automática. `seg.Grupo` es global (solo nombre): lectura por la aplicación con verificación explícita de pertenencia; escritura solo superadmin (`admin.empresas`).
+  - `seg.GrupoEmpresa` sí entra en la política: cada empresa ve su propia fila (correcto: debe saber que pertenece a un grupo), pero el servicio de grupo, con la sesión del usuario (empresa A), **no puede leer las filas de B** y no sabría qué empresas iterar.
+  - Candidatas para esa lectura: **(a, recomendada)** un repositorio dedicado con una sola consulta fija sobre `seg.GrupoEmpresa ⨝ seg.UsuarioGrupo` por la conexión técnica `rol_etl` (ese rol ya está exento en `fn_FiltroEmpresa`), que recibe `UsuarioId` y `GrupoId` y devuelve solo `EmpresaId`; nunca lee `rpt.*` ni `fact.*`. **(b)** política propia para `seg.GrupoEmpresa` en `9000_rls.sql` que permita leer las filas de los grupos del usuario (necesita `UsuarioId` en `SESSION_CONTEXT` y una subconsulta en el predicado: más superficie en la RLS, que es justo lo que la opción A del modelo evita).
+  - Sin esta elección aprobada el plan no pasa a implementación.
 - Permiso nuevo `grupo.ver` (script de semillas nuevo; amplía P10).
 
 ### Application `Grupos/`
-- `ObtenerMetricaGrupoQuery(GrupoId, Metrica, Filtros)`: valida que el usuario esté en `seg.UsuarioGrupo`; obtiene las empresas del grupo; para cada una crea un **alcance de sesión de sistema** con `EmpresaId = n` (mismo mecanismo que necesita PL-04 para alertas) y ejecuta `IMotorMetricas` sin dimensiones o con `periodo`; devuelve `{empresa, valor}` + total.
+- `ObtenerMetricaGrupoQuery(GrupoId, Metrica, Filtros)`: valida que el usuario esté en `seg.UsuarioGrupo`; obtiene las empresas del grupo; para cada una crea un **alcance de sesión de sistema** con `EmpresaId = n` (el de PL-04 §2: `SesionTrabajo.EstablecerSistema` + `ContextoBd.DeApi`; aquí se usa desde la web y no desde el worker, así que el plan debe exponerlo como servicio interno de Infrastructure, sin endpoint que reciba `EmpresaId`) y ejecuta `IMotorMetricas` sin dimensiones o con `periodo`; devuelve `{empresa, valor}` + total.
 - Solo métricas aditivas (expresión `SUM(col)`) se totalizan; las razones se recalculan desde sus componentes o se muestran solo por empresa, **nunca se suman ni se promedian**. Lista blanca de métricas de grupo declarada por cada módulo (`IRegistroModulo.MetricaDeGrupo`), no todas.
 - Cada consulta queda en `aud.Acceso` de **cada** empresa consultada («consulta de grupo por usuario X»): la empresa debe poder ver quién la mira.
 - Caché por grupo + versión de carga de cada empresa.
@@ -54,6 +58,8 @@ Símbolos para `impact`: `IRegistroModulo`, `CatalogoAnalitico`, `IMotorMetricas
 
 ## Pruebas (las de seguridad son la definición de terminado)
 - Usuario de grupo G (empresas A, B) no obtiene nada de C; usuario de A sin grupo no accede al endpoint.
+- `seg.UsuarioGrupo` y `seg.GrupoEmpresa` aparecen en `seg.PolTenant`; un usuario de A no lee por SQL directo (`rol_app`) la membresía de B.
+- La lectura técnica de membresía solo devuelve empresas de grupos a los que pertenece el usuario pedido.
 - Usuario de grupo **no** puede leer filas de B por ningún tablero normal ni por el asistente.
 - Quitar una empresa del grupo corta el acceso en la siguiente consulta (sin esperar caché).
 - Total = suma de las empresas para una métrica aditiva; una razón no se totaliza.

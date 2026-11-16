@@ -18,7 +18,7 @@ Comparar lo ejecutado contra lo presupuestado por cuenta, centro de costo y sede
 - `periodo` fuera de la ventana → `FUERA_DE_VENTANA`; cuenta inexistente → `REFERENCIA_INEXISTENTE:cuentaCodigo`; **centro de costo o sede informados pero inexistentes → rechazo** (aquí no se degrada a NULL: movería el presupuesto a «sin centro» en silencio); cuenta de clase distinta de 4, 5, 6, 7 → `VALOR_INVALIDO:cuentaCodigo`; duplicado por la llave → `DUPLICADO_EN_CARGA`.
 - Reemplazo: borra de `fact.Presupuesto` las filas de la empresa de **las versiones presentes en la carga** con `PeriodoKey` en la ventana, e inserta. Otras versiones no se tocan.
 - Signo: `ValorPresupuestado` positivo por naturaleza (igual que `Saldo` de `vw_EstadoResultados`). Documentarlo en la plantilla.
-- El control de periodo cerrado de `IniciarCargaHandler` **no debe aplicar** a `presupuesto` (se presupuestan meses futuros y se corrige el pasado): excluir esta entidad de esa verificación.
+- El control de periodo cerrado de `IniciarCargaHandler` **no debe aplicar** a `presupuesto` (se presupuestan meses futuros y se corrige el pasado): declarar la entidad con `ExentaDeCierre: true` (propiedad nueva de `EntidadIngesta`, definida en el índice, «Mecanismos compartidos») y que el handler la consulte junto a `EsCatalogo`. No comparar por nombre de entidad.
 
 ### 2. Vista
 `CREATE OR ALTER VIEW rpt.vw_EjecucionPresupuestal` agregando (sin quitar columnas): `ClasePuc, Grupo` (2 dígitos), `RealIngreso, PptoIngreso` (clase 4), `RealGasto, PptoGasto` (clases 5, 6, 7). Requiere unir `dim.CuentaContable` por `CuentaId`.

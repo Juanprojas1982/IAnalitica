@@ -17,6 +17,7 @@ Que cada KPI muestre, además del valor, su variación frente al periodo anterio
   - `AcumuladoAnioAnterior`: lo mismo un año atrás.
 - No aplica (todo `null`) a métricas sin dimensión `periodo` (cartera por `corte`, dinero detenido).
 - Razones y promedios: el acumulado se recalcula con la expresión de la métrica sobre el rango (correcto para `SUM(a)/NULLIF(SUM(b),0)`); **nunca** promediar porcentajes mensuales.
+- El acumulado del año se resuelve **aquí, en el handler**, cambiando `PeriodoDesde`; no se toca `MotorMetricas`. La bandera `AcumuladoAnual` del motor es de PL-14 (métricas presupuestales por vigencia) y es independiente: ningún plan espera al otro.
 - Costo: hasta 3 consultas más por KPI, cacheadas con el widget (misma clave). Lanzarlas con `Task.WhenAll` solo si la conexión lo permite; si no, en secuencia.
 
 ### Web

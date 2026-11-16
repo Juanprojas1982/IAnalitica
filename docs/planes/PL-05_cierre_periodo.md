@@ -6,7 +6,7 @@ Estado: diseñado, **bloqueado por DP-5**. No implementar sin esa decisión. Scr
 Que una cifra reportada no cambie después: cerrar un mes en la plataforma congela sus hechos.
 
 ## Situación actual
-- `etl.PeriodoCierre (EmpresaId, PeriodoKey, Estado, CerradoEn)` existe. `RepositorioCargas.PeriodoCerradoAsync` ya rechaza con `409 PERIODO_CERRADO` toda carga `VENTANA`/`INICIAL` de hechos cuya ventana toque un periodo cerrado. **Nada escribe en la tabla.**
+- `etl.PeriodoCierre (EmpresaId, PeriodoKey, Estado, CerradoEn)` existe. `RepositorioCargas.PeriodoCerradoAsync` ya rechaza con `409 PERIODO_CERRADO` toda carga `VENTANA`/`INICIAL` de hechos cuya ventana toque un periodo cerrado. **Nada escribe en la tabla.** El control vive en `IniciarCargaHandler` y aplica a toda entidad que no sea catálogo; las entidades con `ExentaDeCierre` (`presupuesto`, `agenda-capacidad`; ver índice, «Mecanismos compartidos») no pasan por él.
 - `ia.usp_CerrarPeriodo` es de la facturación de IA (D50): **no es parte de este plan**.
 
 ## Riesgo que obliga a decidir (DP-5)

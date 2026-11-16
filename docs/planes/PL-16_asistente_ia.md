@@ -1,6 +1,6 @@
 # PL-16 · Asistente IA: proveedor real y salida a clientes
 
-Estado: diseñado, **bloqueado por D32 (costo) y P11**. Scripts `1180_asistente.sql` y el reservado `1042` (excedente, D50).
+Estado: diseñado, **bloqueado por D32 (costo) y P11**. Scripts `1180_asistente.sql` y el reservado `1042_ia_periodo_colombia.sql` (D44: periodo de IA en hora Colombia; es el requisito previo del excedente D50, no el excedente).
 Cierra los pendientes técnicos 1 y 7 (`06` §10).
 
 ## Objetivo
@@ -41,13 +41,13 @@ Pasar de «probado con modelo simulado» a un asistente que responde con un mode
 
 ### Fase 4 · Clientes
 - `ia.usp_CerrarPeriodo` invocado por una tarea mensual (hora Colombia, D44).
-- Excedente y su cobro: paso 10 de facturación, script 1042 (D50) — ya diseñado en `08`; se activa aquí.
+- Aplicar `1042_ia_periodo_colombia.sql` (D44) y después activar el excedente y su cobro: paso 10 de facturación (D50), ya diseñado en `08`. Si el paso 10 necesita DDL propio, usa 1043.
 - Habilitación por empresa: consentimiento firmado, tarifa cargada, cupo del plan.
 
 ## Archivos por capa
 | Capa | Archivo |
 |---|---|
-| BD | `database/scripts/1180_asistente.sql` (valoraciones), `1042` (D50) |
+| BD | `database/scripts/1180_asistente.sql` (valoraciones), `1042_ia_periodo_colombia.sql` (D44) |
 | Infrastructure | `Asistente/FabricaClienteAnthropic.cs` (nuevo), `DependencyInjection.cs`, `IAnalitica.Infrastructure.csproj` (paquete, tras verificar) |
 | Application | `Asistente/*` (refusal, respaldo, valoraciones) |
 | Web | `Components/Pages/Asistente.razor`, endpoints `/q/asistente/*` |

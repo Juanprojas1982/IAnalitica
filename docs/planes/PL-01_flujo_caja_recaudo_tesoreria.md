@@ -10,7 +10,8 @@ Responder: ¿cuánto entró y salió de caja y bancos?, ¿cuánto pagó cada EPS
 **Vista `rpt.vw_MovimientoDisponible`** — entradas y salidas de las cuentas de disponible.
 - Fuente: `fact.AsientoLinea` ⨝ `dim.CuentaContable`, `Estado = 1`, cuentas con `EsBanco = 1` o `LEFT(Codigo,2) = '11'` (`[S]` DP-1), comprobantes con `tc.Clase <> 'CIERRE'`.
 - **Traslados:** agrupar por `MovimientoSourceKey`; neto = Σ débito − Σ crédito sobre cuentas de disponible. Si el neto del comprobante es 0 es traslado entre cuentas propias y se excluye. Entradas = neto > 0; salidas = −neto cuando < 0.
-- Columnas: `EmpresaId, PeriodoKey, FechaKey, SedeId, CuentaId, Entradas, Salidas, FlujoNeto`. La sede y la cuenta son las de la línea de disponible de mayor valor del comprobante.
+- **Saldos iniciales:** los comprobantes con `tc.Clase = 'SALDO_INICIAL'` (valor del `CHECK` de `dim.TipoComprobante`, `0040`) no son flujo: van a la columna `SaldoInicial` y quedan fuera de `Entradas`/`Salidas`/`FlujoNeto` (DP-1). Que SaludIPS marque así la apertura es `[S]`: si llegan como `NORMAL`, el primer periodo mostrará una entrada inflada y el tablero debe rotularlo.
+- Columnas: `EmpresaId, PeriodoKey, FechaKey, SedeId, CuentaId, Entradas, Salidas, FlujoNeto, SaldoInicial`. La sede y la cuenta son las de la línea de disponible de mayor valor del comprobante.
 - Limitación a documentar: clasifica por comprobante, no por concepto (no distingue nómina de proveedores).
 
 **Vista `rpt.vw_RecaudoCartera`** — abonos aplicados a cuentas por cobrar.
@@ -24,6 +25,7 @@ Responder: ¿cuánto entró y salió de caja y bancos?, ¿cuánto pagó cada EPS
 **Dashboards:** `tesoreria.flujo_caja` (3 KPI + línea entradas/salidas por periodo + tabla por cuenta) y `tesoreria.recaudo` (KPI recaudo, días de pago, cruces sin caja + barras por pagador + tabla por pagador).
 
 ### B · Ingesta de `recibos` (caja)
+Requiere la verificación de `ModuloRequerido` de PL-02 §1 (si PL-02 no está mezclado, se crea aquí con esa misma definición).
 - `CatalogoEntidades`: `new EntidadIngesta("recibos", new[] { Modos.Ventana, Modos.Inicial }, new[] { "valor" }, ModuloRequerido: "TESORERIA")`.
 - `etl.usp_ProcesarRecibos` → `fact.TesoreriaMovimiento`, ventana por `fecha`. Campos del contrato `02` §15.
   - Obligatorios: `sourceKey, fecha, cuentaBancariaCodigo, tipoMovimiento, valor, anulado` → `CAMPO_REQUERIDO`.
@@ -55,7 +57,7 @@ Símbolos para `impact` antes de editar: `CatalogoEntidades`, `ProcesadorCargas.
 
 ## Pruebas
 - A: comprobante banco↔CxC cuenta como entrada y como recaudo efectivo; traslado banco↔banco no aparece; nota crédito contra CxC va a `ValorSinCaja`; abono reversado no suma; días de pago ponderados = caso calculado a mano.
-- **Cuadre:** Σ `FlujoNeto` de todos los periodos = saldo de las cuentas de disponible en `rpt.vw_SaldoBalance` (misma base, ≤ 0,01).
+- **Cuadre:** Σ `FlujoNeto` + Σ `SaldoInicial` de todos los periodos = saldo de las cuentas de disponible en `rpt.vw_SaldoBalance` (misma base, ≤ 0,01). Comprobante `SALDO_INICIAL` no aparece como entrada.
 - B y C: insertar/actualizar/eliminar por ventana, cada rechazo, anulados, `ENTIDAD_NO_SOPORTADA` ya no aplica, módulo inactivo (ver PL-02).
 - Aislamiento: empresa A no ve movimientos ni recaudo de B por las 4 vistas.
 

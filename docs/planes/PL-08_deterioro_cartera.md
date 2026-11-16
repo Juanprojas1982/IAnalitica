@@ -1,6 +1,7 @@
 # PL-08 · Deterioro estimado de cartera
 
-Estado: diseñado, **bloqueado por DP-7**. Módulo `CARTERA`. Script `1100_deterioro_cartera.sql`.
+Estado: diseñado, **bloqueado por DP-7** (y DP-4 para el permiso). Módulo `CARTERA`. Script `1100_deterioro_cartera.sql`.
+Depende de PL-04 solo por la versión de configuración en la clave de caché; si PL-04 no está mezclado, se crea aquí con la definición de PL-04 §1.
 Origen: propuesta del análisis, **no está en la spec**. Requiere aprobación del dueño como alcance nuevo.
 
 ## Objetivo
@@ -36,7 +37,7 @@ Dashboard `cartera.deterioro`: KPI estimado, % sobre cartera, cartera neta, sald
 ### 3. Configuración
 - Application `Semantica/DeterioroCartera.cs` (o carpeta `Cartera/`): `ListarReglasDeterioroQuery`, `GuardarReglasDeterioroCommand` (reemplaza el conjunto de la empresa; valida rangos del catálogo y un pagador de la empresa), auditoría.
 - Web: `Components/Pages/DeterioroCartera.razor` (tabla rango × porcentaje + excepciones por pagador). Permiso según DP-4.
-- Al guardar: invalidar caché de widgets de la empresa (mismo mecanismo que PL-04).
+- Al guardar: incrementar la versión de configuración de la empresa (`IVersionConfiguracion`, PL-04 §1); la caché no tiene invalidación directa.
 
 ## Archivos por capa
 | Capa | Archivo |

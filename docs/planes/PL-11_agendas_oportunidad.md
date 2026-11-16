@@ -12,11 +12,11 @@ Responder: ¿qué tan llenas están las agendas?, ¿cuánto se pierde por inasis
 
 ## Cambios
 ### 1. Entidades
-- `agenda-capacidad`: `VENTANA` (incluye fechas futuras), sin suma de control (o `cuposOfertados`). **Excluirla del control de periodo cerrado** (PL-05) y permitir `ventanaHasta` futura: revisar que ningún validador lo impida.
+- `agenda-capacidad`: `VENTANA` (incluye fechas futuras), sin suma de control (o `cuposOfertados`). **Excluirla del control de periodo cerrado** con `ExentaDeCierre: true` (el control ya existe en `IniciarCargaHandler`, no nace con PL-05; ver índice, «Mecanismos compartidos») y permitir `ventanaHasta` futura: revisar que ningún validador lo impida.
 - `citas`: `INCREMENTAL`, `INICIAL`; sin suma de control. `pacienteHash` obligatorio si viene paciente; **rechazar la carga si una fila trae nombre o documento** (ampliar `ReglasPrivacidad`).
 
 ### 2. Procedimientos (`1130_agenda.sql`)
-- `etl.usp_ProcesarAgendaCapacidad`: reemplaza la ventana por `fecha`. Llave natural `fecha + profesional + jornada + horaInicio` (confirmar con la PK de `0060` antes de escribir). `cuposOfertados ≥ 0`, `minutosPorCupo` entre 1 y 480.
+- `etl.usp_ProcesarAgendaCapacidad`: reemplaza la ventana por `fecha`. Llave: la PK real de `0060` es `(EmpresaId, FechaKey, ProfesionalId, Jornada)` — **sin** `horaInicio` (verificado; manda el DDL). Dos franjas del mismo profesional, día y jornada se **agregan** en una fila: `CuposOfertados` = Σ, `HoraInicio` = la menor, `MinutosPorCupo` = Σ(cupos × minutos) / Σ cupos redondeado (`MinutosOfertados` es columna calculada y debe conservar el total; si el redondeo lo altera en más de 1 minuto por cupo → rechazo `VALOR_INVALIDO:minutosPorCupo`). Franjas con `especialidadCodigo` o `sedeCodigo` distintos dentro de la misma llave → `DUPLICADO_EN_CARGA` (no se puede elegir una). Cambiar la PK para incluir la hora sería otro script y otra decisión. `cuposOfertados ≥ 0`, `minutosPorCupo` entre 1 y 480.
 - `etl.usp_ProcesarCitas`: upsert por `SourceKey`. `estado` normalizado a `ASIGNADA`, `ASISTIO`, `NO_ASISTIO`, `CANCELADA` (la vista usa esos literales; el mapeo desde SaludIPS es `[S]` y vive en la extracción, no aquí). Fuera de lista → `ESTADO_INVALIDO`.
 
 ### 3. Vistas
@@ -45,6 +45,8 @@ Símbolos para `impact`: `CatalogoEntidades`, `ReglasPrivacidad.Revisar`, `Proce
 - Caso: 100 cupos, 80 asignadas, 60 atendidas, 15 inasistencias, 5 canceladas → ocupación 80 %, inasistencia 18,75 % (15/80), cupos perdidos 40.
 - Oportunidad: solicitud 1-mar, cita 11-mar → 10 días; cita sin fecha de solicitud no entra al promedio.
 - Agenda futura se acepta; recarga de la ventana elimina horarios retirados.
+- Dos franjas en la misma jornada (8:00 con 10 cupos de 20 min y 10:00 con 5 de 20 min) → una fila con 15 cupos y 300 minutos; con sedes distintas → rechazo.
+- `agenda-capacidad` con un mes cerrado en la ventana se acepta (`ExentaDeCierre`); `citas` no cambia.
 - Sin nómina: el costo de capacidad ociosa queda nulo y el widget lo dice, no muestra 0.
 - Aislamiento por ambas vistas.
 

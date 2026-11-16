@@ -12,8 +12,12 @@ Depende de PL-10 (`inventario`). Es el paquete del **operador farmacéutico pilo
 **Las normas de `03` §20 salieron de búsquedas web (oct-2026) y deben confirmarse con el área regulatoria antes de implementar reglas** (Circulares 021 y 022 de 2026 de la CNPMDM, Res. 1604 de 2013, plazos MIPRES). Sin esa confirmación solo se implementan las partes A y B.
 
 ## Parte A · Inventario (sin dependencia regulatoria)
-- Vistas: `rpt.vw_InventarioMensual` existe. Nuevas en 1150: `rpt.vw_InventarioSaldo` (saldo en cantidad y valor por almacén, artículo y lote, acumulado hasta el periodo; `Acumulado: true` en las métricas) y `rpt.vw_VencimientoLotes` (saldo por lote con `DiasParaVencer` y rango `VENCIDO`, `0-30`, `31-90`, `91-180`, `>180`; usa `dim.Lote.FechaVencimiento`; la fecha de referencia es el último corte cargado, **no** `GETDATE()` en la vista, para que la caché sea coherente).
-- `ModuloInventario` (en `Modulos.Farmacia`): `inventario.valor`, `inventario.salidas_valor`, `inventario.dias_inventario` = `30.0*SUM(SaldoValor)/NULLIF(SUM(ValorSalidaMes),0)`, `inventario.valor_vencido`, `inventario.valor_por_vencer_90`. Dimensiones nuevas `almacen`, `articulo`, `rango_vencimiento`.
+- Vistas: `rpt.vw_InventarioMensual` existe. Nuevas en 1150:
+  - `rpt.vw_InventarioSaldo`: **movimiento neto del mes**, no saldo: `EmpresaId, PeriodoKey, AlmacenId, ArticuloId, LoteId, CantidadNeta` (entradas − salidas)`, ValorNeto` (`ValorEntrada − ValorSalida`)`, ValorSalida`, solo `Estado = 1`. El saldo lo obtiene el motor con `Acumulado: true` (suma desde el origen hasta `PeriodoHasta`), igual que el balance. Si la vista ya trajera el saldo acumulado, `Acumulado` lo sumaría otra vez.
+  - `rpt.vw_VencimientoLotes`: saldo **actual** por lote (suma de toda la historia; sin dimensión `periodo`) con `DiasParaVencer` y rango `VENCIDO`, `0-30`, `31-90`, `91-180`, `>180`; usa `dim.Lote.FechaVencimiento`. Fecha de referencia: `inventario` entra por ventana de `fecha` y **no tiene corte**; se usa la fecha del último movimiento cargado de la empresa (`MAX(FechaKey)` de `fact.MovimientoInventario` con `Estado = 1` y fecha ≤ la de la carga) `[S]`, **no** `GETDATE()`, para que la caché sea coherente. El tablero muestra esa fecha.
+- `ModuloInventario` (en `Modulos.Farmacia`): `inventario.valor` = `SUM(ValorNeto)` (`Acumulado: true`), `inventario.salidas_valor` = `SUM(ValorSalida)` (del rango, sin `Acumulado`), `inventario.valor_vencido`, `inventario.valor_por_vencer_90` (sobre `vw_VencimientoLotes`).
+- `inventario.dias_inventario` **no cabe en una expresión declarativa**: mezcla un saldo (acumulado) con un flujo (salidas del rango) y `Acumulado` aplica a la métrica entera. Es una `IMetricaCalculada` (`DiasInventario`): saldo a `PeriodoHasta` ÷ salidas del rango × días del rango (30 × meses); salidas 0 → nulo, no 0. Admite las mismas dimensiones (`almacen`, `articulo`).
+- Dimensiones nuevas `almacen`, `articulo`, `rango_vencimiento`.
 - Dashboards `inventario.resumen` y `inventario.vencimientos`.
 
 ## Parte B · Pendientes de dispensación
@@ -44,7 +48,7 @@ Depende de PL-10 (`inventario`). Es el paquete del **operador farmacéutico pilo
 Símbolos para `impact`: `ModuloFarmacia`, `CatalogoEntidades`, reglas del validador (clase base), `Endpoints` de la API, `Dimensiones.Todas`.
 
 ## Pruebas
-- Inventario: saldo acumulado = entradas − salidas; lote vencido y por vencer en su rango; días de inventario contra caso a mano.
+- Inventario: saldo acumulado = entradas − salidas, y no cambia al mover `PeriodoDesde`; lote vencido y por vencer en su rango contra la fecha del último movimiento; días de inventario contra caso a mano (saldo 300, salidas de 3 meses 450 → 60 días) y nulo sin salidas.
 - Pendiente con existencia en otra bodega aparece; sin existencia no.
 - R3 y R4 sin factor validado quedan «por verificar», no críticas.
 - Bajada: solo con token de conector; no filtra por empresa; `desde` devuelve solo lo cambiado.

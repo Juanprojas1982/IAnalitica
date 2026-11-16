@@ -1,7 +1,7 @@
 # PL-12 · Productividad y apoyo diagnóstico
 
 Estado: diseñado, no implementado. Módulos `DIAGNOSTICO` y `NOMINA_COSTOS` (permisos sembrados). Script `1140_productividad.sql`.
-**Depende de PL-10** (`prestaciones`, `nomina`).
+**Depende de PL-10** (`prestaciones`, `nomina`) y de PL-11 (dimensiones `profesional` y `especialidad`, y su seudonimización). Decisiones: DP-10 y DP-12.
 
 ## Objetivo
 Producción por profesional y especialidad, costo de personal por centro y por hora, y —para centros de diagnóstico— volumen, oportunidad de entrega y repetición de estudios.
@@ -15,12 +15,16 @@ Producción por profesional y especialidad, costo de personal por centro y por h
 
 ### 2. Vistas (`1140_productividad.sql`)
 - `rpt.vw_ProduccionProfesional`: `EmpresaId, PeriodoKey, SedeId, EspecialidadId, ProfesionalId, PagadorId, LineaServicioId, Prestaciones, Cantidad, ValorProducido, PrestacionesAnuladas`.
-- `rpt.vw_CostoPersonal`: `EmpresaId, PeriodoKey, CentroCostoId, Cargo, CostoPersonal, Horas, HorasExtra` (solo si el concepto lo permite distinguir; si no, omitir `HorasExtra`), `Empleados` (conteo de códigos distintos). **Nunca expone `EmpleadoTerceroCodigo`.** Requisito de privacidad (`01` §3): si un grupo `periodo × centro × cargo` tiene menos de 3 empleados, se agrega al centro sin cargo («nómina sin nombres, solo agregados»). Umbral 3 = `[S]`, confirmar con el dueño.
+- `rpt.vw_CostoPersonal`: `EmpresaId, PeriodoKey, CentroCostoId, Cargo, CostoPersonal, Horas, HorasExtra` (solo si el concepto lo permite distinguir; si no, omitir `HorasExtra`), **Nunca expone `EmpleadoTerceroCodigo` ni un conteo de empleados** (un conteo distinto no es aditivo: sumarlo entre periodos o centros lo infla). Requisito de privacidad (`01` §3, «nómina sin nombres, solo agregados»), umbral 3 = `[S]` (DP-10):
+  - Un grupo `periodo × centro × cargo` con menos de 3 empleados no se muestra con su cargo: pasa a `Cargo = NULL` («otros cargos»).
+  - **Supresión complementaria:** si el grupo «otros cargos» resultante de un `periodo × centro` tiene menos de 3 empleados, **todo** el centro de ese periodo se publica sin cargo. Si no, el cargo oculto se deduce restando los visibles del total.
+  - Un centro con menos de 3 empleados en el periodo se publica igual a nivel de centro (el costo por centro ya es visible en la contabilidad); lo que se protege es el cruce con el cargo.
+  - El conteo se hace dentro de la vista (CTE) y no sale como columna.
 - `rpt.vw_EstudiosDiagnostico`: `EmpresaId, PeriodoKey, SedeId, Tipo, ProfesionalId, Estudios, Entregados, DiasEntregaSuma, ImagenesRechazadas, ImagenesRepetidas`.
 
 ### 3. Métricas y dashboards
-- `ModuloNominaCostos` (en `Modulos.Operacion`; permiso `dash.nomina_costos`, **solo gerencia**): `nomina.costo_personal`, `nomina.costo_hora` = `SUM(CostoPersonal)/NULLIF(SUM(Horas),0)`, `nomina.empleados`. Dashboard `nomina.costo_personal`.
-- `ModuloProductividad` (o dentro de `AGENDA` si el dueño prefiere no crear módulo: **decisión**, la lista de módulos es cerrada en `03` §17 y no incluye PRODUCTIVIDAD → usar `AGENDA` para producción por profesional): `agenda.produccion_valor`, `agenda.prestaciones`, `agenda.pct_anuladas`. Dashboard `agenda.productividad`.
+- `ModuloNominaCostos` (en `Modulos.Operacion`; permiso `dash.nomina_costos`, **solo gerencia**): `nomina.costo_personal`, `nomina.costo_hora` = `SUM(CostoPersonal)/NULLIF(SUM(Horas),0)`. Sin métrica de número de empleados en v1 (no aditiva y facilita la deducción). Dashboard `nomina.costo_personal`.
+- Producción por profesional dentro de `ModuloAgenda` (DP-12: la lista de módulos es un `CHECK` cerrado en `0020` y no incluye PRODUCTIVIDAD; crear el módulo exigiría script y permiso nuevos): `agenda.produccion_valor`, `agenda.prestaciones`, `agenda.pct_anuladas`. Dashboard `agenda.productividad`.
 - `ModuloDiagnostico`: `diagnostico.estudios`, `diagnostico.dias_entrega` (`KpiMeta: "DIAS_ENTREGA_ESTUDIO"`), `diagnostico.pct_repetidos`, `diagnostico.pct_rechazados`. Dashboard `diagnostico.resumen`.
 - Dimensiones: `profesional`, `especialidad` (de PL-11), `cargo`, `tipo_estudio`.
 - IA: `profesional` seudonimizado; las métricas `nomina.*` no deben quedar disponibles al asistente para roles sin `dash.nomina_costos` (ya lo hereda del permiso: probarlo).
@@ -39,7 +43,7 @@ Símbolos para `impact`: `CatalogoEntidades`, `ProcesadorCargas.AplicarAsync`, `
 
 ## Pruebas
 - Producción por profesional contra un caso a mano; anuladas fuera del valor.
-- Supresión de grupos pequeños: 2 empleados en un cargo → el cargo no aparece, el total del centro sí.
+- Supresión de grupos pequeños: centro con cargos de 5, 4 y 2 empleados → el de 2 pasa a «otros cargos», que queda con 2 (< 3) → el centro entero sale sin cargo. Con cargos de 5, 2 y 2 → «otros cargos» tiene 4 y se muestran el cargo de 5 y «otros cargos».
 - Usuario `FINANCIERO` no ve `nomina.*` ni por dashboard ni por el asistente; `GERENTE` sí.
 - Aislamiento por las tres vistas.
 
