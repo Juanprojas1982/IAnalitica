@@ -10,8 +10,8 @@ Que cada KPI muestre, además del valor, su variación frente al periodo anterio
 `ObtenerDatosWidgetHandler.CalcularAsync` calcula `anterior` con `PeriodoAnteriorAsync` (rango inmediatamente anterior de igual longitud; `null` si la métrica no tiene dimensión `periodo`, es `Acumulado` o no hay rango). `SerieWidget(resultado, anterior, meta, semaforo)`.
 
 ## Cambios
-### Application `Semantica/Consultas.cs`
-- `SerieWidget`: agregar `decimal? AnioAnterior`, `decimal? AcumuladoAnio`, `decimal? AcumuladoAnioAnterior` (parámetros opcionales al final para no romper llamadas).
+### Application `Semantica/Contratos.cs` (el record) y `Semantica/Consultas.cs` (el handler)
+- `SerieWidget` (está en `Contratos.cs`, no en `Consultas.cs`): agregar `decimal? AnioAnterior = null`, `decimal? AcumuladoAnio = null`, `decimal? AcumuladoAnioAnterior = null` (parámetros opcionales al final para no romper llamadas) y las variaciones derivadas con la misma fórmula de `Variacion` (`(a − b) / |b|`, nula si `b` es 0 o falta).
 - Solo para `TipoWidget.Kpi`:
   - `AnioAnterior`: mismos filtros con `PeriodoDesde − 100` y `PeriodoHasta − 100`. Para métricas `Acumulado` (balance) **sí aplica**: saldo al mismo mes del año anterior (el motor ignora `PeriodoDesde`).
   - `AcumuladoAnio`: `PeriodoDesde = año de PeriodoHasta × 100 + 1`, `PeriodoHasta` igual. No aplica a `Acumulado` (ya es saldo) → `null`.
@@ -19,24 +19,24 @@ Que cada KPI muestre, además del valor, su variación frente al periodo anterio
 - No aplica (todo `null`) a métricas sin dimensión `periodo` (cartera por `corte`, dinero detenido).
 - Razones y promedios: el acumulado se recalcula con la expresión de la métrica sobre el rango (correcto para `SUM(a)/NULLIF(SUM(b),0)`); **nunca** promediar porcentajes mensuales.
 - El acumulado del año se resuelve **aquí, en el handler**, cambiando `PeriodoDesde`; no se toca `MotorMetricas`. La bandera `AcumuladoAnual` del motor es de PL-14 (métricas presupuestales por vigencia) y es independiente: ningún plan espera al otro.
-- Costo: hasta 3 consultas más por KPI, cacheadas con el widget (misma clave). Lanzarlas con `Task.WhenAll` solo si la conexión lo permite; si no, en secuencia.
+- Si la métrica es `AcumuladoAnual` (bandera de PL-14, si ya existe): se trata como `Acumulado` (`AcumuladoAnio` nulo; `AnioAnterior` sí aplica), y `PeriodoAnteriorAsync` también debe devolver `null` para ella.
+- Costo: hasta 3 consultas más por KPI, cacheadas con el widget (misma clave). `MotorMetricas.EjecutarAsync` abre su propia conexión en cada llamada (verificado), así que se pueden lanzar con `Task.WhenAll`.
 
 ### Web
-- Componente del KPI (`Components/Pages/Dashboards/…`): segunda línea «vs. año anterior ▲ 4,2 %» y tercera «Acumulado 2026: … (▲ … vs. 2025)». Color según `SentidoMejora` (reutilizar la lógica de la variación actual). Sin dato → no se pinta la línea.
-- PDF/Excel de reportes (`GeneradorReportes`): agregar las columnas a la sección de KPI si la sección ya exporta `anterior`; si no, dejarlo fuera y anotarlo.
+- `Components/Pages/Dashboards/Tablero.razor` (ahí se pinta el KPI): segunda línea «vs. año anterior ▲ 4,2 %» y tercera «Acumulado 2026: … (▲ … vs. 2025)». Color según `SentidoMejora` (reutilizar la lógica de la variación actual). Sin dato → no se pinta la línea.
+- PDF/Excel de reportes: **fuera de este plan.** Verificado: los exportadores no usan `SerieWidget.Anterior` (ni siquiera exportan la variación actual), así que no hay sección a la que agregar columnas.
 
 ### Asistente IA
-Verificar si las herramientas genéricas exponen `SerieWidget`; si lo hacen, los campos nuevos viajan solos. No cambiar el prompt.
+Sin cambios. Verificado: `HerramientasAsistente` consulta `IMotorMetricas` directamente y no usa `SerieWidget`; los comparativos no llegan al asistente. No cambiar el prompt.
 
 ## Archivos por capa
 | Capa | Archivo |
 |---|---|
-| Application | `src/IAnalitica.Application/Semantica/Consultas.cs` |
-| Web | componente KPI en `src/IAnalitica.Web/Components/Pages/Dashboards/` |
-| Infrastructure | `Reportes/GeneradorReportes.cs` (solo si aplica) |
+| Application | `src/IAnalitica.Application/Semantica/Contratos.cs` (`SerieWidget`), `src/IAnalitica.Application/Semantica/Consultas.cs` (`ObtenerDatosWidgetHandler.CalcularAsync`) |
+| Web | `src/IAnalitica.Web/Components/Pages/Dashboards/Tablero.razor` |
 | Pruebas | `tests/IAnalitica.Application.Tests/SemanticaYReportesTests.cs`, `tests/.../Ingesta/DashboardsTests.cs`, `Web/DashboardsWebTests.cs` (bUnit o HTML) |
 
-Símbolos para `impact`: `SerieWidget`, `ObtenerDatosWidgetHandler`, `DatosWidget`, componente KPI.
+Símbolos para `impact`: `SerieWidget`, `ObtenerDatosWidgetHandler`, `DatosWidget`, `Tablero.razor`.
 
 ## Pruebas
 - Ingresos 2025-03 = 100 y 2026-03 = 120 → año anterior 100, variación 20 %.
@@ -47,5 +47,5 @@ Símbolos para `impact`: `SerieWidget`, `ObtenerDatosWidgetHandler`, `DatosWidge
 - Rango que cruza de año (2025-11 a 2026-02): el acumulado toma el año de `PeriodoHasta`.
 
 ## Riesgos
-- Con menos de 13 meses cargados, el año anterior da 0 y la variación engaña: si el periodo comparado no tiene **ninguna** carga, devolver `null`, no 0. Usar la fecha mínima de datos de la empresa (consulta barata a `fact.AsientoLinea`/`etl.Carga`, cacheada).
+- Con menos de 13 meses cargados no hay año anterior. No hace falta una consulta aparte de «fecha mínima de datos»: sin dimensiones el motor ejecuta `SELECT SUM(…) FROM vista WHERE …` y, sobre cero filas, `SUM` y `SUM/NULLIF(SUM)` devuelven `NULL` → `Total` nulo → la línea no se pinta. Regla: **un comparativo nulo nunca se convierte en 0**. La excepción son las expresiones `COUNT(*)`/`COUNT(DISTINCT)` (dan 0 sobre cero filas): hoy ninguna métrica de KPI las usa; si aparece una, su comparativo en 0 se trata como «sin dato». Prueba: empresa con datos solo de 2026 → `AnioAnterior` nulo, no 0.
 - `SerieWidget` es un record público usado por Web, reportes y posiblemente IA: revisar el `impact` completo.

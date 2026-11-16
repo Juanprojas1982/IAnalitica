@@ -37,11 +37,11 @@ Pasar de «probado con modelo simulado» a un asistente que responde con un mode
 
 ### Fase 3 · Experiencia
 - Streaming SSE en `POST /q/asistente/conversaciones/{id}/mensajes` (manda `/q/`, no `/v1/`). Como la interfaz es SSR sin JavaScript (divergencia de `06` §13), el streaming exige un mínimo de script o un componente interactivo: **decisión de render abierta** (`06` §10). Alternativa sin JS: respuesta completa con indicador de espera (lo que hay hoy). No implementar el panel `Ctrl+K` hasta decidir.
-- Consumo visible (barra de cupo, valor de la respuesta según `VisibilidadCosto`), alertas al 70 y 90 % (reutiliza `ALERTAS` de PL-04), 👍/👎 por respuesta (tabla nueva `ia.Valoracion` en 1180), resumen de historial al pasar el tope.
+- Consumo visible (barra de cupo, valor de la respuesta según `VisibilidadCosto`), alertas al 70 y 90 % (dentro del trabajo `ALERTAS` de PL-04, que ya corre a diario, y como aviso compartido en `/avisos`, PL-04 §2), 👍/👎 por respuesta (tabla nueva `ia.Valoracion` en 1180), resumen de historial al pasar el tope.
 - Fuentes: cada cifra enlaza al dashboard de su métrica con los filtros usados.
 
 ### Fase 4 · Clientes
-- `ia.usp_CerrarPeriodo` invocado por una tarea mensual (hora Colombia, D44).
+- `ia.usp_CerrarPeriodo` invocado por una tarea mensual (hora Colombia, D44). `TiposTrabajo.CerrarPeriodoIa` ya existe (lo declaró facturación); el disparo por reloj sigue el patrón de `PlanificadorFacturacion`/`PlanificadorAlertas` (PL-04 §4).
 - Aplicar `1042_ia_periodo_colombia.sql` (D44) y después activar el excedente y su cobro: paso 10 de facturación (D50), ya diseñado en `08`. Si el paso 10 necesita DDL propio, usa 1043.
 - Habilitación por empresa: consentimiento firmado, tarifa cargada, cupo del plan.
 
@@ -60,4 +60,4 @@ Símbolos para `impact`: `IAsistenteChatClientFactory`, el orquestador del asist
 - **Costo:** Sonnet ≈ USD 0,05 por pregunta según el estimado del contexto (sin medir); un cupo mal fijado se nota en el margen. Medir con tráfico real antes de fijar P11.
 - **Cifras inventadas:** la regla «toda cifra sale de una herramienta» solo se garantiza con evaluaciones; por eso la fase 2 es condición.
 - **Inyección por datos:** los resultados de herramientas contienen texto de la IPS (nombres de pagadores, descripciones). Herramientas de solo lectura y máximo de iteraciones ya existen; las pruebas de la fase 2 lo verifican.
-- **Datos personales hacia un tercero:** hoy solo `usuario` y `tercero` se seudonimizan; PL-11 y PL-12 agregan `profesional`. Toda dimensión nueva que nombre personas debe entrar a esa lista antes de exponerse al asistente.
+- **Datos personales hacia un tercero:** hoy solo `usuario` y `tercero` se seudonimizan (diccionario `Prefijos` de `Seudonimizador`); PL-11 agrega `profesional`. Toda dimensión nueva que nombre personas debe entrar a esa lista antes de exponerse al asistente. Pendiente de revisar antes de salir a clientes: `pagador` no se seudonimiza y puede ser una persona natural (particulares), y `cargo` (PL-12) con grupos pequeños puede identificar a alguien.

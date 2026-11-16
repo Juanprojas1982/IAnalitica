@@ -1,6 +1,7 @@
 # Planes de implementación — producto completo antes del primer piloto
 
 Estado: **diseñados y revisados contra el DDL y el código; decisiones del dueño registradas el 2026-11-16 (D54–D65 en `06` §12). NO implementados.** La columna «Listo» de la tabla dice qué puede empezar; la implementación de cada plan arranca con orden explícita del dueño. Fecha: 2026-11-16.
+**Tercera revisión (2026-11-16), símbolo por símbolo contra `src/` y `database/scripts`:** corrigió errores que habrían fallado al arrancar o en ejecución y cerró huecos de diseño. El resumen está en «Hallazgos de la revisión contra el código»; cada plan tiene su detalle. Quedan dos decisiones nuevas del dueño (DP-14 y DP-15), ambas de PL-15.
 Alcance (decisión del dueño, 2026-11-16): como aún no hay ningún piloto en operación, entra **todo lo que falta**, incluido el sector público (ESE). PL-01 a PL-09 cubren al analista financiero; PL-10 a PL-17, el resto de lo que el producto promete.
 Diseño según D30; implementación con Sonnet, un plan = una rama = un PR. Un cambio de diseño durante la implementación vuelve a diseño.
 
@@ -10,7 +11,7 @@ Diseño según D30; implementación con Sonnet, un plan = una rama = un PR. Un c
 3. **`rpt.vw_CicloIngreso` depende de `fact.Prestacion`**, que no se ingiere. «Dinero detenido por etapa» se rediseña sobre cartera + facturas + foto de pendientes (PL-03).
 4. **`dim.MotivoGlosa` no tiene semillas** y es global: «glosas por causa» necesita guardar el código de origen (PL-02).
 5. **`EntidadIngesta.ModuloRequerido` existe pero nadie lo verifica** (PL-02 lo hace cumplir).
-6. **`cfg.KpiMeta` se lee (semáforo) pero no hay pantalla para escribirla**; las notificaciones con `UsuarioId NULL` no se cuentan en la campana (PL-04).
+6. **`cfg.KpiMeta` se lee (semáforo) pero no hay pantalla para escribirla**; las notificaciones con `UsuarioId NULL` no se cuentan ni se pueden listar: no existe página de avisos (PL-04).
 7. **Cerrar un periodo en la plataforma puede tumbar la carga nocturna**: la ventana del conector se calcula con los cierres de SaludIPS, no con los de IAnalitica → `409 PERIODO_CERRADO` (PL-05; resuelto con D57: cierre blando primero).
 8. **Los abonos sin cruzar desaparecen de la cartera**: `etl.usp_GenerarCorteCartera` descarta líneas con `ValorOriginal = 0` (un crédito en una cuenta CxC de naturaleza débito). Hoy solo se ven como diferencia en la conciliación (PL-09).
 9. El comparativo contra el periodo anterior **ya existe** en los KPI; falta año anterior y acumulado del año (PL-07).
@@ -21,8 +22,8 @@ Diseño según D30; implementación con Sonnet, un plan = una rama = un PR. Un c
 | PL-01 | Flujo de caja, recaudo de cartera, caja y conciliación bancaria | PL-02 (solo B y C: verificación de módulo) | 1050 | Parte B y C | **Sí** | — |
 | PL-02 | Glosas | — | 1060 | Sí | **Sí** | Clasificación de motivos (DP-2): el tablero sale con códigos crudos |
 | PL-03 | Atendido no facturado y dinero detenido por etapa | PL-02 (opcional) | 1070 | Sí (foto) | **Sí** | — |
-| PL-04 | Metas de KPI y alertas | — | 1080 | No | **Sí** | — |
-| PL-05 | Cierre de periodo | PL-04 (trabajo `ALERTAS` y sesión de sistema) | 1085 | Fase 2 (ventana) | **Fase 1 sí** | Fase 2 (cierre duro): conector actualizado en la empresa |
+| PL-04 | Metas de KPI, alertas y avisos del portal | — | 1080 | No | **Sí** | — |
+| PL-05 | Cierre de periodo | PL-04 (trabajo `ALERTAS`, alcance de sistema y avisos) | 1085 | Fase 2 (ventana) | **Fase 1 sí** | Fase 2 (cierre duro): conector actualizado en la empresa |
 | PL-06 | Presupuesto vs. real | — | 1090 | No | **Sí** | — |
 | PL-07 | Comparativos: año anterior y acumulado | — | — | No | **Sí** | — |
 | PL-08 | Deterioro estimado de cartera | PL-04 (versión de configuración en la caché) | 1100 | No | **Sí** | — |
@@ -31,10 +32,10 @@ Diseño según D30; implementación con Sonnet, un plan = una rama = un PR. Un c
 | PL-11 | Agendas y oportunidad | PL-10 (solo costo ocioso) | 1130 | Sí | **Sí** | — |
 | PL-12 | Productividad y apoyo diagnóstico | PL-10, PL-11 (dimensiones `profesional`, `especialidad`) | 1140 | Sí | **Sí** | — |
 | PL-13 | Farmacia, inventario y validador de precios completo | PL-10 | 1150 | Sí | **Parte A sí** | B: contrato de `ordenes-externas` (P9). C: confirmación regulatoria |
-| PL-14 | Paquete ESE (presupuesto público, plan de cuentas público, riesgo) | PL-02 (verificación de módulo) | 1160 | Sí (función nueva en `SaludIPS2`) | **Fases 1–3 sí** | Fase 4: validar el plan de cuentas con la ESE. Fase 5: P6. Cuadre con datos reales antes de mostrar cifras |
-| PL-15 | Grupos de instituciones (vista consolidada) | PL-04 (sesión de sistema) | 1170 | No | **Sí** | Para dar de alta un grupo real: consentimiento contractual (P5) |
-| PL-16 | Asistente IA: proveedor real y salida a clientes | PL-04 (alertas de cupo) | 1180, 1042 (D44) | No | No | D32 (costo y clave), P11, P5 |
-| PL-17 | Auditor de configuración, fase 2 | — | 1190 | Parcial | **Lotes 1 y 3 sí** | Resto de lotes: medir falsos positivos con el piloto; reglas `[S]` nacen `PorVerificar` |
+| PL-14 | Paquete ESE (presupuesto público, plan de cuentas público, riesgo) | PL-02 (verificación de módulo) | 1160 | Sí (función nueva en `SaludIPS2`) | **Fases 1 y 2 sí; fase 3, solo reglas del auditor** | `contratos-publicos` y el tablero de contratación: contrato sin definir (P9). Fase 4: validar el plan de cuentas con la ESE. Fase 5: P6. Cuadre con datos reales antes de mostrar cifras |
+| PL-15 | Grupos de instituciones (vista consolidada) | PL-04 (alcance de sistema) | 1170 (+ `9000_rls.sql`) | No | **No** | DP-14 (por dónde se lee la membresía) y DP-15 (escritura de la membresía solo por superadmin). Para dar de alta un grupo real: consentimiento contractual (P5) |
+| PL-16 | Asistente IA: proveedor real y salida a clientes | PL-04 (alertas de cupo y avisos) | 1180, 1042 (D44) | No | No | D32 (costo y clave), P11, P5 |
+| PL-17 | Auditor de configuración, fase 2 | PL-04 solo para el resumen semanal | 1190 | Parcial | **Lotes 1 y 3 sí** | Resto de lotes: medir falsos positivos con el piloto; reglas `[S]` nacen `PorVerificar`. Resumen semanal: tras PL-04 |
 
 «Listo» significa que el diseño no tiene decisiones abiertas y se puede escribir y probar con Testcontainers. **No** significa que haya datos: las entidades que envía el conector (PL-01 B/C, PL-02, PL-03, PL-10, PL-11, PL-12) dependen de extracciones de `docs/06` y `docs/11` que no se han ejecutado contra una base real (P2).
 
@@ -42,9 +43,9 @@ Diseño según D30; implementación con Sonnet, un plan = una rama = un PR. Un c
 1. **Sin conector:** PL-07 → PL-17 (lotes 1 y 3) → PL-01 parte A → PL-04.
 2. **Ciclo del ingreso completo:** PL-02 → PL-03 → PL-06 → PL-01 (B, C).
 3. **Operación:** PL-10 → PL-11 → PL-12 → PL-13 parte A.
-4. **Configuración y seguridad:** PL-08 → PL-05 fase 1 → PL-15.
-   **ESE:** PL-14 fases 1 a 3 pueden ir en cualquier punto después de PL-02; su origen ya está verificado en el código de SaludIPS.
-5. **Esperan algo externo:** PL-09 (datos reales), PL-13 B y C (contrato y regulatorio), PL-14 fases 4 y 5 (ESE), PL-16 (D32, P11), PL-05 fase 2 (conector), PL-17 lotes 2 y 4–6 (medición con piloto).
+4. **Configuración y seguridad:** PL-08 → PL-05 fase 1.
+   **ESE:** PL-14 fases 1 y 2 (y las reglas ESE de la fase 3) pueden ir en cualquier punto después de PL-02; su origen ya está verificado en el código de SaludIPS.
+5. **Esperan algo:** PL-15 (DP-14 y DP-15, del dueño), PL-09 (datos reales), PL-13 B y C (contrato y regulatorio), PL-14 contratación (contrato de `contratos-publicos`) y fases 4 y 5 (ESE), PL-16 (D32, P11), PL-05 fase 2 (conector), PL-17 lotes 2 y 4–6 (medición con piloto).
 
 Razón: primero lo que da valor con datos ya ingeridos; después lo que exige ampliar el conector; al final lo que cambia seguridad, cuesta dinero o depende de datos reales.
 
@@ -74,9 +75,16 @@ Aprobadas el 2026-11-16 y registradas en `06` §12. Lo que una decisión no dice
 | DP-13 | Periodo que evalúa `ALERTAS` | Último mes completo; KPI por corte, sobre el último corte | D64 |
 | — | `inventario` sin `ModuloRequerido` | Se recibe aunque la empresa no tenga `INVENTARIO` (alimenta el costeo); los tableros sí exigen el módulo | D65 |
 
+### Nuevas, por decidir (salieron de la revisión contra el código)
+| # | Pregunta | Recomendación | Bloquea |
+|---|---|---|---|
+| DP-14 | ¿Por dónde lee el portal la membresía de un grupo? D60 dice «por la conexión `rol_etl`», pero el portal no la tiene (solo el Worker) | Procedimiento fijo en la BD con `EXECUTE AS` de un usuario sin login miembro de `rol_etl`; el portal no recibe credenciales nuevas. Alternativas en PL-15 | PL-15 |
+| DP-15 | ¿Se acepta tocar `siempre/9000_rls.sql` para que `seg.UsuarioGrupo` y `seg.GrupoEmpresa` solo las escriba el superadmin? Sin eso, una sesión de una empresa puede inscribirse en un grupo ajeno | Sí: dos nombres en el caso que ya existe para `fac.%`; solo endurece | PL-15 |
+
 ### Siguen abiertas (no dependen solo del dueño)
 | # | Qué falta | Quién | Bloquea |
 |---|---|---|---|
+| P9 (parte) | Campos y origen de `contratos-publicos` (repetir para `Presupuesto.Contratacion*` la verificación hecha para el presupuesto) | Técnico + equipo funcional | PL-14, tablero de contratación |
 | DP-2 | Codificación de motivos de glosa de cada piloto y norma vigente (Res. 3047/2008 anexo 6 vs. Res. 2284/2023: **verificar**) | Equipo funcional | Solo la clasificación de PL-02; el plan sale con el código de origen |
 | DP-8 | Cómo registra SaludIPS anticipos y giros sin identificar | Equipo funcional + datos reales | PL-09 |
 | D32, P11, P5 | Costo y clave del proveedor de IA, tarifa y cupo, documentos legales | Dueño, abogado | PL-16 |
@@ -92,13 +100,22 @@ Aprobadas el 2026-11-16 y registradas en `06` §12. Lo que una decisión no dice
 - Una métrica = una vista. Razones entre dos hechos se resuelven con una vista `UNION ALL` al mismo grano.
 - Definición de terminado de `01` §0.7 completa: sin advertencias, prueba unitaria, **prueba de aislamiento por empresa**, integración con Testcontainers, métrica financiera cuadrada contra un caso conocido, `[S]` listados en el PR, docs de `contexto/` actualizadas (02 §5 entidades aceptadas, 03 §6 estado, 06 §10 pendientes).
 - Ningún recurso pago ni paquete NuGet nuevo en estos planes. Si aparece la necesidad, parar (D32).
+- **Códigos:** métrica `modulo_en_minusculas.nombre` (`^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$`); dashboard con permiso `dash.<modulo_en_minusculas>`; fuente `rpt.vw_` + letras y dígitos (sin guion bajo después del prefijo). `CatalogoAnalitico.Construir` lo valida al arrancar: cada plan deja una prueba que construye el catálogo completo.
+- **Widgets:** KPI = 1 métrica sin dimensión; línea = 1 a 4 métricas y 1 dimensión; barras, dona, embudo y cascada = 1 métrica y 1 dimensión; barras apiladas y mapa de calor = 1 métrica y 2 dimensiones; tabla = hasta 12 métricas y 3 dimensiones.
+- **Expresiones:** `SUM/AVG/MIN/MAX(col)`, `COUNT(*)`, `COUNT(DISTINCT col)` y `[n*]SUM(a)/NULLIF(SUM(b),0)`. Una resta o suma de agregados no cabe: se resuelve con una columna en la vista.
+- **Permisos de BD:** `rol_app` escribe en `seg`, `cfg`, `etl`, `stg`, `ia`, `reg`; en `fact` solo `UPDATE`; en `dim` y `rpt` solo lee. Lo que el portal deba escribir fuera de eso lleva su `GRANT` (mínimo, por columna si se puede) en el script del plan. `rol_etl` lee `seg` y `cfg`, y solo inserta en `seg.Notificacion`.
+- **Calculadoras (`IMetricaCalculada`):** solo `IContextoCalculo`; nunca `ISesionUsuario` (PL-04 §3).
 
 ## Mecanismos compartidos (se crean una vez; el plan que llegue primero los crea)
 | Mecanismo | Lo crea | Lo usan | Definición |
 |---|---|---|---|
 | Verificación de `ModuloRequerido` en `IniciarCargaHandler` | PL-02 | PL-01 B/C, PL-10 (nómina), PL-14 | PL-02 §1 |
-| Sesión de sistema por empresa en el worker | PL-04 | PL-15, PL-16 | PL-04 §2 «Sesión de sistema» |
+| Alcance de sistema por empresa (`IFabricaAlcanceSistema`): sesión explícita, válido en Worker y en Web | PL-04 | PL-05, PL-15, PL-16 | PL-04 §3 |
+| Avisos del portal: `INotificaciones` con avisos compartidos, `seg.NotificacionLeida`, página `/avisos` | PL-04 | PL-05, PL-16, PL-17 (resumen) | PL-04 §2 |
+| Disparo por reloj en el worker (`PlanificadorAlertas` + `ProgramadorAlertas`) | PL-04 | PL-16 (cierre mensual de IA), PL-17 (resumen semanal) | PL-04 §4 |
 | Versión de configuración en la clave de caché de widgets | PL-04 | PL-08 | PL-04 §1 |
+| `ReglasPrivacidad.Revisar` por entidad, con motivo propio | PL-10 (nómina) o PL-11 (citas), el primero | PL-10, PL-11 | PL-10 §2 |
+| `ModuloOperacion.Modulos` / `ModuloFarmacia.Modulos` / `ModuloEse.Modulos` y su composición en hosts y pruebas | PL-11 / PL-13 / PL-14 | PL-12 reutiliza la de PL-11 | PL-11 §4 |
 | `EntidadIngesta.ExentaDeCierre` (la entidad no pasa por el control de periodo cerrado) | PL-06 o PL-11, el primero | PL-06 (`presupuesto`), PL-11 (`agenda-capacidad`) | Propiedad `bool ExentaDeCierre = false` al final del record; `IniciarCargaHandler` la consulta junto a `EsCatalogo`. El control **ya existe hoy** para todo hecho en `VENTANA`/`INICIAL`; no nace con PL-05 |
 | Bandera `AcumuladoAnual` en `DefinicionMetrica` | PL-14 fase 2 | Solo PL-14 | PL-07 **no** la usa: resuelve el acumulado del año en el handler |
 
@@ -106,6 +123,34 @@ Si un plan se implementa antes que el que crea su mecanismo, lo crea él con la 
 
 ### Archivos compartidos
 `Ingesta/Entidades.cs`, `Ingesta/Procesamiento.cs` (`AplicarAsync`), `Modulos/Dimensiones.cs` y `Modulos.Ingreso/ModuloIngreso.cs` los tocan casi todos los planes. «Un plan = una rama» se mantiene, pero **las ramas se abren desde `main` ya actualizado y se mezclan de una en una**; no se trabajan dos planes en paralelo sobre esos archivos.
+**Composición de módulos:** la lista de módulos analíticos se arma en siete sitios con `AddCapaSemantica(new[] { ModuloFinanciero.Modulo }.Concat(ModuloIngreso.Modulos))`: `src/IAnalitica.Api/Program.cs`, `src/IAnalitica.Web/Program.cs`, `src/IAnalitica.Worker/Program.cs`, `tests/IAnalitica.Integration.Tests/Infra/BaseDeDatosFixture.cs`, `tests/.../Ingesta/AyudaIngesta.cs` y `tests/.../Ingesta/ReportesTests.cs` (dos veces). Un módulo nuevo dentro de `Modulos.Ingreso` o `Modulos.Financiero` no los toca; uno en `Modulos.Operacion`, `Modulos.Farmacia` o `Modulos.Ese` obliga a tocar los siete.
+
+## Hallazgos de la revisión contra el código (2026-11-16)
+Lo que estaba mal o incompleto y ya quedó corregido en cada plan. Sirve de lista de comprobación a quien implemente.
+| # | Hallazgo (verificado en) | Efecto si no se corregía | Plan |
+|---|---|---|---|
+| 1 | El código de una métrica debe empezar por el código del módulo en minúsculas y el permiso del dashboard debe ser `dash.<módulo>` (`CatalogoAnalitico.ValidarMetrica`/`ValidarDashboard`). Los planes usaban `nomina.*` (módulo `NOMINA_COSTOS`) y `ese.*` (módulo `ESE_PRESUPUESTO`) | Los tres hosts no arrancan | PL-12, PL-14 |
+| 2 | `fact.Cita.Estado` admite `ASISTIO`, `NO_ASISTIO`, `PENDIENTE`, `CANCELADA`; el plan normalizaba a `ASIGNADA` | Toda carga de citas violaría el `CHECK` | PL-11 |
+| 3 | `rpt.vw_AgendaOcupacion` une citas por profesional y fecha contra capacidad agrupada además por sede y especialidad | Citas duplicadas cuando un profesional atiende en dos sedes el mismo día | PL-11 |
+| 4 | No existe lista de avisos; el contador vive en «Mis reportes» y `NotificarAsync` exige usuario | Los avisos de KPI, cierre y auditor no se podrían leer ni apagar | PL-04 |
+| 5 | `ALERTAS` solo nacía de una carga de `asientos` | La «carga tardía» no se detectaría nunca | PL-04 |
+| 6 | En Web, `ISesionUsuario` del contenedor es siempre la sesión HTTP | La «sesión de sistema» no servía fuera del Worker (PL-15 la usa en Web) | PL-04, PL-15 |
+| 7 | `FallarAsync` no informa si el trabajo quedó en `VENENO`, y hay un segundo camino (lease vencido) que no pasa por el despachador | Avisos de falla incompletos y un cambio innecesario en el núcleo del worker | PL-04 |
+| 8 | `rol_app` solo tiene `SELECT` en `dim` y `SELECT, UPDATE` en `fact` (`0900`) | Clasificar centros de costo y guardar bases manuales desde el portal fallaría por permisos | PL-10 |
+| 9 | `etl.usp_CalcularBasesCosto` ya calcula las cinco bases | Se iba a reescribir un procedimiento que ya hace lo pedido | PL-10 |
+| 10 | `fact.NominaCosto.ConceptoCodigo` es `NOT NULL` y el contrato de `nomina` no lista `conceptoCodigo` (la extracción sí lo envía) | Inserción fallida o campo inventado | PL-10 |
+| 11 | La privacidad de nómina y citas va en `ReglasPrivacidad` (Application), no en el SP, y el mensaje actual habla solo de terceros | Validación en la capa equivocada | PL-10, PL-11 |
+| 12 | Una foto de pendientes vacía no deja filas, y «último corte» se tomaba del máximo de la tabla | El tablero mostraría para siempre los pendientes del día anterior | PL-03 |
+| 13 | `DefCatalogo` solo admite una columna llave; los rubros son únicos por vigencia y código | El catálogo de rubros no cabe en el generador genérico | PL-14 |
+| 14 | `contratos-publicos` no tiene campos ni origen verificados; `presupuesto-publico` no tenía lista de campos | Fase 3 marcada «lista» sin contrato de datos | PL-14 |
+| 15 | La apropiación inicial lleva fecha 1 de enero y la ventana diaria empieza en el primer periodo abierto | Rechazos `FUERA_DE_VENTANA` o apropiación que no se actualiza | PL-14 |
+| 16 | El portal no tiene conexión `rol_etl`, y la política por defecto deja que una empresa escriba sus propias filas de membresía | D60 no implementable tal cual; posible inscripción en un grupo ajeno | PL-15 (DP-14, DP-15) |
+| 17 | `MotorAuditoria.GuardarIndiceAsync` no excluye las reglas `PorVerificar` | Las reglas con supuestos bajarían el índice de salud | PL-17 |
+| 18 | `rpt.vw_SaldoBalance.Disponible` solo toma el grupo 11 | El cuadre del flujo de caja fallaría con bancos fuera del 11 | PL-01 |
+| 19 | `SerieWidget` está en `Contratos.cs`; los reportes y el asistente no la usan; el motor abre una conexión por consulta | Tres «verificar al implementar» resueltos | PL-07 |
+| 20 | Horas de nómina: una fila por concepto repite las horas | Costo por hora subestimado varias veces | PL-12 |
+| 21 | Cierre consecutivo sin punto de partida | 13 cierres obligatorios para empezar | PL-05 |
+| 22 | `financiero.desviacion` total suma ingresos y gastos | KPI sin sentido | PL-06 |
 
 ## Reglas de diseño que salieron de la revisión (2026-11-16)
 - **Promedios:** nunca `AVG(col)` sobre una vista ya agregada (promedio de promedios). La vista expone suma y conteo, y la métrica es `SUM(suma)/NULLIF(SUM(conteo),0)`.

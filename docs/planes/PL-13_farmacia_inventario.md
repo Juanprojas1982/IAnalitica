@@ -20,6 +20,9 @@ Depende de PL-10 (`inventario`). Es el paquete del **operador farmacéutico pilo
 - `inventario.dias_inventario` **no cabe en una expresión declarativa**: mezcla un saldo (acumulado) con un flujo (salidas del rango) y `Acumulado` aplica a la métrica entera. Es una `IMetricaCalculada` (`DiasInventario`): saldo a `PeriodoHasta` ÷ salidas del rango × días del rango (30 × meses); salidas 0 → nulo, no 0. Admite las mismas dimensiones (`almacen`, `articulo`).
 - Dimensiones nuevas `almacen`, `articulo`, `rango_vencimiento`.
 - Dashboards `inventario.resumen` y `inventario.vencimientos`.
+- **Composición (verificado):** `ModuloFarmacia.cs` hoy solo expone `Ensamblado`. Agregar `ModuloFarmacia.Modulos` y concatenarla en las siete llamadas a `AddCapaSemantica` (tres hosts y cuatro en pruebas; lista en PL-11 §4 y en el índice). Módulo `INVENTARIO` → métricas `inventario.*`, permiso `dash.inventario` (ya sembrado).
+- `DiasInventario` (la calculadora) solo usa `IContextoCalculo`; no inyecta `ISesionUsuario` (regla de PL-04 §3). `DefinicionMetrica.Fuente` sigue siendo obligatoria y debe ser una vista `rpt.vw_*` aunque haya calculadora: usar `rpt.vw_InventarioSaldo`.
+- `vw_InventarioSaldo` no lleva dimensión `corte`; `vw_VencimientoLotes` tampoco (ni `periodo`): sus métricas no reciben filtro de fecha y el tablero muestra la fecha de referencia.
 
 ## Parte B · Pendientes de dispensación
 - **Falta el contrato de datos**: `ordenes-externas` está en la lista «a añadir» (P9) sin campos definidos y sin tabla destino. Paso 0: definir el contrato con el equipo funcional a partir de `SIPS_119`, `SIPS_700`, `SIPS_701` (reportes de dispensación ya existentes) y escribir la extracción. **Sin ese paso no hay parte B.**
@@ -44,6 +47,7 @@ Depende de PL-10 (`inventario`). Es el paquete del **operador farmacéutico pilo
 | Infrastructure | `Ingesta/Procesamiento.cs`, `Regulacion/*` (reglas, importador) |
 | Api | `Endpoints.cs` (bajada) |
 | Módulo | `Modulos.Farmacia/ModuloFarmacia.cs` |
+| Hosts y pruebas | las siete llamadas a `AddCapaSemantica` (parte A) |
 | Pruebas | `InventarioTests.cs`, `FarmaciaTests.cs`, `ValidadorPreciosTests.cs`, `ApiIngestaTests.cs`, aislamiento |
 
 Símbolos para `impact`: `ModuloFarmacia`, `CatalogoEntidades`, reglas del validador (clase base), `Endpoints` de la API, `Dimensiones.Todas`.

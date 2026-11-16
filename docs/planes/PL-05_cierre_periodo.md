@@ -2,7 +2,7 @@
 
 Estado: diseñado, no implementado. Script `1085_cierre_periodo.sql`.
 Preparación (2026-11-16): **fase 1 (cierre blando) lista para implementar.** DP-5 aprobada (D57): blando ahora, duro después. La fase 2 (cierre duro) se habilita empresa por empresa cuando su conector esté actualizado.
-Depende de PL-04: el trabajo `ALERTAS`, la sesión de sistema y las notificaciones compartidas.
+Depende de PL-04: el trabajo `ALERTAS` (con su disparo diario), el alcance de sistema (`IFabricaAlcanceSistema`, PL-04 §3) y los avisos del portal (`/avisos`, PL-04 §2).
 
 ## Objetivo
 Que una cifra reportada no cambie sin que alguien se entere (fase 1) y, donde el conector lo permita, que no cambie (fase 2).
@@ -50,17 +50,19 @@ Se evalúan con `IMotorMetricas` directamente (no por los handlers de dashboards
 
 ### 3. Application `Ingesta/Periodos.cs` (nuevo)
 - `ListarPeriodosQuery`: últimos 24 meses con estado, tipo, fecha, usuario y número de KPI que cambiaron tras el cierre.
-- `CerrarPeriodoCommand(PeriodoKey)`: solo meses anteriores al mes en curso (hora Colombia); cierre consecutivo (todos los meses anteriores con datos ya cerrados); no cerrar si hay una carga `CERRADA`/`PROCESANDO` de la empresa. Escribe `Tipo = 'BLANDO'` y la foto en la misma transacción. En fase 1 el comando **no acepta** `DURO`.
-- `ReabrirPeriodoCommand(PeriodoKey, Motivo)`: motivo ≥ 10 caracteres; solo el último cerrado. Borra la foto.
+- `CerrarPeriodoCommand(PeriodoKey)`: solo meses anteriores al mes en curso (hora Colombia); no cerrar si hay una carga `CERRADA`/`PROCESANDO` de la empresa. Escribe `Tipo = 'BLANDO'` y la foto en la misma transacción. En fase 1 el comando **no acepta** `DURO`.
+  - **Cierre consecutivo, definido:** el **primer** cierre de la empresa puede ser cualquier mes pasado; después solo se puede cerrar el mes siguiente al último cerrado. Así los cerrados forman siempre un rango continuo, que es lo que la fase 2 necesita (`periodoCerradoHasta` es un solo `yyyymm`), sin obligar a cerrar uno por uno los 13 meses de historia de una empresa recién cargada. La regla anterior («todos los meses anteriores con datos ya cerrados») no decía desde cuándo y exigía 13 cierres para empezar.
+  - La foto se evalúa con el `IMotorMetricas` de la solicitud (sesión de quien cierra: el motor solo usa su `EmpresaId`, no sus permisos `dash.*`).
+- `ReabrirPeriodoCommand(PeriodoKey, Motivo)`: motivo ≥ 10 caracteres; solo el último cerrado. Pasa `Estado` a `'ABIERTO'`, llena `ReabiertoEn/Por` y `MotivoReapertura`, y borra la foto (la FK de `etl.PeriodoCierreKpi` obliga a borrarla antes si se eliminara la fila; aquí la fila se conserva).
 - `AceptarCambiosPeriodoCommand(PeriodoKey, Motivo)`: reconoce los cambios detectados y retoma la foto (`ValorCierre = ValorActual`, `CambioEn = NULL`); motivo ≥ 10 caracteres.
 - Los tres: `IComandoTransaccional`, permiso `admin.usuarios` (D56/D57), auditoría en `aud.CambioAdministrativo` (valores anteriores y nuevos), `EmpresaId` de la sesión, nunca del cuerpo.
 
 ### 4. Detección de cambios (en el trabajo `ALERTAS` de PL-04)
 Después de evaluar las metas, `ManejadorAlertas` llama a `IRevisorPeriodosCerrados`:
-- Para cada periodo `CERRADO` de la empresa en los últimos 13 meses (la ventana máxima del conector), reevalúa las métricas de su foto con la sesión de sistema.
+- Para cada periodo `CERRADO` de la empresa en los últimos 13 meses (la ventana máxima del conector), reevalúa las métricas de su foto con el alcance de sistema de PL-04 §3 (`AlcanceSistema.Motor`; escribe `etl.PeriodoCierreKpi` con `AlcanceSistema.Conexiones`: `rol_app` tiene escritura sobre `etl` y la RLS lo limita a la empresa).
 - Hay cambio si `|actual − cierre| ≥ 1` en métricas en pesos, o `≥ 0,01` en las demás (porcentajes, días, veces, unidades). Nulo frente a valor cuenta como cambio.
 - Actualiza `ValorActual` y `RevisadoEn`; pone `CambioEn` la primera vez.
-- Notifica `PERIODO_CAMBIO` (`UsuarioId NULL`, enlace a `/periodos`) **solo cuando aparece un cambio nuevo** (un `ValorActual` distinto del anterior): «3 indicadores de 2026-03 cambiaron después del cierre». Sin cifras de personas.
+- Notifica `PERIODO_CAMBIO` (aviso compartido de PL-04 §2: `UsuarioId NULL`, visible en `/avisos`, enlace a `/periodos`) **solo cuando aparece un cambio nuevo** (un `ValorActual` distinto del anterior): «3 indicadores de 2026-03 cambiaron después del cierre». Sin cifras de personas.
 - Una métrica que ya no existe en el catálogo o cuyo módulo se desactivó se omite sin fallar.
 
 ### 5. Web
@@ -90,9 +92,17 @@ Sin script nuevo: usa `Tipo = 'DURO'`.
 
 Símbolos para `impact`: `IRepositorioCargas`, `RepositorioCargas.PeriodoCerradoAsync`, `IniciarCargaHandler`, `ManejadorAlertas`, `IMotorMetricas`; en fase 2 `EstadoPlataforma`, `RepositorioCargas.EstadoPlataformaAsync`, `ProcesadorCargas.EncolarCostosAsync`.
 
+## Verificado contra el código (2026-11-16)
+- `RepositorioCargas.PeriodoCerradoAsync` hoy filtra `Estado = 'CERRADO' AND PeriodoKey BETWEEN @d AND @h`: el cambio de la fase 1 es agregar `AND Tipo = 'DURO'` en esa consulta y nada más.
+- `rol_app` tiene `SELECT, INSERT, UPDATE, DELETE` sobre el esquema `etl`: los comandos del portal escriben `etl.PeriodoCierre` y `etl.PeriodoCierreKpi` sin permisos nuevos.
+- `EstadoPlataforma` (Contracts, netstandard2.0) es una clase con propiedades `get; set;`: agregar `int? PeriodoCerradoHasta` no rompe a un conector que no la conozca.
+- Las métricas `AcumuladoAnual` de PL-14, si ya existen al implementar este plan, entran en la foto igual que las `Acumulado` (valor a ese mes).
+- El primer cierre de una empresa evalúa todos sus KPI en la misma solicitud web: medirlo; si pasa de unos segundos, la foto se toma en un trabajo del worker y el periodo queda «cerrando».
+
 ## Pruebas
 Fase 1:
-- Cerrar y reabrir con sus reglas (orden, mes en curso, motivo corto, carga en curso); sin permiso → 403; auditoría escrita.
+- Cerrar y reabrir con sus reglas (mes en curso, motivo corto, carga en curso); sin permiso → 403; auditoría escrita.
+- Orden: primer cierre en 2026-03 con 2026-01 y 2026-02 abiertos → se acepta; después 2026-05 → rechazado (falta 2026-04); 2026-04 → aceptado; reabrir 2026-03 con 2026-04 cerrado → rechazado.
 - **Cierre blando no bloquea:** carga `VENTANA` que toca el mes cerrado → 201 (regresión de `ApiIngestaTests`: una fila `DURO` sigue dando 409).
 - Foto: ingresos 1.000 al cerrar; recarga que los deja en 1.200 → tras `ALERTAS`, `ValorActual = 1.200`, `CambioEn` con fecha y **una** notificación; segunda corrida sin cambios → ninguna; nueva recarga a 1.300 → otra.
 - Diferencia de 0,50 pesos no es cambio; de 0,02 puntos porcentuales sí.

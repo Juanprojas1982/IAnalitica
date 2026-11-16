@@ -27,13 +27,16 @@ Comparar lo ejecutado contra lo presupuestado por cuenta, centro de costo y sede
 ### 3. Métricas y dashboard (`ModuloFinancieroAnalitico`)
 - `financiero.ppto_ingresos`, `financiero.real_ingresos_ppto`, `financiero.ejecucion_ingresos_pct` = `100.0*SUM(RealIngreso)/NULLIF(SUM(PptoIngreso),0)` (`KpiMeta: "EJECUCION_INGRESOS"`).
 - `financiero.ppto_gastos`, `financiero.real_gastos_ppto`, `financiero.ejecucion_gastos_pct` (`MenorEsMejor`).
-- `financiero.desviacion` = `SUM(Desviacion)` (dims periodo, sede, centro_costo, clase_puc, grupo_puc, cuenta).
+- `financiero.desviacion` = `SUM(Desviacion)` (dims periodo, sede, centro_costo, clase_puc, grupo_puc, cuenta). **Solo en tablas agrupadas por `clase_puc`, `grupo_puc` o `cuenta`, nunca como KPI total:** suma la desviación de ingresos con la de gastos, que tienen sentido contrario (ingresar 100 menos y gastar 100 menos daría −200). Los KPI son los dos porcentajes de ejecución y los dos valores presupuestados.
 - Dashboard `financiero.presupuesto`: 4 KPI · línea real vs. presupuesto por periodo · tabla por grupo del PUC · tabla por centro de costo. Estado vacío: «No se ha cargado un presupuesto».
 - Actualizar el comentario «Pendiente» de la clase.
 
 ### 4. Carga por portal (CSV, D58)
 - Página `Components/Pages/Presupuesto.razor`: descargar plantilla CSV (`periodo;cuenta;centro_costo;sede;valor`), elegir año y versión, subir archivo.
-- Application `Ingesta/PresupuestoPortal.cs`: `CargarPresupuestoCommand(Anio, Version, Stream)` → valida tamaño (≤ 2 MB) y filas (≤ 50.000), convierte a filas del contrato y **reutiliza el flujo existente** (`IRepositorioCargas`: crear carga, guardar lotes, cerrar con suma de control). No hay camino paralelo.
+- Application `Ingesta/PresupuestoPortal.cs`: `CargarPresupuestoCommand(Anio, Version, Stream)` → valida tamaño (≤ 2 MB) y filas (≤ 50.000), convierte a filas del contrato y **reutiliza el flujo existente**. No hay camino paralelo.
+  - Cómo: el handler envía por `ISender` los mismos tres comandos de la API (`IniciarCargaCommand` con `VENTANA` enero–diciembre del año, `RecibirLoteCommand` en lotes de hasta 5.000 filas, `CerrarCargaCommand` con la suma de control). Sus handlers solo usan `ISesionUsuario.EmpresaId`, que en el portal sale de la sesión: funcionan igual. Así heredan validaciones, hash, `ExentaDeCierre` y la cola; el worker procesa la carga.
+  - Archivo idéntico a uno ya procesado → `CARGA_DUPLICADA`: mostrar «sin cambios», no un error.
+  - `RepositorioCargas.CrearAsync` escribe `Origen = 'api'` fijo. Para distinguir las cargas del portal, agregar `Origen` a `NuevaCarga` (por defecto `'api'`) y pasar `'portal'`: cambio opcional, no bloquea.
 - Decimales: aceptar punto o coma según cultura `es-CO`, rechazar notación científica. Neutralizar celdas que empiecen por `= + - @` al mostrar errores.
 - Resultado: enlace al estado de la carga y a sus rechazos (lista existente).
 - Permiso `admin.usuarios` (D56); auditoría en `aud.CambioAdministrativo` (quién cargó qué versión y año, sin valores).
@@ -49,7 +52,13 @@ Comparar lo ejecutado contra lo presupuestado por cuenta, centro de costo y sede
 | Web | `Components/Pages/Presupuesto.razor`, endpoint `/q/presupuesto` |
 | Pruebas | `PresupuestoTests.cs` (nuevo), `Web/PresupuestoWebTests.cs`, `DashboardsTests.cs`, aislamiento |
 
-Símbolos para `impact`: `CatalogoEntidades`, `IniciarCargaHandler.Handle`, `ProcesadorCargas.AplicarAsync`, `ModuloFinancieroAnalitico.Registrar`, `IRepositorioCargas`.
+Símbolos para `impact`: `CatalogoEntidades`, `EntidadIngesta`, `IniciarCargaHandler.Handle`, `ProcesadorCargas.AplicarAsync`, `ModuloFinancieroAnalitico.Registrar`, `IRepositorioCargas`.
+
+## Verificado contra el código (2026-11-16)
+- `EntidadIngesta` es `record (Nombre, Modos, ColumnasSumaControl, ModuloRequerido = null, EsCatalogo = false)`: `ExentaDeCierre = false` se agrega al final; el control de `IniciarCargaHandler` pasa de `{ EsCatalogo: false }` a `{ EsCatalogo: false, ExentaDeCierre: false }`.
+- `rpt.vw_EjecucionPresupuestal` hace `FULL JOIN` entre `rpt.vw_EstadoResultados` y `fact.Presupuesto`; para dar `ClasePuc` y `Grupo` a las filas que solo tienen presupuesto hay que unir `dim.CuentaContable` por `COALESCE(r.CuentaId, p.CuentaId)`.
+- `UQ_Presupuesto` incluye `CentroCostoId` y `SedeId` anulables: SQL Server trata los `NULL` como iguales en un índice único, así que el duplicado «sin centro» también se detecta en la tabla.
+- `IniciarCargaCommandValidator` no limita fechas futuras: presupuestar meses futuros pasa. `dim.Fecha` llega hasta 2035.
 
 ## Pruebas
 - Reemplazo por versión y ventana; otra versión intacta; cada rechazo.

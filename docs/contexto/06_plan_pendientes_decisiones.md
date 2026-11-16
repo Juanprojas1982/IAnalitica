@@ -49,6 +49,8 @@ Parte de `docs/CONTEXTO.md` (índice). La numeración §N es global y se conserv
 | P7 | Reglas de distribución de costos por piloto (centros, orden, base) | Cada piloto | Cierre de F5 |
 | P8 | Dominio y marca | Dueño | Landing |
 | P10 | Confirmar matriz rol × permiso | Dueño | Nada (script nuevo) |
+| DP-14 | Grupos: por dónde lee el portal la membresía. D60 dice «conexión `rol_etl`», pero el portal no la tiene (solo el Worker). Recomendado: procedimiento fijo con `EXECUTE AS`; alternativas en `planes/PL-15` | Dueño | PL-15 |
+| DP-15 | Grupos: aceptar que `siempre/9000_rls.sql` deje la escritura de `seg.UsuarioGrupo` y `seg.GrupoEmpresa` solo al superadmin (D60 daba la RLS por intacta); sin eso una empresa puede inscribirse en un grupo ajeno | Dueño | PL-15 |
 | P11 | Planes de IA, tarifa de venta (COP por millón de tokens), cupo, autorización de excedente, visibilidad del costo | Dueño | IA a clientes |
 | — | ¿`CodPlan` es parte del cruce de tarifas? ¿`pSuministros.Costo` y `Valor` son por unidad o por presentación? ¿Tabla de CxP para CON-04? ¿Ruta del menú SaludIPS por hallazgo? ¿Campos del dataset `nauz-qkjw`? | Equipo funcional | TAR-02, validador, CON-04 |
 | — | Homologación `TipoOrigen` → administrativo/apoyo/productivo | Equipo funcional | Reglas por defecto de costos |
@@ -127,7 +129,7 @@ Parte de `docs/CONTEXTO.md` (índice). La numeración §N es global y se conserv
 | D63 | Producción por profesional dentro de `AGENDA`; no se crea el módulo `PRODUCTIVIDAD` (PL-12, DP-12) |
 | D64 | El trabajo `ALERTAS` evalúa el último mes completo; KPI por corte, el último corte (PL-04, DP-13) |
 | D65 | `inventario` se recibe sin exigir el módulo `INVENTARIO` (alimenta el costeo); los tableros sí lo exigen (PL-10) |
-| Abiertas | D45 (motivo para ver facturación como superadmin), D49 (`fac.consultar` a FINANCIERO/TESORERO), D50 (excedente IA); ver `08` |
+| Abiertas | D45 (motivo para ver facturación como superadmin), D49 (`fac.consultar` a FINANCIERO/TESORERO), D50 (excedente IA); ver `08`. D60 pendiente de precisar con DP-14 y DP-15 (§10) antes de implementar PL-15 |
 
 ## 13. Divergencias spec original ↔ implementación (la implementación manda)
 | Spec original | Realidad |

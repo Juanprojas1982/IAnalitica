@@ -1,7 +1,7 @@
 # PL-17 · Auditor de configuración, fase 2
 
 Estado: diseñado, no implementado. Módulo `AUDITOR_CONFIG`. Script `1190_auditor_fase2.sql`. Cierra el pendiente técnico 6 (`06` §10).
-Preparación (2026-11-16): **lotes 1 y 3 listos para implementar.** El resto, tras medir falsos positivos con el piloto.
+Preparación (2026-11-16): **lotes 1 y 3 listos para implementar** (solo reglas: no dependen de otro plan). El resto de lotes, tras medir falsos positivos con el piloto. El **resumen semanal depende de PL-04** (avisos del portal y disparo por reloj): no entra con los lotes 1 y 3.
 Es el diferenciador que ya funciona: ampliarlo es lo que menos depende de datos nuevos (la foto `configuracion` ya llega).
 
 ## Objetivo
@@ -23,12 +23,15 @@ Orden por certeza: primero las que no dependen de un `[S]`.
 | 6 · Parámetros y usuarios | PAR-01 parámetros ausentes en la nueva vigencia · PAR-02 configuración anual sin el año · USU-02 segregación de funciones · USU-03 usuarios genéricos | USU-02 necesita el significado de los permisos de SaludIPS (`[S]`): matriz de pares incompatibles como dato editable, no en código |
 
 Para cada regla: clase en `IAnalitica.Modulos.Auditor`, semilla en `cfg.ReglaConfiguracion` (script nuevo; nunca editar `1010`), severidad y umbrales editables, texto «por qué importa» y «dónde corregir» (**la ruta del menú de SaludIPS es un pendiente funcional**: dejar el campo vacío antes que inventarla), evidencia de impacto en 30 días cuando exista el hecho.
-Reglas con significado sin confirmar nacen con `PorVerificar = 1` y **no restan** al índice de salud hasta confirmarse (verificar que el cálculo actual ya lo hace; si no, corregirlo en este plan).
+Reglas con significado sin confirmar nacen con `PorVerificar = 1` y **no restan** al índice de salud hasta confirmarse.
+- **Verificado: el cálculo actual sí les resta.** `MotorAuditoria.GuardarIndiceAsync` cuenta todos los hallazgos `NUEVO`/`ABIERTO` unidos a `cfg.ReglaConfiguracion` sin mirar `PorVerificar`. Corrección de este plan (primer PR, antes de sembrar reglas `PorVerificar`): agregar `AND r.PorVerificar = 0` a esa consulta. Efecto: el índice de las empresas con hallazgos de reglas ya marcadas `PorVerificar` en `1010` sube; anotarlo en la nota de versión. El conteo `Abiertos` que se guarda junto al índice debe usar el mismo filtro para no mostrar «100 con 3 abiertos»; la lista de hallazgos sigue mostrándolos con su rótulo.
+- FE-04: el dígito de verificación ya se calcula en `IAnalitica.Domain/Empresas/Nit.cs`; `Modulos.Auditor` puede usarlo (los módulos referencian `Domain`).
 
 ## Funciones nuevas
 ### Resumen semanal
 - Trabajo `RESUMEN_AUDITOR` semanal por empresa: hallazgos nuevos, corregidos y abiertos por severidad, índice y su variación.
-- Entrega: **notificación en el portal** (campana) con enlace a `/auditor`. Por correo solo cuando exista proveedor (P15, D32); el envío reutiliza `ENVIAR_CORREO` de facturación (`08`), sin datos de personas en el cuerpo.
+- **Disparo:** nada encola trabajos por reloj salvo la facturación y, desde PL-04, las alertas. Se agrega al `PlanificadorAlertas` de PL-04 §4 (lunes, hora Colombia; una vez por semana y empresa con el módulo `AUDITOR_CONFIG` activo), no un programador nuevo.
+- Entrega: **aviso compartido en el portal** (`/avisos`, PL-04 §2: lo ven administrador y GERENTE) con enlace a `/auditor`. El rol `AUDITOR` no recibe avisos compartidos con esa regla: si debe recibirlo, se amplía la lista de roles por tipo de aviso (decisión menor; por defecto, no). Por correo solo cuando exista proveedor (P15, D32); el envío reutiliza `ENVIAR_CORREO` de facturación (`08`), sin datos de personas en el cuerpo.
 
 ### Campaña de cierre de año
 - Del 1-nov al 31-ene, `/auditor` muestra un bloque «Cierre de vigencia» con el avance de CON-02, PAR-01, PAR-02, AGE-04, FE-01 y ESE-05 (PL-14): cuántas faltan y cuáles. Es una vista filtrada, no un motor nuevo.
@@ -50,12 +53,12 @@ Excel de hallazgos ya existe por reportes; agregar las columnas de las reglas nu
 | Web | `Components/Pages/Auditor.razor`, `Admin/AuditorConsolidado.razor` |
 | Pruebas | `AuditorTests.cs` (un caso positivo y uno negativo por regla), `AuditorWebTests.cs`, aislamiento |
 
-Símbolos para `impact`: `IReglaConfiguracion`, el motor que ejecuta las reglas, `ManejadorAuditarConfig`, el cálculo del índice de salud.
+Símbolos para `impact`: `IReglaConfiguracion`, `MotorAuditoria` (ejecuta las reglas), `MotorAuditoria.GuardarIndiceAsync` (índice de salud), `ManejadorAuditarConfig`, `ModuloAuditor.Reglas`.
 
 ## Pruebas
 - Por regla: configuración que la dispara, configuración sana, y reincidencia (CORREGIDO → hallazgo nuevo).
 - Una regla que lanza excepción no altera los hallazgos de las demás (comportamiento actual; no romperlo).
-- `PorVerificar` no resta al índice.
+- `PorVerificar` no resta al índice: empresa con un hallazgo crítico de una regla normal y otro de una `PorVerificar` → índice 80, no 60; ambos aparecen en la lista.
 - Consolidado: solo superadmin; sin nombres de entidades de clientes.
 - Aislamiento: hallazgos de A invisibles para B.
 

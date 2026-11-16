@@ -56,9 +56,16 @@ Requiere la verificación de `ModuloRequerido` de PL-02 §1 (si PL-02 no está m
 
 Símbolos para `impact` antes de editar: `CatalogoEntidades`, `ProcesadorCargas.AplicarAsync`, `ModuloIngreso.Modulos`, `Dimensiones.Todas`.
 
+## Verificado contra el código (2026-11-16)
+- `ModuloTesoreria` vive en `IAnalitica.Modulos.Ingreso` y se agrega a `ModuloIngreso.Modulos`: los hosts ya componen esa lista, no hay que tocar `Program.cs`.
+- Códigos: módulo `TESORERIA` → métricas `tesoreria.*` y permiso `dash.tesoreria` (el catálogo lo exige al arrancar). Los KPI llevan **una** métrica y la línea admite hasta 4: el diseño de los tres tableros cabe.
+- Dimensiones `cuenta` y `usuario` ya existen; `usuario` ya se seudonimiza en el asistente. Las nuevas (`concepto_caja`, `forma_pago`, `cuenta_bancaria`) no nombran personas.
+- `fact.TesoreriaMovimiento.Valor` tiene `CHECK (Valor >= 0)` y `CuentaBancariaId` es `NOT NULL`: coinciden con los rechazos de la parte B.
+- La parte A no necesita permisos nuevos de BD: solo vistas `rpt.*` (`rol_app` ya tiene `SELECT` sobre el esquema).
+
 ## Pruebas
 - A: comprobante banco↔CxC cuenta como entrada y como recaudo efectivo; traslado banco↔banco no aparece; nota crédito contra CxC va a `ValorSinCaja`; abono reversado no suma; días de pago ponderados = caso calculado a mano.
-- **Cuadre:** Σ `FlujoNeto` + Σ `SaldoInicial` de todos los periodos = saldo de las cuentas de disponible en `rpt.vw_SaldoBalance` (misma base, ≤ 0,01). Comprobante `SALDO_INICIAL` no aparece como entrada.
+- **Cuadre:** Σ `FlujoNeto` + Σ `SaldoInicial` de todos los periodos = Σ (`Debito` − `Credito`) de `fact.AsientoLinea` con `Estado = 1` sobre **las mismas cuentas** (`EsBanco = 1` o grupo 11) y el mismo filtro `tc.Clase <> 'CIERRE'` (≤ 0,01). **No** comparar contra `rpt.vw_SaldoBalance.Disponible`: esa columna solo toma el grupo 11 (no las `EsBanco = 1` de otro grupo) y no excluye cierres; solo coincide si la empresa no tiene bancos fuera del 11. Comprobante `SALDO_INICIAL` no aparece como entrada.
 - B y C: insertar/actualizar/eliminar por ventana, cada rechazo, anulados, `ENTIDAD_NO_SOPORTADA` ya no aplica, módulo inactivo (ver PL-02).
 - Aislamiento: empresa A no ve movimientos ni recaudo de B por las 4 vistas.
 
