@@ -160,7 +160,7 @@ public class FacturacionEsquemaTests(BaseDeDatosFixture bd)
         var cond = await Escalar<int>(c, $"SELECT CondicionId FROM fac.CondicionComercial WHERE EmpresaId = {d.EmpresaA}");
 
         Assert.Equal(ViolacionRestriccion, await CodigoErrorAsync(c,
-            $"INSERT fac.CuentaCobro (EmpresaId, PeriodoKey, CondicionId, Numero, Estado, DiasPago) VALUES ({d.EmpresaA}, 202602, {cond}, 'CC-000001', 'BORRADOR', 30)"));
+            $"INSERT fac.CuentaCobro (EmpresaId, PeriodoKey, CondicionId, Numero, Estado, DiasPago) VALUES ({d.EmpresaA}, 202602, {cond}, 'CC-999999', 'BORRADOR', 30)"));
         Assert.Equal(ViolacionRestriccion, await CodigoErrorAsync(c,
             $"INSERT fac.CuentaCobro (EmpresaId, PeriodoKey, CondicionId, Estado, DiasPago) VALUES ({d.EmpresaA}, 202602, {cond}, 'EMITIDA', 30)"));
         Assert.Equal(ViolacionRestriccion, await CodigoErrorAsync(c,

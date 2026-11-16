@@ -220,7 +220,7 @@ public class FacturacionCarteraTests(BaseDeDatosFixture bd)
     public async Task La_mora_envia_recordatorio_previo_y_avisos_una_sola_vez_por_hito_y_sin_adjunto()
     {
         var emp = await NuevaEmpresaAsync();
-        await BaseDeDatosFixture.EjecutarAsync(bd.CadenaEtl, $"INSERT seg.EmpresaContacto (EmpresaId, Tipo, Nombre, Email) VALUES ({emp}, 'FACTURACION', N'Tesorería', N't{emp}@cliente.test')");
+        await BaseDeDatosFixture.EjecutarAsync(bd.CadenaPropietario, $"INSERT seg.EmpresaContacto (EmpresaId, Tipo, Nombre, Email) VALUES ({emp}, 'FACTURACION', N'Tesorería', N't{emp}@cliente.test')");
         var cuenta = await CuentaAsync(emp);
         var pagada = await CuentaAsync(emp);
         await BaseDeDatosFixture.EjecutarAsync(bd.CadenaEtl, $"""
@@ -258,7 +258,7 @@ public class FacturacionCarteraTests(BaseDeDatosFixture bd)
     public async Task El_dia_del_vencimiento_la_cuenta_aun_no_esta_en_mora()
     {
         var emp = await NuevaEmpresaAsync();
-        await BaseDeDatosFixture.EjecutarAsync(bd.CadenaEtl, $"INSERT seg.EmpresaContacto (EmpresaId, Tipo, Nombre, Email) VALUES ({emp}, 'FACTURACION', N'Tesorería', N't{emp}@cliente.test')");
+        await BaseDeDatosFixture.EjecutarAsync(bd.CadenaPropietario, $"INSERT seg.EmpresaContacto (EmpresaId, Tipo, Nombre, Email) VALUES ({emp}, 'FACTURACION', N'Tesorería', N't{emp}@cliente.test')");
         var cuenta = await CuentaAsync(emp);
         await BaseDeDatosFixture.EjecutarAsync(bd.CadenaEtl, $"UPDATE fac.CuentaCobro SET FechaVencimiento = '2027-02-10' WHERE CuentaCobroId = {cuenta}");
         var reloj = new FakeTimeProvider(new DateTimeOffset(2027, 2, 10, 13, 0, 0, TimeSpan.Zero));

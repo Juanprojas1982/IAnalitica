@@ -33,7 +33,7 @@ public sealed class EnviosFacturacion(IFabricaConexionesEtl etl, IGeneradorPdfCu
 {
     private sealed record FilaCuenta(int CuentaCobroId, int EmpresaId, int PeriodoKey, string Estado, string? Numero, decimal TotalCop, DateTime? FechaEmision,
         DateTime? FechaVencimiento, string? ClienteRazonSocial, string? ClienteNit, string? ClienteDv, string? ClienteDireccion, string? PdfRuta);
-    private sealed record FilaLinea(string Concepto, int DiasFacturados, int DiasPeriodo, decimal ValorCop);
+    private sealed record FilaLinea(string Concepto, short DiasFacturados, short DiasPeriodo, decimal ValorCop);
     private sealed record FilaParametro(string Clave, string Valor);
     private sealed record FilaDestinatario(string Clase, string Email, string? Nombre);
     private sealed record FilaEnvio(Guid EnvioId, int EmpresaId, int CuentaCobroId, string Tipo, string? Hito, bool ConAdjunto, string MessageId, string Estado, byte Intentos);

@@ -41,7 +41,7 @@ public class FacturacionProcedimientosTests(BaseDeDatosFixture bd)
     private static int NuevoPeriodo()
     {
         var p = Interlocked.Increment(ref _siguientePeriodo);
-        return p % 100 > 12 ? NuevoPeriodo() : p;   // 203001..203012, 203101...
+        return p % 100 is < 1 or > 12 ? NuevoPeriodo() : p;   // 203001..203012, 203101...
     }
 
     /// <summary>Crea un borrador de un canon completo (rol_etl, sin RLS) y devuelve su id.</summary>
