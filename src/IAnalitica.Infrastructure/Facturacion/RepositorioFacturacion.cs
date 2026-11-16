@@ -50,7 +50,7 @@ internal sealed class RepositorioFacturacion(IFabricaConexiones conexiones) : IR
         var extra = await cn.QueryFirstAsync<FilaExtra>(new CommandDefinition(
             "SELECT ReemplazaA, CAST(IIF(PdfRuta IS NULL, 0, 1) AS bit) AS Pdf, MotivoAnulacion FROM fac.CuentaCobro WHERE CuentaCobroId = @cuentaCobroId", new { cuentaCobroId }, cancellationToken: ct)).ConfigureAwait(false);
         var lineas = (await cn.QueryAsync<LineaVista>(new CommandDefinition(
-            "SELECT Concepto, DiasFacturados, DiasPeriodo, ValorCop FROM fac.CuentaCobroLinea WHERE CuentaCobroId = @cuentaCobroId ORDER BY Orden", new { cuentaCobroId }, cancellationToken: ct)).ConfigureAwait(false)).ToList();
+            "SELECT Concepto, CAST(DiasFacturados AS int) AS DiasFacturados, CAST(DiasPeriodo AS int) AS DiasPeriodo, ValorCop FROM fac.CuentaCobroLinea WHERE CuentaCobroId = @cuentaCobroId ORDER BY Orden", new { cuentaCobroId }, cancellationToken: ct)).ConfigureAwait(false)).ToList();
         var envios = (await cn.QueryAsync<EnvioVista>(new CommandDefinition("""
             SELECT EnvioId, CuentaCobroId, CAST(NULL AS varchar(20)) AS CuentaNumero, Tipo, Hito, Estado, EsReenvio, ConAdjunto, Intentos, CodigoError, CreadoEn, EnviadoEn
             FROM fac.Envio WHERE CuentaCobroId = @cuentaCobroId ORDER BY CreadoEn DESC
