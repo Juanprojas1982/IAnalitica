@@ -11,7 +11,7 @@ Parte de `docs/CONTEXTO.md` (índice). La numeración §N es global y se conserv
 | F3 Dashboards | ✅ parcial | Los 3 pilotos los usan | No |
 | F4 Auditor y validador | ✅ parcial | ≥ 80 % de hallazgos confirmados reales | No |
 | F5 Costos e IA | ✅ parcial | Conservación del costo; consumo IA dentro del tope | Conservación y tope: sí (sintético). Pilotos y modelo real: no |
-| Facturación (cuenta de cobro, `fac`) | ✅ parcial | Pasos 1–9 en `feature/f6-facturacion-cuenta-cobro`; paso 10 (excedente IA) diferido a D50. Pruebas de integración escritas, **no ejecutadas** contra SQL Server (sin Docker) | No |
+| Facturación (cuenta de cobro, `fac`) | ✅ parcial | Pasos 1–9 en `main` (PR #8); paso 10 (excedente IA) diferido a D50. Pruebas de integración en CI: 318/318 | No |
 | F6 Despliegue piloto | ⏳ | 95 % de noches con carga correcta durante 30 días | — (bloqueada por P1 y por datos reales) |
 
 ## 10. Pendientes y decisiones abiertas
@@ -28,7 +28,7 @@ Parte de `docs/CONTEXTO.md` (índice). La numeración §N es global y se conserv
 10. Almacenamiento de reportes compartido o Blob si hay varios nodos (`Reportes:Almacen:Ruta`); llaves de Data Protection y de firma de token en Key Vault (F6).
 11. Gráficos en PDF (hoy tablas y KPI); logo en PDF; QR del 2FA.
 
-12. Facturación: ejecutar pruebas de integración de `fac` con Docker; paso 10 (excedente IA, script 1042) al activar la IA a clientes (D50); decisiones D49 y D45 abiertas (detalle en `08` §35).
+12. Facturación: paso 10 (excedente IA, script 1042) al activar la IA a clientes (D50); decisiones D49 y D45 abiertas (detalle en `08` §35).
 
 ### Decisiones de diseño abiertas
 - **Render:** `InteractiveAuto` + MudBlazor (spec original) vs. SSR+SVG actual (F3). Decidir si se quiere interactividad (requiere proyecto `IAnalitica.Web.Client` no previsto en la estructura).
@@ -70,7 +70,7 @@ Parte de `docs/CONTEXTO.md` (índice). La numeración §N es global y se conserv
 | Costo de nube o IA | D32, presupuesto con alertas, topes de IA, cupo gratuito con pausa |
 | Licencias comerciales | Verificar al instalar; QuestPDF revisión anual (umbral USD 1 M) |
 | Alcance creciente | Lo nuevo entra como fase posterior |
-| Ramas largas sin integrar | Cadena apilada f0→f2→f3→f4→f5→f6-facturación sin integrar a `main`; abrir PR(s) y ejecutar las pruebas de integración con Docker antes de fusionar |
+| Ramas largas sin integrar | Cadena F0–F6 integrada en `main` (PR #8); borrar las ramas `feature/*` intermedias |
 
 ## 12. Decisiones (registro)
 | # | Decisión |

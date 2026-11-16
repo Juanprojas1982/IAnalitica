@@ -1,7 +1,7 @@
 # IAnalitica — Facturación del SaaS: cuenta de cobro, control de pagos y envío por correo
 
 Parte de `docs/CONTEXTO.md` (índice). La numeración §N es global y se conserva entre archivos. Precedencia y reglas de uso: `01_reglas_arquitectura_seguridad.md` §0.
-**Estado (rev. 4, 2026-11-05): pasos 1 a 9 implementados en la rama `feature/f6-facturacion-cuenta-cobro`; el paso 10 (excedente de IA) está diferido hasta la decisión D50.** Las pruebas de integración están escritas pero no se han ejecutado contra SQL Server real (el entorno de desarrollo no tenía Docker); compilan y pasan las unitarias, el PDF, el `.eml` y la validación de SMTP. Decisiones del dueño: **prorrateo por días** (D48) y **el canon se cobra siempre, también en suspensión** (D51). Incorpora las decisiones vinculantes del dueño: sin DIAN, sin IVA, mes vencido, envío automático, SMTP genérico.
+**Estado (rev. 5, 2026-11-16): pasos 1 a 9 implementados e integrados en `main`; el paso 10 (excedente de IA) está diferido hasta la decisión D50.** Integrado en `main` (PR #8, 2026-11-16). Las pruebas de integración se ejecutaron en CI contra SQL Server real: 318/318 en verde tras corregir DI de la API, tipos `smallint` y la ruta `POST /facturacion/contactos/guardar`. Decisiones del dueño: **prorrateo por días** (D48) y **el canon se cobra siempre, también en suspensión** (D51). Incorpora las decisiones vinculantes del dueño: sin DIAN, sin IVA, mes vencido, envío automático, SMTP genérico.
 Convención: **[H]** = hecho verificado en el repo · **[S]** = supuesto no confirmado (§0.3) · **[NV]** = afirmación externa no verificada.
 El repo usa el **mediador propio** `Application/Mediacion` (D34), no MediatR.
 

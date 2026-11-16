@@ -1,6 +1,6 @@
 # IAnalitica — CONTEXTO (índice)
 
-Estado: rama `feature/f6-facturacion-cuenta-cobro` (apilada sobre f5; sin PR a `main`). F0–F5 implementadas; facturación (cuenta de cobro) pasos 1–9 implementados, paso 10 diferido (D50); despliegue piloto sin iniciar. Actualizado: 2026-11-16.
+Estado: `main` incluye F0–F5 y facturación (cuenta de cobro) pasos 1–9 (PR #8, CI 318/318); paso 10 diferido (D50); despliegue piloto sin iniciar. Actualizado: 2026-11-16.
 Contexto vigente para humanos y agentes de IA, partido por tema. La numeración §N es global. **Cargar solo el archivo que aplique.**
 Precedencia: este contexto → código y `database/scripts` (el DDL manda) → `docs/archivo/` (histórico, no usar como fuente).
 
