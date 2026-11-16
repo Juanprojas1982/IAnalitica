@@ -1,6 +1,7 @@
-# Planes de implementación — brechas del analista financiero
+# Planes de implementación — producto completo antes del primer piloto
 
 Estado: **diseñados, NO implementados.** No se implementa nada hasta orden explícita del dueño. Fecha: 2026-11-16.
+Alcance (decisión del dueño, 2026-11-16): como aún no hay ningún piloto en operación, entra **todo lo que falta**, incluido el sector público (ESE). PL-01 a PL-09 cubren al analista financiero; PL-10 a PL-17, el resto de lo que el producto promete.
 Diseño según D30; implementación con Sonnet, un plan = una rama = un PR. Un cambio de diseño durante la implementación vuelve a diseño.
 
 ## Hallazgos del análisis que cambian el alcance
@@ -26,9 +27,31 @@ Diseño según D30; implementación con Sonnet, un plan = una rama = un PR. Un c
 | PL-07 | Comparativos: año anterior y acumulado | — | — | No | — |
 | PL-08 | Deterioro estimado de cartera | — | 1100 | No | DP-7 |
 | PL-09 | Recaudo sin aplicar (anticipos y giros sin cruzar) | PL-01 | 1110 | No | DP-8, datos reales |
+| PL-10 | Ingesta operativa (prestaciones, nómina, inventario) y costos confiables | — | 1120 | Sí | P2 |
+| PL-11 | Agendas y oportunidad | PL-10 (solo costo ocioso) | 1130 | Sí | — |
+| PL-12 | Productividad y apoyo diagnóstico | PL-10 | 1140 | Sí | DP-10 |
+| PL-13 | Farmacia, inventario y validador de precios completo | PL-10 | 1150 | Sí | Confirmación regulatoria, P9 |
+| PL-14 | Paquete ESE (presupuesto público, plan de cuentas público, riesgo) | PL-07 (motor) | 1160 | Sí | Fase 0 con la ESE, P6 |
+| PL-15 | Grupos de instituciones (vista consolidada) | PL-04 (sesión de sistema) | 1170 | No | DP-9 |
+| PL-16 | Asistente IA: proveedor real y salida a clientes | PL-04 (alertas de cupo) | 1180, 1042 | No | D32, P11, P5 |
+| PL-17 | Auditor de configuración, fase 2 | — | 1190 | Parcial | — |
 
-Orden sugerido: PL-07 → PL-01 (parte A) → PL-04 → PL-02 → PL-03 → PL-06 → PL-01 (B, C) → PL-08 → PL-05 → PL-09.
-Razón: primero lo que da valor con datos ya ingeridos y sin decisiones pendientes; PL-05 y PL-09 al final por riesgo.
+### Orden sugerido (por oleadas)
+1. **Sin conector ni decisiones:** PL-07 → PL-01 (parte A) → PL-17 (lotes 1 y 3) → PL-04.
+2. **Ciclo del ingreso completo:** PL-02 → PL-03 → PL-06 → PL-01 (B, C).
+3. **Operación:** PL-10 → PL-11 → PL-12.
+4. **Por piloto:** PL-13 (operador farmacéutico) y PL-14 (ESE), en paralelo, cada uno tras su levantamiento.
+5. **Riesgo alto o bloqueados:** PL-16 → PL-08 → PL-05 → PL-15 → PL-09.
+
+Razón: primero lo que da valor con datos ya ingeridos; después lo que exige ampliar el conector; al final lo que cambia seguridad, cuesta dinero o depende de datos reales.
+
+### Advertencia de alcance
+Son 17 planes. El riesgo «alcance creciente» (`06` §11) deja de ser teórico: ninguna fase se ha cerrado con datos reales y F6 sigue bloqueada por P1. **Incluir todo en el plan no es construir todo antes de salir.** Recomendación: fijar un corte de salida por piloto (qué planes necesita cada uno) y dejar el resto en cola.
+| Piloto | Mínimo para salir |
+|---|---|
+| IPS privada | Lo ya construido + PL-07, PL-01 A, PL-02, PL-03, PL-04 |
+| Operador farmacéutico | Lo ya construido + PL-10 (inventario), PL-13 A y B |
+| ESE | Lo ya construido + PL-14 fases 0–2 y 4 |
 El número 1042 queda reservado para D50 (excedente IA). Un script por plan; si un plan necesita otro, usa el siguiente número libre de su decena.
 
 ## Decisiones del dueño que bloquean (no inventar la respuesta)
@@ -42,6 +65,9 @@ El número 1042 queda reservado para D50 (excedente IA). Un script por plan; si 
 | DP-6 | Formato de carga del presupuesto por portal | CSV (sin paquetes nuevos); Excel después | PL-06 |
 | DP-7 | Política de deterioro (porcentaje por edad vs. pérdida esperada) y quién la parametriza | Porcentaje por rango de edad, por empresa, etiquetado «estimado, no contable» | PL-08 |
 | DP-8 | Cómo registra SaludIPS anticipos y giros sin identificar (cuenta, relación) | Validar con equipo funcional y datos reales | PL-09 |
+| DP-9 | Modelo de acceso para grupos (contradice D11) | Opción A de PL-15: el usuario sigue en una empresa; un servicio consulta empresa por empresa; la RLS no cambia | PL-15 |
+| DP-10 | Umbral mínimo de empleados para mostrar costo de personal por cargo, y si se publica productividad individual de administrativos | 3 empleados; productividad individual fuera | PL-12 |
+| DP-11 | Corte de salida por piloto (ver «Advertencia de alcance») | La tabla de arriba | Orden de todo |
 
 ## Reglas para quien implemente (además de `01` §0)
 - Antes de editar cualquier símbolo: `impact` de GitNexus (upstream) y reportar riesgo; HIGH/CRITICAL se avisa antes de tocar. Antes de commit: `detect-changes --scope all`. Cada plan lista los símbolos a analizar.
@@ -53,8 +79,11 @@ El número 1042 queda reservado para D50 (excedente IA). Un script por plan; si 
 - Ningún recurso pago ni paquete NuGet nuevo en estos planes. Si aparece la necesidad, parar (D32).
 
 ## Fuera de estos planes (y por qué)
-- **Cuadre con datos reales (P1, P2):** no es código; sigue siendo lo primero para mostrar cifras a un cliente.
-- **Ingesta de `nomina`, `prestaciones`, `inventario`, `TipoCC`, bases manuales:** ya es el pendiente técnico 2–3; merece su propio diseño.
-- **Rentabilidad por contrato de capitación/PGP:** el contrato de ingesta no trae población afiliada y `CostoDirecto` es `[S]` (P2).
+- **Cuadre con datos reales (P1, P2) y despliegue (F6):** no es diseño; sigue siendo lo primero para mostrar cifras a un cliente.
+- **Rentabilidad por contrato de capitación/PGP:** el contrato de ingesta no trae población afiliada.
 - **Conciliación de cartera con el saldo que reconoce la EPS (Circular 030 de 2013, por verificar):** no hay fuente del saldo del pagador.
-- **Flujo de caja proyectado a 13 semanas:** esbozado en PL-01 §Fase siguiente; necesita patrón de recaudo real para calibrar.
+- **Flujo de caja proyectado a 13 semanas:** esbozado en PL-01; necesita patrón de recaudo real para calibrar.
+- **Hospitalario y quirúrgico (camas, triage, quirófano), benchmarking entre IPS, pronóstico:** fase 3 de la spec; la instalación revisada no tiene esos datos.
+- **MIPRES y SISMED:** sus plazos y emisores están «por verificar» en el propio contexto (PL-13).
+- **Conector para un HIS distinto de SaludIPS:** existe el contrato canónico; un conector nuevo depende de cada sistema.
+- **Editor de dashboards (`cfg.Dashboard`), comentarios sobre datos, informe gerencial programado:** fase 2 de la capa semántica; sin plan todavía.
