@@ -31,7 +31,7 @@ Diseño según D30; implementación con Sonnet, un plan = una rama = un PR. Un c
 | PL-11 | Agendas y oportunidad | PL-10 (solo costo ocioso) | 1130 | Sí | **Sí** | — |
 | PL-12 | Productividad y apoyo diagnóstico | PL-10, PL-11 (dimensiones `profesional`, `especialidad`) | 1140 | Sí | **Sí** | — |
 | PL-13 | Farmacia, inventario y validador de precios completo | PL-10 | 1150 | Sí | **Parte A sí** | B: contrato de `ordenes-externas` (P9). C: confirmación regulatoria |
-| PL-14 | Paquete ESE (presupuesto público, plan de cuentas público, riesgo) | PL-02 (verificación de módulo) | 1160 | Sí | No | Fase 0 con la ESE (datos reales); P6 para la fase 5 |
+| PL-14 | Paquete ESE (presupuesto público, plan de cuentas público, riesgo) | PL-02 (verificación de módulo) | 1160 | Sí (función nueva en `SaludIPS2`) | **Fases 1–3 sí** | Fase 4: validar el plan de cuentas con la ESE. Fase 5: P6. Cuadre con datos reales antes de mostrar cifras |
 | PL-15 | Grupos de instituciones (vista consolidada) | PL-04 (sesión de sistema) | 1170 | No | **Sí** | Para dar de alta un grupo real: consentimiento contractual (P5) |
 | PL-16 | Asistente IA: proveedor real y salida a clientes | PL-04 (alertas de cupo) | 1180, 1042 (D44) | No | No | D32 (costo y clave), P11, P5 |
 | PL-17 | Auditor de configuración, fase 2 | — | 1190 | Parcial | **Lotes 1 y 3 sí** | Resto de lotes: medir falsos positivos con el piloto; reglas `[S]` nacen `PorVerificar` |
@@ -43,7 +43,8 @@ Diseño según D30; implementación con Sonnet, un plan = una rama = un PR. Un c
 2. **Ciclo del ingreso completo:** PL-02 → PL-03 → PL-06 → PL-01 (B, C).
 3. **Operación:** PL-10 → PL-11 → PL-12 → PL-13 parte A.
 4. **Configuración y seguridad:** PL-08 → PL-05 fase 1 → PL-15.
-5. **Esperan algo externo:** PL-09 (datos reales), PL-13 B y C (contrato y regulatorio), PL-14 (fase 0 con la ESE), PL-16 (D32, P11), PL-05 fase 2 (conector), PL-17 lotes 2 y 4–6 (medición con piloto).
+   **ESE:** PL-14 fases 1 a 3 pueden ir en cualquier punto después de PL-02; su origen ya está verificado en el código de SaludIPS.
+5. **Esperan algo externo:** PL-09 (datos reales), PL-13 B y C (contrato y regulatorio), PL-14 fases 4 y 5 (ESE), PL-16 (D32, P11), PL-05 fase 2 (conector), PL-17 lotes 2 y 4–6 (medición con piloto).
 
 Razón: primero lo que da valor con datos ya ingeridos; después lo que exige ampliar el conector; al final lo que cambia seguridad, cuesta dinero o depende de datos reales.
 
@@ -79,7 +80,7 @@ Aprobadas el 2026-11-16 y registradas en `06` §12. Lo que una decisión no dice
 | DP-2 | Codificación de motivos de glosa de cada piloto y norma vigente (Res. 3047/2008 anexo 6 vs. Res. 2284/2023: **verificar**) | Equipo funcional | Solo la clasificación de PL-02; el plan sale con el código de origen |
 | DP-8 | Cómo registra SaludIPS anticipos y giros sin identificar | Equipo funcional + datos reales | PL-09 |
 | D32, P11, P5 | Costo y clave del proveedor de IA, tarifa y cupo, documentos legales | Dueño, abogado | PL-16 |
-| Fase 0 ESE, P6 | Datos presupuestales reales y fórmulas de riesgo | ESE piloto | PL-14 |
+| Plan de cuentas CGN, P6 | Homologación del plan de cuentas público y fórmulas de riesgo; base con datos presupuestales para el cuadre | ESE piloto | PL-14 fases 4 y 5, y la aceptación de las fases 1–3 |
 | P9 | Contrato de `ordenes-externas` | Equipo funcional | PL-13 B |
 | Confirmación regulatoria | Circulares de precios, Res. 1604/2013, plazos | Área regulatoria | PL-13 C |
 
