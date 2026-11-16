@@ -5,7 +5,7 @@ const out = path.join(raiz, 'dist/assets'); mkdirSync(out, { recursive: true });
 const b = await chromium.launch();
 // Capturas finales
 const ctx = await b.newContext({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 });
-for (const v of ['gerencial', 'cartera', 'ciclo', 'asistente', 'grupo']) { const p = await ctx.newPage(); await p.goto(url(`v=${v}&t=end`)); await p.waitForTimeout(400); await p.screenshot({ path: path.join(tmp, `dash-${v}.png`) }); await p.close(); }
+for (const v of ['gerencial', 'cartera', 'ciclo', 'asistente']) { const p = await ctx.newPage(); await p.goto(url(`v=${v}&t=end`)); await p.waitForTimeout(400); await p.screenshot({ path: path.join(tmp, `dash-${v}.png`) }); await p.close(); }
 await ctx.close();
 // Videos (grabación de Playwright: 12 s por vista, en bucle)
 for (const [v, dur] of [['gerencial', 12000], ['asistente', 12000]]) {
