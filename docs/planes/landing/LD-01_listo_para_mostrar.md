@@ -6,6 +6,8 @@ Repo: `ianalitica-landing`. Rama: `ld-01-listo-para-mostrar` desde `propuesta/te
 Que un gerente pueda abrir la portada sin ver nada tapado ni notas internas, y que sea imposible publicar con textos sin confirmar.
 
 ## A. Banner de cookies
+**Estado (2026-11-17): el solape con los botones quedó resuelto sin tocar el banner.** En la rama `ld-05-marca` (commit `ec17372`) se quitaron las tres viñetas `.hero .tres`, que repetían el subtítulo, y los botones subieron. Medido con el consentimiento sin decidir: 1366×768, `.hero .cta` 416–469 y `#cookies` 581–752; 390×844, 437–490 frente a 610–828. **De esta parte solo queda** el criterio automatizado en `tools/revisar.mjs` (para que no reaparezca) y, opcional, la barra compacta en móvil (el banner aún ocupa 218 px de alto). Los puntos 1 a 3 de abajo son el diseño original y ya no son necesarios para cumplir el criterio; el punto 3 ya está hecho.
+
 Problema: `#cookies` es `position:fixed; left:16px; right:16px; bottom:16px; max-width:620px` y queda sobre `.hero .cta`.
 Diseño:
 1. Escritorio (> 640 px): anclar a la derecha (`left:auto; right:16px; max-width:400px`). Los botones del hero están a la izquierda.

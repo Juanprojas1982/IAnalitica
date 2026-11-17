@@ -10,10 +10,12 @@ Contexto: `docs/contexto/07_usuarios_landing.md` §28 y el `README.md` del landi
 4. Verificación: `python3 build.py && python3 -m http.server 8099 -d dist` y, en otra terminal, `node tools/revisar.mjs` (debe imprimir «Sin problemas»). `revisar.mjs` y `render.mjs` importan `playwright`; `tools/node_modules` está en `.gitignore`. En la sesión en la nube Playwright es global: si el `import` falla, resolverlo con `createRequire` o `NODE_PATH`, **sin** ejecutar `playwright install`.
 5. Hay 11 avisos `data-provisional` repartidos en 10 páginas, y dos marcadores sin resolver: `comercial@dominio-por-definir.co` (pie y `dist/js/config.js`) y `#portal-por-definir` (botón «Ingresar», cabecera y pie).
 
+6. **Textos de la portada y de `funcionalidades.html` reescritos el 2026-11-17** (commits `ea66c0f` y `ec17372`): titular «Analítica gerencial para el sector salud», antetítulo «Para IPS, ESE y operadores farmacéuticos», tarjetas más cortas con el indicador financiero primero. LD-02 y LD-04 citan textos anteriores: manda el HTML actual.
+
 ## Hallazgos de la revisión (medidos)
 | # | Hallazgo | Evidencia | Plan |
 |---|---|---|---|
-| 1 | El banner de cookies tapa los botones del hero en la primera visita | 1366×768: `#cookies` y 580–752, `.hero .cta` y 593–649. 390×844: 609–828 frente a 683–806 | LD-01 |
+| 1 | **Resuelto el 2026-11-17** (se quitaron las viñetas del hero; falta solo la regla en `revisar.mjs`). El banner de cookies tapaba los botones del hero en la primera visita | 1366×768: `#cookies` y 580–752, `.hero .cta` y 593–649. 390×844: 609–828 frente a 683–806 | LD-01 |
 | 2 | Notas internas visibles para el visitante | Aviso «Texto provisional…» en «Para quién»; correo `…dominio-por-definir.co` en el pie | LD-01 |
 | 3 | «Ingresar» apunta a `#portal-por-definir` | `src/partials/head.html`, `foot.html` | LD-01 |
 | 4 | Iconos de las tarjetas son caracteres Unicode (◎ ▲ ∑ ⟳ $ ✓ ▣ ⇩) | `src/pages/index.html`, clase `.ic` | LD-02 |
