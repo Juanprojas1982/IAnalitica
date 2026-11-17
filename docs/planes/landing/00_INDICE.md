@@ -1,6 +1,6 @@
 # Planes del landing (carpeta `landing/`) — acabado para mostrarlo a gerentes
 
-Estado: **diseñados el 2026-11-17 y revisados el mismo día contra el código real de `landing/`** (después de aplicar la identidad de Procesos en Línea, reescribir los textos de la portada y de `funcionalidades.html`, y quitar las viñetas del hero). **NO implementados.** Implementación con Sonnet (D30): un plan = una rama = un PR. Si durante la implementación aparece una decisión de diseño que el plan no cierra, se detiene y vuelve a diseño (no se improvisa).
+Estado: **LD-01 a LD-04 implementados y fusionados en `main` el 2026-11-17** (PR 15 a 18; un plan = una rama = un PR). **LD-05: parte A hecha, B bloqueada.** El resto de este índice es el diseño con el que se implementaron; los «hallazgos» describen el estado ANTES de implementar. Pendiente fuera de los planes: Firefox y Safari sin probar (video, `<source>`), banner en 320×568 (fuera de criterio) y los 9 pendientes que impiden `build.py --publicar` (7 avisos y 2 marcadores de `config.js`).
 Contexto: `docs/contexto/07_usuarios_landing.md` §28 y `landing/README.md`. Las rutas de los planes (`src/pages`, `dist/css`, `tools/`, `build.py`) son relativas a `landing/`.
 
 ## Reglas que ningún plan rompe
