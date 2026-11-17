@@ -9,9 +9,10 @@ for (const [ancho, alto, n] of [[1440, 900, 'pc'], [390, 844, 'movil']]) {
   for (const u of paginas) {
     await p.goto(B + u); await p.waitForTimeout(300);
     await p.evaluate(() => document.querySelectorAll('.rev').forEach(e => e.classList.add('v')));
-    const r = await p.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, sinAlt: [...document.images].filter(i => !i.hasAttribute('alt')).length, links: [...document.querySelectorAll('a[href^="/"]')].map(a => a.getAttribute('href').split('#')[0]), h1: document.querySelectorAll('h1').length }));
+    const r = await p.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, sinAlt: [...document.images].filter(i => !i.hasAttribute('alt')).length, links: [...document.querySelectorAll('a[href^="/"]')].map(a => a.getAttribute('href').split('#')[0]), h1: document.querySelectorAll('h1').length, icTexto: [...document.querySelectorAll('.ic')].filter(e => e.textContent.trim() || !e.querySelector('svg')).length }));
     if (r.sw > r.cw + 1) { console.log(`✗ ${n} ${u}: desborda (${r.sw}>${r.cw})`); problemas++; }
     if (r.sinAlt) { console.log(`✗ ${u}: ${r.sinAlt} imagen(es) sin alt`); problemas++; }
+    if (r.icTexto) { console.log(`✗ ${u}: ${r.icTexto} icono(s) .ic sin SVG o con texto`); problemas++; }
     if (r.h1 !== 1) { console.log(`✗ ${u}: ${r.h1} h1`); problemas++; }
     r.links.forEach(l => vistos.add(l));
     if (n === 'pc' || u === '/') await p.screenshot({ path: `tools/.tmp/rev/${n}-${u.replace(/[\/.]/g, '_') || 'inicio'}.png`, fullPage: true });
