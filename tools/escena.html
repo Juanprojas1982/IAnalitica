@@ -2,29 +2,31 @@
 <html lang="es"><head><meta charset="utf-8"><title>Escena de dashboard (datos ficticios)</title>
 <meta name="viewport" content="width=1280">
 <style>
-:root{--bg:#050d1c;--bg2:#0a1a33;--card:rgba(16,36,70,.72);--line:rgba(120,170,255,.18);--tx:#e8f0ff;--mut:#8ea6cc;--az:#3b82f6;--cy:#22d3ee;--ok:#34d399;--am:#fbbf24;--rj:#f87171}
+/* Paleta del manual de identidad de Procesos en Línea: --cy = naranja primario, --az = berenjena */
+@font-face{font-family:Ubuntu;font-weight:400;src:url("../dist/assets/fonts/ubuntu-400.woff2") format("woff2")}@font-face{font-family:Ubuntu;font-weight:500;src:url("../dist/assets/fonts/ubuntu-500.woff2") format("woff2")}@font-face{font-family:Ubuntu;font-weight:700;src:url("../dist/assets/fonts/ubuntu-700.woff2") format("woff2")}
+:root{--bg:#F5F5F5;--bg2:#EEEEEE;--card:#FFFFFF;--line:#DDDDDD;--tx:#333333;--mut:#5C5C5C;--az:#772953;--cy:#E95420;--ok:#2B8C3A;--am:#8A6100;--rj:#C42B20}
 *{box-sizing:border-box;margin:0}
-body{width:1280px;height:720px;overflow:hidden;background:radial-gradient(1200px 600px at 75% -10%,#12356b 0,transparent 60%),radial-gradient(900px 500px at -10% 110%,#0b3a5c 0,transparent 55%),var(--bg);color:var(--tx);font:14px/1.35 Inter,system-ui,sans-serif;position:relative}
-body:before{content:"";position:absolute;inset:0;background:linear-gradient(var(--line) 1px,transparent 1px) 0 0/48px 48px,linear-gradient(90deg,var(--line) 1px,transparent 1px) 0 0/48px 48px;opacity:.22;mask:radial-gradient(circle at 50% 40%,#000 0,transparent 75%)}
+body{width:1280px;height:720px;overflow:hidden;background:linear-gradient(180deg,#fff 0,var(--bg) 60%);color:var(--tx);font:14px/1.35 Ubuntu,Tahoma,Arial,sans-serif;position:relative}
+body:before{content:"";position:absolute;inset:0;background:linear-gradient(var(--line) 1px,transparent 1px) 0 0/48px 48px,linear-gradient(90deg,var(--line) 1px,transparent 1px) 0 0/48px 48px;opacity:.5;mask:radial-gradient(circle at 50% 40%,#000 0,transparent 75%)}
 .top{position:absolute;left:28px;right:28px;top:20px;display:flex;align-items:center;gap:14px}
-.logo{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--az),var(--cy));display:grid;place-items:center;font-weight:800;color:#041022}
+.logo{width:30px;height:30px;border-radius:6px;background:var(--cy);display:grid;place-items:center;font-weight:700;color:#fff}
 .top h1{font-size:16px;font-weight:700;letter-spacing:.2px}.top small{color:var(--mut)}
-.chips{margin-left:auto;display:flex;gap:8px}.chip{padding:5px 10px;border:1px solid var(--line);border-radius:999px;color:var(--mut);font-size:12px;background:rgba(255,255,255,.03)}.chip.on{color:#041022;background:var(--cy);border-color:var(--cy);font-weight:600}
+.chips{margin-left:auto;display:flex;gap:8px}.chip{padding:5px 10px;border:1px solid var(--line);border-radius:999px;color:var(--mut);font-size:12px;background:#fff}.chip.on{color:#fff;background:#D34615;border-color:#D34615;font-weight:500}
 .g{position:absolute;left:28px;right:28px;top:74px;bottom:44px;display:grid;gap:14px;grid-template-columns:repeat(12,1fr);grid-template-rows:repeat(6,1fr)}
-.c{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;backdrop-filter:blur(6px);position:relative;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.05)}
-.c h2{font-size:12px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
-.k{font-size:34px;font-weight:750;letter-spacing:-.5px;font-variant-numeric:tabular-nums}.d{font-size:12px;margin-top:4px}.up{color:var(--ok)}.dn{color:var(--rj)}
-.glow:after{content:"";position:absolute;right:-30px;top:-30px;width:110px;height:110px;border-radius:50%;background:radial-gradient(var(--cy),transparent 65%);opacity:.18}
+.c{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px 16px;position:relative;overflow:hidden;box-shadow:0 4px 14px rgba(51,51,51,.07)}
+.c h2{font-size:12px;font-weight:500;color:var(--mut);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+.k{font-size:34px;font-weight:700;letter-spacing:-.5px;font-variant-numeric:tabular-nums}.d{font-size:12px;margin-top:4px}.up{color:var(--ok)}.dn{color:var(--rj)}
+.glow:after{content:"";position:absolute;right:-30px;top:-30px;width:110px;height:110px;border-radius:50%;background:radial-gradient(var(--cy),transparent 65%);opacity:.12}
 svg{display:block;width:100%;height:100%}
-.bar{display:grid;grid-template-columns:96px 1fr 62px;gap:10px;align-items:center;margin:7px 0;font-size:12.5px}.bar i{display:block;height:9px;border-radius:5px;background:linear-gradient(90deg,var(--az),var(--cy));width:0}
+.bar{display:grid;grid-template-columns:96px 1fr 62px;gap:10px;align-items:center;margin:7px 0;font-size:12.5px}.bar i{display:block;height:9px;border-radius:5px;background:var(--cy);width:0}
 .bar b{text-align:right;font-variant-numeric:tabular-nums}
-.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11.5px;font-weight:600}.p-r{background:rgba(248,113,113,.15);color:var(--rj)}.p-a{background:rgba(251,191,36,.15);color:var(--am)}.p-v{background:rgba(52,211,153,.15);color:var(--ok)}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11.5px;font-weight:600}.p-r{background:rgba(223,56,44,.12);color:var(--rj)}.p-a{background:rgba(239,183,62,.22);color:var(--am)}.p-v{background:rgba(56,180,74,.14);color:var(--ok)}
 .al{display:flex;gap:10px;align-items:flex-start;margin:8px 0;font-size:12.5px}.dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex:none;box-shadow:0 0 0 0 currentColor;animation:pulso 2s infinite}
 @keyframes pulso{0%{box-shadow:0 0 0 0 color-mix(in srgb,currentColor 55%,transparent)}100%{box-shadow:0 0 0 10px transparent}}
 .mk{position:absolute;left:28px;right:28px;bottom:14px;display:flex;justify-content:space-between;color:var(--mut);font-size:11.5px}
-.chat{display:flex;flex-direction:column;gap:10px;font-size:13.5px}.m{padding:10px 13px;border-radius:12px;max-width:92%}.u{align-self:flex-end;background:var(--az);color:#fff}.a{background:rgba(255,255,255,.06);border:1px solid var(--line)}
+.chat{display:flex;flex-direction:column;gap:10px;font-size:13.5px}.m{padding:10px 13px;border-radius:12px;max-width:92%}.u{align-self:flex-end;background:var(--az);color:#fff}.a{background:var(--bg);border:1px solid var(--line)}
 .cur:after{content:"▍";color:var(--cy);animation:p 1s steps(2) infinite}@keyframes p{50%{opacity:0}}
-.fuente{margin-top:8px;font-size:11.5px;color:var(--cy)}
+.fuente{margin-top:8px;font-size:11.5px;color:#C7410F}
 .hid{display:none!important}
 </style></head><body>
 <div class="top"><div class="logo">IA</div><div><h1 id="tit">Tablero gerencial</h1><small>Clínica Ejemplo · Datos ficticios</small></div>
@@ -37,9 +39,9 @@ svg{display:block;width:100%;height:100%}
  <div class="c" style="grid-column:span 3;grid-row:span 2"><h2>Utilidad</h2><div class="k" data-n="901" data-f="m">0</div><div class="d up">▲ 0,4 % vs. periodo anterior</div></div>
  <div class="c" style="grid-column:span 3;grid-row:span 2"><h2>Margen</h2><div class="k" data-n="18.7" data-f="p">0</div><div class="d dn">▼ 1,2 pts vs. periodo anterior</div></div>
  <div class="c" style="grid-column:span 8;grid-row:span 4"><h2>Ingresos, costos y utilidad por mes</h2>
-  <svg viewBox="0 0 760 250" preserveAspectRatio="none"><defs><linearGradient id="ar" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#22d3ee" stop-opacity=".45"/><stop offset="1" stop-color="#22d3ee" stop-opacity="0"/></linearGradient></defs>
-  <g stroke="rgba(120,170,255,.15)"><path d="M0 40H760M0 100H760M0 160H760M0 220H760"/></g>
-  <path id="area" fill="url(#ar)" d=""/><path id="l1" fill="none" stroke="#22d3ee" stroke-width="3" stroke-linecap="round" d=""/><path id="l2" fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 0" d=""/><circle id="pt" r="6" fill="#fff" stroke="#22d3ee" stroke-width="3" cx="0" cy="0"/></svg></div>
+  <svg viewBox="0 0 760 250" preserveAspectRatio="none"><defs><linearGradient id="ar" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#E95420" stop-opacity=".28"/><stop offset="1" stop-color="#E95420" stop-opacity="0"/></linearGradient></defs>
+  <g stroke="#E6E6E6"><path d="M0 40H760M0 100H760M0 160H760M0 220H760"/></g>
+  <path id="area" fill="url(#ar)" d=""/><path id="l1" fill="none" stroke="#E95420" stroke-width="3" stroke-linecap="round" d=""/><path id="l2" fill="none" stroke="#772953" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 0" d=""/><circle id="pt" r="6" fill="#fff" stroke="#E95420" stroke-width="3" cx="0" cy="0"/></svg></div>
  <div class="c" style="grid-column:span 4;grid-row:span 2"><h2>Facturado en el periodo</h2><div class="k" data-n="4610" data-f="m">0</div><div class="d">9 pagadores · 3 sedes</div></div>
  <div class="c" style="grid-column:span 4;grid-row:span 2"><h2>Cartera por cobrar</h2><div class="k" data-n="3150" data-f="m">0</div><div class="d dn">31 % con más de 90 días</div></div>
 </div>
@@ -100,8 +102,8 @@ const path=a=>a.map((v,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)).join
 if(document.getElementById('l1')){l1.setAttribute('d',path(ing));l2.setAttribute('d',path(cos));area.setAttribute('d',path(ing)+' L760 250 L0 250Z');
  l1.style.strokeDasharray=l1.getTotalLength();l2.style.strokeDasharray=l2.getTotalLength();}
 const ET=[['Facturado','$ 4.610 M','p-v'],['Facturas','18.420','p-v'],['Facturado sin radicar','$ 330 M','p-r'],['Días de factura a radicación','6,4 d','p-a'],['Valor anulado','$ 74 M','p-a']];
-if(window.etapas)etapas.innerHTML=ET.map(([a,b,c])=>`<div style="padding:12px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.03)"><div style="color:var(--mut);font-size:12px">${a}</div><div class="k" style="font-size:24px;margin:6px 0">${b}</div><span class="pill ${c}">${c=='p-v'?'periodo':c=='p-r'?'atención':'seguimiento'}</span></div>`).join('');
-if(window.edades){const E=[['0-30',46],['31-60',72],['61-90',55],['91-180',90],['>180',60]];edades.innerHTML=E.map(([l,h],i)=>`<rect class="eb" data-h="${h*2}" x="${20+i*76}" y="200" width="52" height="0" rx="6" fill="${i>2?'#f87171':'#3b82f6'}"/><text x="${46+i*76}" y="222" fill="#8ea6cc" font-size="12" text-anchor="middle">${l}</text>`).join('')}
+if(window.etapas)etapas.innerHTML=ET.map(([a,b,c])=>`<div style="padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--bg)"><div style="color:var(--mut);font-size:12px">${a}</div><div class="k" style="font-size:24px;margin:6px 0">${b}</div><span class="pill ${c}">${c=='p-v'?'periodo':c=='p-r'?'atención':'seguimiento'}</span></div>`).join('');
+if(window.edades){const E=[['0-30',46],['31-60',72],['61-90',55],['91-180',90],['>180',60]];edades.innerHTML=E.map(([l,h],i)=>`<rect class="eb" data-h="${h*2}" x="${20+i*76}" y="200" width="52" height="0" rx="6" fill="${i>2?'#DF382C':'#AEA79F'}"/><text x="${46+i*76}" y="222" fill="#5C5C5C" font-size="12" text-anchor="middle">${l}</text>`).join('')}
 const TXT='Salud Azul concentra el 52 % de la cartera mayor a 90 días ($ 640 M de $ 1.200 M) y explica 3,1 de los 4 puntos de aumento desde junio. Recomendación: priorizar una conciliación con Salud Azul esta semana.';
 let t0=null;
 function frame(ts){ if(t0===null)t0=ts; let p=FIN?1:Math.min(((ts-t0)%DUR)/DUR*1.0,1); const loop=FIN?1:((ts-t0)%DUR)/DUR;

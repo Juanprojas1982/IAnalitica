@@ -1,15 +1,20 @@
 /* Identidad visual: ÚNICO lugar para cambiar la marca.
-   Valores PROVISIONALES: parten de la paleta del portal de IAnalitica (dashboards.css: #0b2545 / #1f5fbf) y un acento cian para el tono «analítico».
-   Cuando se tenga la identidad corporativa de Procesos en Línea (logo, colores, tipografía), se reemplazan aquí y el sitio completo cambia. */
+   Fuente: manual «Identidad Corporativa – Procesos en Línea» v1.0 (Pasto). Los valores marcados «derivado» no están en el manual:
+   se agregaron para cumplir contraste AA (4,5:1) o como tinte de fondo, y deben confirmarse con el dueño de la marca. */
 :root{
-  --marca-900:#061428;   /* fondo oscuro del hero */
-  --marca-800:#0b2545;   /* azul institucional del portal */
-  --marca-600:#1f5fbf;   /* acción primaria */
-  --marca-500:#3b82f6;
-  --acento:#22d3ee;      /* cian de acento (solo sobre fondo oscuro o como detalle) */
-  --ok:#15803d; --alerta:#b45309; --peligro:#b91c1c;
-  --tx:#0f1b2d; --tx-suave:#4a5b73; --linea:#dde3ea; --fondo:#ffffff; --fondo-alt:#f4f6f9;
-  --radio:14px; --sombra:0 10px 30px rgba(11,37,69,.10);
-  --fuente:Inter,"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;
+  --naranja-logo:#F15227; /* solo el logo y piezas gráficas */
+  --naranja:#E95420;      /* primario de interfaz: franjas, detalles, texto grande */
+  --naranja-osc:#D34615;  /* botones (blanco encima = 4,51:1), bordes, hover */
+  --naranja-tx:#C7410F;   /* derivado: texto naranja pequeño sobre blanco y #F5F5F5 (≥ 4,6:1) */
+  --naranja-hover:#BF3F12;/* derivado: botón presionado */
+  --naranja-tinte:#FDEDE7;/* derivado: fondo de iconos y resaltes */
+  --berenjena:#772953;    /* acento: bandas oscuras, información */
+  --berenjena-tinte:#F3E6EE; /* derivado */
+  --gris:#AEA79F;         /* secundario: elementos neutros */
+  --acento:#FFC4A8;       /* derivado: detalle claro sobre berenjena (6,2:1) */
+  --ok:#38B44A; --alerta:#EFB73E; --peligro:#DF382C;
+  --tx:#333333; --tx-suave:#5C5C5C; --linea:#DDDDDD; --fondo:#FFFFFF; --fondo-alt:#F5F5F5;
+  --radio:8px; --radio-btn:4px; --sombra:0 6px 20px rgba(51,51,51,.08);
+  --fuente:Ubuntu,Tahoma,"Helvetica Neue",Helvetica,Arial,sans-serif;
   --ancho:1180px;
 }
