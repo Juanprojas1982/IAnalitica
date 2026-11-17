@@ -35,6 +35,20 @@ for (const [ancho, alto] of [[1440, 900], [1366, 768], [390, 844], [360, 740]]) 
   else if (ancho <= 640 && r.alto > 120) { console.log(`✗ ${ancho}×${alto}: el banner de cookies mide ${r.alto} px (máximo 120 en móvil)`); problemas++; }
   await ctx.close();
 }
+// LD-03: en móvil, imágenes compactas y ningún video; en escritorio, el video se activa
+{ const ctx = await b.newContext({ viewport: { width: 390, height: 844 } }); const p = await ctx.newPage(); const videos = [];
+  p.on('request', q => /\.(webm|mp4)(\?|$)/.test(q.url()) && videos.push(q.url()));
+  for (const u of ['/', '/asistente-ia.html']) { await p.goto(B + u); await p.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await p.waitForTimeout(800); }
+  if (videos.length) { console.log('✗ móvil descarga video:', videos); problemas++; }
+  await p.goto(B + '/'); await p.locator('#asistente .shot img').scrollIntoViewIfNeeded(); await p.waitForTimeout(600);
+  const m = await p.evaluate(() => ['.hero .marco img', '#asistente .shot img'].map(s => { const i = document.querySelector(s); return { s, w: Math.round(i.getBoundingClientRect().width), src: i.currentSrc }; }));
+  for (const x of m) if (x.w < 330 || !/-c(-2x)?\.webp$/.test(x.src)) { console.log('✗ móvil, medio no compacto o angosto:', x); problemas++; }
+  await ctx.close(); }
+{ const ctx = await b.newContext({ viewport: { width: 1440, height: 900 } }); const p = await ctx.newPage();
+  await p.goto(B + '/'); await p.locator('#asistente').scrollIntoViewIfNeeded(); await p.waitForTimeout(1500);
+  const ok = await p.evaluate(() => [...document.querySelectorAll('video[data-video]')].every(v => !v.hidden && v.currentSrc));
+  if (!ok) { console.log('✗ escritorio: algún video no se activó'); problemas++; }
+  await ctx.close(); }
 const p = await (await b.newContext()).newPage();
 for (const l of vistos) { if (!l) continue; const r = await p.request.get(B + l); if (!r.ok()) { console.log(`✗ enlace roto: ${l} (${r.status()})`); problemas++; } }
 await b.close(); console.log(problemas ? `${problemas} problema(s)` : 'Sin problemas');

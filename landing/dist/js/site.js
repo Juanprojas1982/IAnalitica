@@ -10,9 +10,20 @@
   // aparición al hacer scroll
   const io = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('v'); io.unobserve(e.target); } }), { threshold: .12 }) : null;
   $$('.rev').forEach(e => io ? io.observe(e) : e.classList.add('v'));
-  // video del hero: solo si el usuario no pidió menos movimiento ni ahorro de datos
-  const v = $('video[data-hero]');
-  if (v && (matchMedia('(prefers-reduced-motion: reduce)').matches || navigator.connection?.saveData)) { v.removeAttribute('autoplay'); v.pause(); v.controls = true; }
+  // medios: la imagen fija va siempre; el video se monta solo en > 640 px, sin «reducir movimiento» ni ahorro de datos, al acercarse a la vista
+  const conVideo = matchMedia('(min-width: 641px)').matches && !matchMedia('(prefers-reduced-motion: reduce)').matches && !navigator.connection?.saveData;
+  const activar = fig => {
+    const v = $('video[data-video]', fig), img = $('img', fig), nota = $('[data-nota-video]', fig);
+    v.poster = img.currentSrc || img.src;
+    v.innerHTML = `<source src="${v.dataset.webm}" type="video/webm"><source src="${v.dataset.mp4}" type="video/mp4">`;
+    ($('picture', fig) || img).hidden = true; v.hidden = false; if (nota) nota.textContent = nota.dataset.notaVideo;
+    v.load(); v.play().catch(() => {});
+  };
+  if (conVideo) {
+    const figs = $$('video[data-video]').map(v => v.closest('figure'));
+    const iov = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { activar(e.target); iov.unobserve(e.target); } }), { rootMargin: '200px' }) : null;
+    figs.forEach(f => iov ? iov.observe(f) : activar(f));
+  }
   // consentimiento de cookies: sin consentimiento no se carga ninguna analítica (no hay proveedor configurado todavía)
   const KEY = 'ianalitica-consent', ck = $('#cookies');
   const get = () => { try { return localStorage.getItem(KEY); } catch { return null; } }, set = x => { try { localStorage.setItem(KEY, x); } catch {} };
