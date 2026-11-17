@@ -28,22 +28,41 @@ svg{display:block;width:100%;height:100%}
 .cur:after{content:"▍";color:var(--cy);animation:p 1s steps(2) infinite}@keyframes p{50%{opacity:0}}
 .fuente{margin-top:8px;font-size:11.5px;color:#C7410F}
 .hid{display:none!important}
+/* Variante compacta (?c=1): lienzo 720×540, texto mínimo 24 px */
+.cmp body{width:720px;height:540px;font-size:24px}
+.cmp body:before{background-size:72px 72px}
+.cmp .top{left:24px;right:24px;top:16px;gap:16px}
+.cmp .logo{width:48px;height:48px;font-size:22px;border-radius:8px}
+.cmp .top h1{font-size:28px}.cmp .top small{font-size:24px}
+.cmp .chips,.cmp .mk,.cmp .solo-amplia{display:none!important}
+.cmp .g{left:24px;right:24px;top:92px;bottom:24px;gap:16px;grid-template-columns:repeat(2,1fr);grid-template-rows:auto auto 1fr}
+.cmp .g>.c{grid-column:auto!important;grid-row:auto!important;padding:12px 16px;border-radius:10px}
+.cmp .g>.c.ancha{grid-column:1/-1!important}
+.cmp .c h2{font-size:24px;letter-spacing:.02em;margin-bottom:4px;text-transform:none}
+.cmp .k{font-size:40px;display:inline-block}
+.cmp .d{font-size:24px;display:inline-block;margin-left:10px}
+.cmp .d .lg{display:none}
+.cmp .chat{font-size:24px;gap:16px}.cmp .m{padding:14px 18px;border-radius:14px}
+.cmp .fuente{font-size:24px}
+.cmp [data-v=asistente]{grid-template-rows:1fr}.cmp [data-v=asistente] h2{display:none}
+.cmp #l1,.cmp #l2{stroke-width:4px;vector-effect:non-scaling-stroke}.cmp #pt,.cmp .glow:after{display:none}
+.cmp .ancha{display:flex;flex-direction:column}.cmp .ancha svg{flex:1;min-height:0}
 </style></head><body>
 <div class="top"><div class="logo">IA</div><div><h1 id="tit">Tablero gerencial</h1><small>Clínica Ejemplo · Datos ficticios</small></div>
 <div class="chips"><span class="chip on">Ene–Sep 2026</span><span class="chip">Todas las sedes</span><span class="chip">Todas las EPS</span></div></div>
 
 <!-- Vista gerencial -->
 <div class="g v" data-v="gerencial">
- <div class="c glow" style="grid-column:span 3;grid-row:span 2"><h2>Ingresos</h2><div class="k" data-n="4820" data-f="m">0</div><div class="d up">▲ 6,4 % vs. periodo anterior</div></div>
- <div class="c" style="grid-column:span 3;grid-row:span 2"><h2>Costos y gastos</h2><div class="k" data-n="3919" data-f="m">0</div><div class="d dn">▲ 7,9 % vs. periodo anterior</div></div>
- <div class="c" style="grid-column:span 3;grid-row:span 2"><h2>Utilidad</h2><div class="k" data-n="901" data-f="m">0</div><div class="d up">▲ 0,4 % vs. periodo anterior</div></div>
- <div class="c" style="grid-column:span 3;grid-row:span 2"><h2>Margen</h2><div class="k" data-n="18.7" data-f="p">0</div><div class="d dn">▼ 1,2 pts vs. periodo anterior</div></div>
- <div class="c" style="grid-column:span 8;grid-row:span 4"><h2>Ingresos, costos y utilidad por mes</h2>
+ <div class="c glow" style="grid-column:span 3;grid-row:span 2"><h2>Ingresos</h2><div class="k" data-n="4820" data-f="m">0</div><div class="d up">▲ 6,4 %<span class="lg"> vs. periodo anterior</span></div></div>
+ <div class="c" style="grid-column:span 3;grid-row:span 2"><h2>Costos y gastos</h2><div class="k" data-n="3919" data-f="m">0</div><div class="d dn">▲ 7,9 %<span class="lg"> vs. periodo anterior</span></div></div>
+ <div class="c" style="grid-column:span 3;grid-row:span 2"><h2>Utilidad</h2><div class="k" data-n="901" data-f="m">0</div><div class="d up">▲ 0,4 %<span class="lg"> vs. periodo anterior</span></div></div>
+ <div class="c" style="grid-column:span 3;grid-row:span 2"><h2>Margen</h2><div class="k" data-n="18.7" data-f="p">0</div><div class="d dn">▼ 1,2 pts<span class="lg"> vs. periodo anterior</span></div></div>
+ <div class="c ancha" style="grid-column:span 8;grid-row:span 4"><h2>Ingresos, costos y utilidad por mes</h2>
   <svg viewBox="0 0 760 250" preserveAspectRatio="none"><defs><linearGradient id="ar" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#E95420" stop-opacity=".28"/><stop offset="1" stop-color="#E95420" stop-opacity="0"/></linearGradient></defs>
   <g stroke="#E6E6E6"><path d="M0 40H760M0 100H760M0 160H760M0 220H760"/></g>
   <path id="area" fill="url(#ar)" d=""/><path id="l1" fill="none" stroke="#E95420" stroke-width="3" stroke-linecap="round" d=""/><path id="l2" fill="none" stroke="#772953" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 0" d=""/><circle id="pt" r="6" fill="#fff" stroke="#E95420" stroke-width="3" cx="0" cy="0"/></svg></div>
- <div class="c" style="grid-column:span 4;grid-row:span 2"><h2>Facturado en el periodo</h2><div class="k" data-n="4610" data-f="m">0</div><div class="d">9 pagadores · 3 sedes</div></div>
- <div class="c" style="grid-column:span 4;grid-row:span 2"><h2>Cartera por cobrar</h2><div class="k" data-n="3150" data-f="m">0</div><div class="d dn">31 % con más de 90 días</div></div>
+ <div class="c solo-amplia" style="grid-column:span 4;grid-row:span 2"><h2>Facturado en el periodo</h2><div class="k" data-n="4610" data-f="m">0</div><div class="d">9 pagadores · 3 sedes</div></div>
+ <div class="c solo-amplia" style="grid-column:span 4;grid-row:span 2"><h2>Cartera por cobrar</h2><div class="k" data-n="3150" data-f="m">0</div><div class="d dn">31 % con más de 90 días</div></div>
 </div>
 
 <!-- Vista cartera -->
@@ -76,21 +95,22 @@ svg{display:block;width:100%;height:100%}
 
 <!-- Vista asistente -->
 <div class="g v hid" data-v="asistente">
- <div class="c" style="grid-column:span 7;grid-row:span 6"><h2>Asistente analista</h2>
+ <div class="c ancha" style="grid-column:span 7;grid-row:span 6"><h2>Asistente analista</h2>
   <div class="chat"><div class="m u">¿Qué EPS explica el aumento de la cartera mayor a 90 días?</div>
    <div class="m a" id="resp" style="min-height:190px"></div></div></div>
- <div class="c" style="grid-column:span 5;grid-row:span 3"><h2>Cartera mayor a 90 días por EPS</h2>
+ <div class="c solo-amplia" style="grid-column:span 5;grid-row:span 3"><h2>Cartera mayor a 90 días por EPS</h2>
   <div class="bar"><span>Salud Azul</span><div><i data-w="88"></i></div><b>$ 640 M</b></div>
   <div class="bar"><span>Vida Plena</span><div><i data-w="45"></i></div><b>$ 330 M</b></div>
   <div class="bar"><span>Mutual Norte</span><div><i data-w="32"></i></div><b>$ 230 M</b></div></div>
- <div class="c" style="grid-column:span 5;grid-row:span 3"><h2>Control de consumo</h2><div class="k" style="font-size:28px" data-n="38" data-f="p">0</div><div class="d">del cupo incluido este mes · tope definido por su empresa</div></div>
+ <div class="c solo-amplia" style="grid-column:span 5;grid-row:span 3"><h2>Control de consumo</h2><div class="k" style="font-size:28px" data-n="38" data-f="p">0</div><div class="d">del cupo incluido este mes · tope definido por su empresa</div></div>
 </div>
 
 <div class="mk"><span>IAnalitica · Datos ficticios de una empresa de ejemplo</span><span id="hora">Actualizado hoy 06:00</span></div>
 
 <script>
-const q=new URLSearchParams(location.search), V=q.get('v')||'gerencial', FIN=q.get('t')==='end', DUR=+(q.get('dur')||12000);
+const q=new URLSearchParams(location.search), CMP=q.get('c')==='1', V=q.get('v')||'gerencial', FIN=q.get('t')==='end', DUR=+(q.get('dur')||12000);
 const TIT={gerencial:'Tablero gerencial',cartera:'Cartera',ciclo:'Ciclo del ingreso',asistente:'Asistente analista'};
+if(CMP)document.documentElement.classList.add('cmp');
 document.getElementById('tit').textContent=TIT[V]||V;
 document.querySelectorAll('.v').forEach(e=>e.classList.toggle('hid',e.dataset.v!==V));
 const fmt=(n,f)=>f==='m'?'$ '+Math.round(n).toLocaleString('es-CO')+' M':(f==='p'?n.toFixed(1).replace('.',',')+' %':Math.round(n));
