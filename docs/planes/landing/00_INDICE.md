@@ -1,4 +1,6 @@
-# Planes del landing (`ianalitica-landing`) — acabado para mostrarlo a gerentes
+# Planes del landing (carpeta `landing/`) — acabado para mostrarlo a gerentes
+
+> **Desde el 2026-11-17 el landing vive en la carpeta `landing/` de este repo** (se integró con su historial; P22 resuelto). Donde este índice o un plan diga «repo `ianalitica-landing`», «rama local» o «no tiene remoto», léase: carpeta `landing/`, rama de este repo desde `main`, PR normal. Las rutas de los planes (`src/pages`, `dist/css`, `tools/`, `build.py`) son relativas a `landing/`. Las ramas locales `propuesta/textos-ajustados` y `ld-05-marca` ya están contenidas en `main`.
 
 Estado: **diseñados el 2026-11-17 a partir de una revisión visual de la portada (escritorio 1366×768 y móvil 390×844). NO implementados.** Implementación con Sonnet (D30): un plan = una rama = un PR en el repo `ianalitica-landing`. Un cambio de diseño durante la implementación vuelve a diseño.
 Contexto: `docs/contexto/07_usuarios_landing.md` §28 y el `README.md` del landing. Reglas que no se tocan: sin precios (D05), sin cifras de ahorro ni ROI, capturas con empresa ficticia, una funcionalidad solo pasa a «hoy» cuando está en `main` y cuadrada con un piloto.
