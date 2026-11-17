@@ -1,5 +1,7 @@
 # IAnalitica · sitio web (landing)
 
+Vive en la carpeta `landing/` del repo `ianalitica` desde el 2026-11-17 (antes era un repo local aparte); los comandos de este archivo se ejecutan desde `landing/`. No forma parte de `IAnalitica.sln` ni del CI.
+
 Sitio **estático**, proyecto aparte de la plataforma (spec 13; decisiones D05 y D06 de la spec maestra): sin precios («Cotizar»), independiente del HIS, caso SaludIPS descrito sin cifras de mejora. Se publica en SmarterASP subiendo el contenido de `dist/`.
 
 ## Estructura

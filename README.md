@@ -35,4 +35,4 @@ dotnet run
 Las cadenas de conexión y los secretos van en User Secrets (local) o Key Vault (Azure); nunca en `appsettings` ni en el repositorio.
 
 ## Estructura
-`src/` capas y hosts · `database/scripts` DDL único (fuente de verdad) · `database/IAnalitica.Database.Migrator` DbUp · `tests/` · `docs/` especificaciones.
+`src/` capas y hosts · `landing/` sitio web estático (aparte de la solución; ver `landing/README.md`) · `database/scripts` DDL único (fuente de verdad) · `database/IAnalitica.Database.Migrator` DbUp · `tests/` · `docs/` especificaciones.
