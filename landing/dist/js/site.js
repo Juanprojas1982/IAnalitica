@@ -3,7 +3,10 @@
   // menú móvil
   const nav = $('.nav'), bur = $('.burger');
   bur?.addEventListener('click', () => { const o = nav.classList.toggle('open'); bur.setAttribute('aria-expanded', o); });
-  $$('a[data-portal]').forEach(a => { if (C.urlPortal) a.href = C.urlPortal; });
+  // «Ingresar» y correo del pie: ocultos en el HTML; aparecen solo con valores reales en config.js
+  const valido = x => !!x && !x.includes('por-definir'), correoOk = valido(C.correoComercial);
+  if (valido(C.urlPortal) && !C.urlPortal.startsWith('#')) $$('a[data-portal]').forEach(a => { a.href = C.urlPortal; (a.closest('li') || a).hidden = false; });
+  if (correoOk) $$('[data-correo]').forEach(li => { const a = document.createElement('a'); a.href = 'mailto:' + C.correoComercial; a.textContent = C.correoComercial; li.append(a); li.hidden = false; });
   // aparición al hacer scroll
   const io = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('v'); io.unobserve(e.target); } }), { threshold: .12 }) : null;
   $$('.rev').forEach(e => io ? io.observe(e) : e.classList.add('v'));
@@ -34,6 +37,7 @@
     if (!ok) { msg.className = 'msg er'; msg.textContent = 'Hay datos por corregir.'; $('[aria-invalid=true]', f)?.focus(); return; }
     const d = Object.fromEntries(new FormData(f)); delete d.sitio_web; d.autoriza = true; d.comunicaciones = !!f.elements.comunicaciones.checked; d.autorizadoEn = new Date().toISOString(); d.version_politica = 'borrador-1';
     if (!C.endpointProspectos) {                                 // sin API todavía: se abre el correo comercial con los datos
+      if (!correoOk) { msg.className = 'msg er'; msg.textContent = 'El formulario aún no está habilitado.'; return; }
       const cuerpo = Object.entries(d).map(([k, v]) => `${k}: ${v}`).join('\n');
       location.href = `mailto:${C.correoComercial}?subject=${encodeURIComponent('Solicitud de demo IAnalitica')}&body=${encodeURIComponent(cuerpo)}`;
       msg.className = 'msg ok'; msg.textContent = 'Abrimos su programa de correo con la solicitud lista para enviar.'; window.medir?.('demo_enviada'); return;
@@ -42,6 +46,6 @@
       const r = await fetch(C.endpointProspectos, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) });
       if (!r.ok) throw new Error(r.status);
       f.reset(); msg.className = 'msg ok'; msg.textContent = 'Recibimos su solicitud. Le escribiremos en un día hábil para agendar el diagnóstico.'; window.medir?.('demo_enviada');
-    } catch { msg.className = 'msg er'; msg.textContent = 'No pudimos enviar la solicitud. Intente de nuevo o escríbanos a ' + C.correoComercial + '.'; }
+    } catch { msg.className = 'msg er'; msg.textContent = correoOk ? 'No pudimos enviar la solicitud. Intente de nuevo o escríbanos a ' + C.correoComercial + '.' : 'No pudimos enviar la solicitud. Intente de nuevo.'; }
   });
 })();
