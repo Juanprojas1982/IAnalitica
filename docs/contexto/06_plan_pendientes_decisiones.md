@@ -29,6 +29,7 @@ Parte de `docs/CONTEXTO.md` (índice). La numeración §N es global y se conserv
 11. Gráficos en PDF (hoy tablas y KPI); logo en PDF; QR del 2FA.
 
 12. Facturación: paso 10 (excedente IA, script 1042) al activar la IA a clientes (D50); decisiones D49 y D45 abiertas (detalle en `08` §35).
+13. Landing: implementar los planes LD-01 a LD-04 de `docs/planes/landing/` (banner de cookies sobre los botones del hero, notas internas visibles, iconos, medios ilegibles en móvil, estructura de la portada). Diseñados el 2026-11-17, **no implementados**; LD-05 (marca y prueba social) espera P8 y los pilotos.
 
 ### Decisiones de diseño abiertas
 - **Render:** `InteractiveAuto` + MudBlazor (spec original) vs. SSR+SVG actual (F3). Decidir si se quiere interactividad (requiere proyecto `IAnalitica.Web.Client` no previsto en la estructura).
@@ -61,6 +62,7 @@ Parte de `docs/CONTEXTO.md` (índice). La numeración §N es global y se conserv
 | P18 | Datos del emisor, instrucciones de pago, `CORREO_OPERACION` | Dueño | Paso 6 de facturación |
 | P19 | Tarifa de IA publicada para el cliente | Técnico | D50 |
 | P21 | Plazo de retención de cuentas, pagos y destinatarios | Abogado / contador | Política de borrado |
+| P22 | Crear el repositorio remoto de `ianalitica-landing` (hoy solo existe en local, sin remoto) | Dueño | PR de los planes LD-01 a LD-05; respaldo del landing |
 | — | Diagnóstico SIPS_108 vs SIPS_550_1: ejecutar el script de §4 de `30_DIAGNOSTICO_SIPS108_vs_SIPS550.md` contra una base real; causa probable (sin confirmar) = INNER JOIN a la tarifa del manual | Técnico | — |
 
 ## 11. Riesgos
