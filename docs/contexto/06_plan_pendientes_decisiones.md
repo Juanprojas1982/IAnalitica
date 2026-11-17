@@ -29,7 +29,7 @@ Parte de `docs/CONTEXTO.md` (índice). La numeración §N es global y se conserv
 11. Gráficos en PDF (hoy tablas y KPI); logo en PDF; QR del 2FA.
 
 12. Facturación: paso 10 (excedente IA, script 1042) al activar la IA a clientes (D50); decisiones D49 y D45 abiertas (detalle en `08` §35).
-13. Landing (carpeta `landing/` de este repo): implementar los planes LD-01 a LD-04 de `docs/planes/landing/` (banner de cookies sobre los botones del hero, notas internas visibles, iconos, medios ilegibles en móvil, estructura de la portada). Diseñados el 2026-11-17, **no implementados**; LD-05 (marca y prueba social) espera P8 y los pilotos.
+13. Landing (carpeta `landing/`): **LD-01 a LD-04 implementados el 2026-11-17** (PR 15 a 18). Quedan: LD-05 B (prueba social, tras los pilotos), probar Firefox y Safari, y resolver los 9 pendientes de `build.py --publicar` antes de publicar (7 avisos `data-provisional` por P5, P17/P11, P1, referencias normativas y caso SaludIPS; y `correoComercial`/`urlPortal` de `config.js`, por P8).
 
 ### Decisiones de diseño abiertas
 - **Render:** `InteractiveAuto` + MudBlazor (spec original) vs. SSR+SVG actual (F3). Decidir si se quiere interactividad (requiere proyecto `IAnalitica.Web.Client` no previsto en la estructura).
