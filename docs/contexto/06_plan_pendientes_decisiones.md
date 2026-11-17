@@ -48,7 +48,7 @@ Parte de `docs/CONTEXTO.md` (índice). La numeración §N es global y se conserv
 | P5 | Revisión y firma de documentos legales | Abogado | Contratos y pilotos |
 | P6 | Fórmulas de riesgo de la ESE | ESE piloto | Simulador (fase 2) |
 | P7 | Reglas de distribución de costos por piloto (centros, orden, base) | Cada piloto | Cierre de F5 |
-| P8 | Dominio y marca | Dueño | Landing |
+| P8 | Dominio (la marca ya se aplicó al landing el 2026-11-17 con el manual de identidad de Procesos en Línea; falta confirmar los tonos derivados y si IAnalitica tendrá isotipo propio) | Dueño | Landing |
 | P10 | Confirmar matriz rol × permiso | Dueño | Nada (script nuevo) |
 | DP-14 | Grupos: por dónde lee el portal la membresía. D60 dice «conexión `rol_etl`», pero el portal no la tiene (solo el Worker). Recomendado: procedimiento fijo con `EXECUTE AS`; alternativas en `planes/PL-15` | Dueño | PL-15 |
 | DP-15 | Grupos: aceptar que `siempre/9000_rls.sql` deje la escritura de `seg.UsuarioGrupo` y `seg.GrupoEmpresa` solo al superadmin (D60 daba la RLS por intacta); sin eso una empresa puede inscribirse en un grupo ajeno | Dueño | PL-15 |

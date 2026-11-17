@@ -5,7 +5,7 @@ Contexto: `docs/contexto/07_usuarios_landing.md` §28 y el `README.md` del landi
 
 ## Hechos del repo del landing que el implementador debe conocer
 1. **No tiene remoto** (solo ramas locales `master` y `propuesta/textos-ajustados`). Si el contenedor se pierde, se pierde el landing. Pendiente P22 (`06` §10). No se puede abrir PR hasta que exista el remoto; mientras tanto, una rama local por plan.
-2. La rama de trabajo es `propuesta/textos-ajustados` (3 commits delante de `master`, «sin publicar: requiere revisión del dueño»). Los planes parten de esa rama.
+2. **Desde el 2026-11-17 la rama más avanzada es `ld-05-marca`** (identidad corporativa aplicada, sale de `propuesta/textos-ajustados`): LD-01 a LD-04 parten de ella. Cambió la paleta (naranja/berenjena, fondo claro) y la tipografía (Ubuntu): donde un plan cite colores o clases (`--acento`, `--marca-*`, `.btn-g` en el hero), manda `dist/css/tokens.css` actual. Antes, la rama de trabajo era `propuesta/textos-ajustados` (3 commits delante de `master`, «sin publicar: requiere revisión del dueño»). Los planes parten de esa rama.
 3. `build.py` solo compone HTML (`src/partials` + `src/pages` → `dist/*.html`, `sitemap.xml`, `robots.txt`). **`dist/css`, `dist/js` y `dist/assets` son fuente**: se editan a mano y están versionados. No hay minificación ni dependencias.
 4. Verificación: `python3 build.py && python3 -m http.server 8099 -d dist` y, en otra terminal, `node tools/revisar.mjs` (debe imprimir «Sin problemas»). `revisar.mjs` y `render.mjs` importan `playwright`; `tools/node_modules` está en `.gitignore`. En la sesión en la nube Playwright es global: si el `import` falla, resolverlo con `createRequire` o `NODE_PATH`, **sin** ejecutar `playwright install`.
 5. Hay 11 avisos `data-provisional` repartidos en 10 páginas, y dos marcadores sin resolver: `comercial@dominio-por-definir.co` (pie y `dist/js/config.js`) y `#portal-por-definir` (botón «Ingresar», cabecera y pie).
@@ -30,7 +30,7 @@ Contexto: `docs/contexto/07_usuarios_landing.md` §28 y el `README.md` del landi
 | LD-02 | Iconografía SVG | — | **Sí** | — |
 | LD-03 | Medios legibles en móvil y en el bloque del asistente | — | **Sí** | Requiere `ffmpeg` solo si se regeneran videos |
 | LD-04 | Estructura de la portada | LD-02 (comparten `index.html`; hacer después para no chocar) | **Sí** | — |
-| LD-05 | Marca y prueba social | P8 (marca y dominio), pilotos con autorización escrita | **No** | Decisiones del dueño |
+| LD-05 | Marca y prueba social | P8 (dominio), pilotos con autorización escrita | **A hecha (2026-11-17, rama local `ld-05-marca`); B no** | Dominio, tonos derivados e isotipo propio; prueba social tras los pilotos |
 
 Orden sugerido: LD-01 → LD-02 → LD-04 → LD-03. LD-05 espera.
 Alcance: solo la portada salvo donde el plan diga otra cosa. Ningún plan agrega afirmaciones nuevas sobre el producto: los textos se reordenan o se acortan, no se inventan.

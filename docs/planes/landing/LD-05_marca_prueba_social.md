@@ -1,6 +1,8 @@
-# LD-05 — Marca y prueba social (bloqueado)
+# LD-05 — Marca y prueba social
 
-**No está listo.** Depende de decisiones del dueño y de los pilotos; se deja escrito para no perder el alcance.
+**Parte A (identidad visual): implementada el 2026-11-17** en la rama local `ld-05-marca` del landing (commit `e06e589`), con el manual «Identidad Corporativa – Procesos en Línea» v1.0 y el logo oficial del sitio corporativo. Falta de A: dominio (P8), confirmar los tonos «derivado» de `tokens.css` y decidir si IAnalitica tendrá isotipo propio (el símbolo del logo corporativo es un mazo judicial). **Parte B (prueba social): bloqueada** por los pilotos.
+
+Lo que sigue es el diseño original, que se conserva como referencia.
 
 ## A. Identidad visual — bloqueado por P8
 Entradas que debe entregar el dueño: logo (SVG), colores, tipografía y dominio de Procesos en Línea / IAnalitica.
