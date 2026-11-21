@@ -104,6 +104,7 @@ public class DashboardsWebTests(BaseDeDatosFixture bd) : IAsyncLifetime
         Assert.Contains("role=\"img\"", html);
         Assert.Contains("<details class=\"datos\">", html);
         Assert.Contains("<th scope=\"row\">2026-01</th>", html);
+        Assert.Contains("class=\"kpi-tendencia\"", html);   // UI-02: mini-tendencia del KPI
         // marca del landing (UI-01)
         Assert.Matches(@"css/tokens(\.[A-Za-z0-9]+)?\.css", html);   // @Assets agrega huella al nombre
         Assert.Contains("class=\"navbar navbar-expand barra-app", html);
@@ -118,6 +119,15 @@ public class DashboardsWebTests(BaseDeDatosFixture bd) : IAsyncLifetime
         Assert.Contains("$ 2.000", html);
         Assert.Contains("+100 %", html);            // frente a enero
         Assert.Contains("frente al periodo anterior", html);
+    }
+
+    [Fact]
+    public async Task El_margen_se_compara_en_puntos_porcentuales_y_no_en_porcentaje_relativo()
+    {
+        var n = await ComoAsync(_admin!);
+        var (_, html, _) = await n.IrAsync("/d/financiero.gerencial?desde=2026-02&hasta=2026-02");
+        Assert.Contains("+50 pts", html);           // margen: 50 % (enero) → 100 % (febrero)
+        Assert.Contains("frente al periodo anterior (50,0 %)", html);
     }
 
     [Fact]

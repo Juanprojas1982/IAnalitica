@@ -39,6 +39,9 @@ public static class Formato
         return (v < 0 ? "-" : "") + prefijo + texto;
     }
 
+    /// <summary>Diferencia en puntos porcentuales (métricas en %): «+1,2 pts».</summary>
+    public static string Puntos(decimal diferencia) => (diferencia > 0 ? "+" : "") + diferencia.ToString("0.#", Co) + " pts";
+
     public static string Variacion(decimal fraccion) => (fraccion > 0 ? "+" : "") + (fraccion * 100).ToString("0.#", Co) + " %";
 
     /// <summary>Orden canónico de las edades de cartera (el texto no ordena bien: «121-150» &lt; «31-60»).</summary>

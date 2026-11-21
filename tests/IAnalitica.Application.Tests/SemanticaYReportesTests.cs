@@ -32,6 +32,16 @@ public class SemanticaYReportesTests
     }
 
     [Fact]
+    public void La_diferencia_en_puntos_existe_aun_con_anterior_cero_y_la_tendencia_nace_vacia()
+    {
+        ResultadoMetrica R(decimal? v) => new("m", "M", "%", SentidoMejora.MayorEsMejor, Array.Empty<string>(), new[] { new FilaMetrica(new Dictionary<string, DimensionValor>(), v) }, Array.Empty<string>());
+        Assert.Equal(-1.2m, new SerieWidget(R(17.5m), 18.7m, null, Semaforo.SinMeta).Diferencia);
+        Assert.Equal(5m, new SerieWidget(R(5m), 0m, null, Semaforo.SinMeta).Diferencia);
+        Assert.Null(new SerieWidget(R(5m), null, null, Semaforo.SinMeta).Diferencia);
+        Assert.Empty(new SerieWidget(R(5m), 1m, null, Semaforo.SinMeta).Tendencia);
+    }
+
+    [Fact]
     public void La_variacion_solo_existe_con_anterior_distinto_de_cero()
     {
         ResultadoMetrica R(decimal? v) => new("m", "M", "COP", SentidoMejora.Neutro, Array.Empty<string>(), new[] { new FilaMetrica(new Dictionary<string, DimensionValor>(), v) }, Array.Empty<string>());

@@ -107,24 +107,43 @@ public sealed class ObtenerDatosWidgetHandler(CatalogoAnalitico catalogo, ISesio
             foreach (var f in resultado.FiltrosNoAplicados) noAplicados.Add(f);
 
             decimal? anterior = null;
+            IReadOnlyList<PuntoTendencia> tendencia = [];
             MetaKpi? meta = null;
             var semaforo = Semaforo.SinMeta;
             if (widget.Tipo == TipoWidget.Kpi)
             {
                 anterior = await PeriodoAnteriorAsync(metrica, request.Filtros, ct).ConfigureAwait(false);
+                tendencia = await TendenciaAsync(metrica, request.Filtros, ct).ConfigureAwait(false);
                 if (metrica.KpiMeta is { } kpi)
                 {
                     meta = await metas.ObtenerAsync(kpi, request.Filtros.PeriodoHasta, ct).ConfigureAwait(false);
                     semaforo = Semaforos.Calcular(resultado.Total, meta, metrica.Sentido);
                 }
             }
-            series.Add(new SerieWidget(resultado, anterior, meta, semaforo));
+            series.Add(new SerieWidget(resultado, anterior, meta, semaforo) { Tendencia = tendencia });
         }
         return new DatosWidget(request.Dashboard, request.Widget, widget.Tipo, widget.Titulo, series, noAplicados.ToList());
     }
 
     /// <summary>Tablas y barras muestran como máximo 50 filas (respuestas acotadas, spec 20 §4.4); las líneas y las demás, todas.</summary>
     private static int? LimiteFilas(DefinicionWidget w) => w.Tipo is TipoWidget.Barras or TipoWidget.Tabla or TipoWidget.Dona ? 50 : null;
+
+    /// <summary>
+    /// Valor por periodo del rango filtrado (últimos 24) para la mini-tendencia del KPI. Solo métricas por periodo, no acumuladas y con un rango
+    /// de al menos 2 periodos. La clave de la dimensión «periodo» es el entero yyyymm (PeriodoKey). Una consulta más por KPI, dentro de la misma caché.
+    /// </summary>
+    private async Task<IReadOnlyList<PuntoTendencia>> TendenciaAsync(DefinicionMetrica metrica, FiltrosDashboard f, CancellationToken ct)
+    {
+        if (!metrica.Dimensiones.ContainsKey(Dimensiones.Periodo) || metrica.Acumulado || f.PeriodoDesde is not { } desde || f.PeriodoHasta is not { } hasta) return [];
+        var meses = (hasta / 100 * 12 + hasta % 100) - (desde / 100 * 12 + desde % 100) + 1;
+        if (meses < 2) return [];
+        var r = await motor.EjecutarAsync(new ConsultaMetrica(metrica.Codigo, new[] { Dimensiones.Periodo }, f), ct).ConfigureAwait(false);
+        return r.Filas
+            .Select(fila => (Clave: fila.Dimensiones[Dimensiones.Periodo].Clave, fila.Valor))
+            .Where(x => int.TryParse(x.Clave, out _))
+            .Select(x => new PuntoTendencia(int.Parse(x.Clave), x.Valor))
+            .OrderBy(p => p.Periodo).TakeLast(24).ToList();
+    }
 
     /// <summary>Mismo valor para el periodo inmediatamente anterior de igual longitud (solo si hay rango de periodos y la métrica es por periodo).</summary>
     private async Task<decimal?> PeriodoAnteriorAsync(DefinicionMetrica metrica, FiltrosDashboard f, CancellationToken ct)

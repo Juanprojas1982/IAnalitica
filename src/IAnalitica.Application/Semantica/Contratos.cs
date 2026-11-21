@@ -40,7 +40,16 @@ public sealed record SerieWidget(ResultadoMetrica Resultado, decimal? Anterior, 
 {
     /// <summary>Variación relativa frente al periodo anterior (solo KPI con ambos valores y anterior distinto de cero).</summary>
     public decimal? Variacion => Resultado.Total is { } a && Anterior is { } b && b != 0 ? (a - b) / Math.Abs(b) : null;
+
+    /// <summary>Diferencia absoluta frente al periodo anterior (para métricas en %, se lee en puntos porcentuales).</summary>
+    public decimal? Diferencia => Resultado.Total is { } a && Anterior is { } b ? a - b : null;
+
+    /// <summary>Valores de la métrica por periodo (últimos 24) para la mini-tendencia del KPI; vacía si no aplica.</summary>
+    public IReadOnlyList<PuntoTendencia> Tendencia { get; init; } = [];
 }
+
+/// <param name="Periodo">Periodo en formato yyyymm (clave de la dimensión «periodo»).</param>
+public sealed record PuntoTendencia(int Periodo, decimal? Valor);
 
 public sealed record DatosWidget(string Dashboard, string Widget, TipoWidget Tipo, string Titulo, IReadOnlyList<SerieWidget> Series, IReadOnlyList<string> FiltrosNoAplicados)
 {
