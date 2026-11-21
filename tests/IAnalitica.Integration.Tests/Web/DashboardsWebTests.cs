@@ -106,6 +106,9 @@ public class DashboardsWebTests(BaseDeDatosFixture bd) : IAsyncLifetime
         Assert.Contains("<th scope=\"row\">2026-01</th>", html);
         Assert.Contains("class=\"kpi-tendencia\"", html);   // UI-02: mini-tendencia del KPI
         Assert.DoesNotContain("linearGradient", html);       // UI-04: con 3 series no hay área bajo la línea
+        Assert.Matches(@"js/graficos(\.[A-Za-z0-9]+)?\.js", html);   // UI-03: tooltips (mejora progresiva)
+        Assert.Contains("class=\"zona\"", html);
+        Assert.Contains("2026-01 · Ingresos: $ 1.000 · Costos y gastos: $ 500 · Utilidad del periodo: $ 500", html);   // zona: todas las series
         // marca del landing (UI-01)
         Assert.Matches(@"css/tokens(\.[A-Za-z0-9]+)?\.css", html);   // @Assets agrega huella al nombre
         Assert.Contains("class=\"navbar navbar-expand barra-app", html);

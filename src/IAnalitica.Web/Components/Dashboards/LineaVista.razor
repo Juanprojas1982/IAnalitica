@@ -71,6 +71,16 @@
                 }
             }
         }
+        @* Zonas de lectura: una banda vertical por categoría encima de los puntos; su <title> lista todas las series. *@
+        @for (var i = 0; i < categorias.Count; i++)
+        {
+            var semiancho = (W - ML - MR) / Math.Max(1, categorias.Count - 1) / 2;
+            var x0 = Math.Max(ML, X(i) - semiancho);
+            var x1 = Math.Min(W - MR, X(i) + semiancho);
+            <rect class="zona" x="@F(x0)" y="@F(MT)" width="@F(x1 - x0)" height="@F(H - MT - MB)" fill="transparent">
+                <title>@etiquetas[categorias[i]]@string.Concat(series.Select((sr, k) => " · " + sr.Resultado.Nombre + ": " + Formato.Valor(valores[k][i], sr.Resultado.Unidad)))</title>
+            </rect>
+        }
     </svg>
     @if (series.Count > 1)
     {

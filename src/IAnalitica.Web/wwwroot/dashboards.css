@@ -58,3 +58,7 @@
 @media (max-width: 40rem) { .hallazgo dl { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: no-preference) { .widget { animation: widget-entra 200ms ease-out; } }
 @keyframes widget-entra { from { opacity: 0; } to { opacity: 1; } }
+.grafico .zona:hover { fill: rgba(51,51,51,.05); }
+.tip { position: absolute; z-index: 1080; pointer-events: none; max-width: 18rem; padding: .4rem .6rem; border-radius: var(--radio-btn);
+       background: var(--tx); color: #fff; font-size: .8rem; line-height: 1.3; box-shadow: var(--sombra); }
+.tip[hidden] { display: none; }
