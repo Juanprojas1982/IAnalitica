@@ -105,7 +105,7 @@ public class DashboardsWebTests(BaseDeDatosFixture bd) : IAsyncLifetime
         Assert.Contains("<details class=\"datos\">", html);
         Assert.Contains("<th scope=\"row\">2026-01</th>", html);
         Assert.Contains("class=\"kpi-tendencia\"", html);   // UI-02: mini-tendencia del KPI
-        Assert.Contains("linearGradient", html);             // UI-04: área bajo la línea
+        Assert.DoesNotContain("linearGradient", html);       // UI-04: con 3 series no hay área bajo la línea
         Assert.Matches(@"js/graficos(\.[A-Za-z0-9]+)?\.js", html);   // UI-03: tooltips (mejora progresiva)
         Assert.Contains("class=\"zona\"", html);
         Assert.Contains("2026-01 · Ingresos: $ 1.000 · Costos y gastos: $ 500 · Utilidad del periodo: $ 500", html);   // zona: todas las series
@@ -140,6 +140,7 @@ public class DashboardsWebTests(BaseDeDatosFixture bd) : IAsyncLifetime
         var n = await ComoAsync(_admin!);
         var (_, pyg, _) = await n.IrAsync("/d/financiero.pyg?desde=2026-01&hasta=2026-02");
         Assert.Contains("class=\"conector\"", pyg);
+        Assert.Contains("linearGradient", pyg);   // «Utilidad por periodo»: una sola serie, con área
         var (_, fe, _) = await n.IrAsync("/d/ciclo_ingreso.fe_rips?desde=2026-01&hasta=2026-02");
         Assert.Contains("dona-rotulo", fe);
     }
