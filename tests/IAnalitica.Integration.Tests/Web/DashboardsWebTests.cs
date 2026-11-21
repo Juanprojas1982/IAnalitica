@@ -115,6 +115,9 @@ public class DashboardsWebTests(BaseDeDatosFixture bd) : IAsyncLifetime
         Assert.Contains("id=\"menu-app\"", html);              // UI-05: menú plegable sin JS
         Assert.Contains("btn-outline-light", html);
         Assert.Contains("viewBox=\"0 0 800 240\"", html);      // UI-05: línea de 8 columnas
+        Assert.Contains("viewBox=\"0 0 360 220\"", html);      // UI-06: lienzo compacto para el celular
+        Assert.Contains("class=\"lienzo lienzo-compacto\"", html);
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(html, "<details class=\"datos\">"));   // «Ver los datos» una sola vez (fuera de los dos lienzos)
         Assert.Contains("un producto de Procesos En Línea", html);
     }
 
