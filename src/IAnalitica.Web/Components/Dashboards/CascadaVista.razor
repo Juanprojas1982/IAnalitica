@@ -33,10 +33,14 @@
             var it = items[i];
             var arriba = Math.Max(it.Desde, it.Hasta);
             var abajo = Math.Min(it.Desde, it.Hasta);
-            var color = it.EsTotal ? Paleta.De(0) : (it.Hasta >= it.Desde ? Paleta.Positivo : Paleta.Negativo);
-            <rect x="@F(ML + i * ancho + ancho * 0.18)" y="@F(Y(arriba))" width="@F(ancho * 0.64)" height="@F(Math.Max(1, Y(abajo) - Y(arriba)))" fill="@color">
+            var color = it.EsTotal ? Paleta.Total : (it.Hasta >= it.Desde ? Paleta.Positivo : Paleta.Negativo);
+            <rect x="@F(ML + i * ancho + ancho * 0.18)" y="@F(Y(arriba))" width="@F(ancho * 0.64)" height="@F(Math.Max(1, Y(abajo) - Y(arriba)))" rx="2" fill="@color">
                 <title>@it.Etiqueta: @Formato.Valor(it.Hasta - it.Desde, resultado.Unidad)</title>
             </rect>
+            @if (i < items.Count - 1)
+            {
+                <line x1="@F(ML + i * ancho + ancho * 0.82)" x2="@F(ML + (i + 1) * ancho + ancho * 0.18)" y1="@F(Y(it.Hasta))" y2="@F(Y(it.Hasta))" class="conector" />
+            }
             @Svg.Texto(F(ML + i * ancho + ancho / 2), F(H - 22), "middle", "etiqueta", it.Etiqueta)
             @Svg.Texto(F(ML + i * ancho + ancho / 2), F(H - 8), "middle", "etiqueta valor", Formato.Corto(it.Hasta - it.Desde, resultado.Unidad))
         }

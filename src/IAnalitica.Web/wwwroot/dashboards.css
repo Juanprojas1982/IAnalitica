@@ -17,15 +17,18 @@
 .kpi-meta { margin: .25rem 0 0; font-size: .8rem; }
 .semaforo-verde strong { color: var(--estado-ok-tx); } .semaforo-amarillo strong { color: var(--estado-alerta-tx); } .semaforo-rojo strong { color: var(--estado-peligro-tx); }
 .grafico { margin: 0; } .grafico svg { width: 100%; height: auto; display: block; }
-.grafico .eje { stroke: var(--eje); stroke-width: 1; } .grafico .etiqueta { font-size: 11px; fill: var(--tx-eje); } .grafico .etiqueta.valor { font-weight: 600; }
+.grafico .eje { stroke: var(--eje); stroke-width: 1; } .grafico .etiqueta { font-size: 11px; fill: var(--tx-eje); } .grafico .etiqueta.valor { font-weight: 600; fill: var(--tx); }
 .grafico .dona-total { font-size: 18px; font-weight: 700; fill: var(--tx); }
+.grafico .dona-rotulo { font-size: 10px; fill: var(--tx-suave); }
+.grafico .conector { stroke: var(--gris); stroke-width: 1; stroke-dasharray: 3 3; }
 .dona { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; } .dona svg { max-width: 190px; }
 .leyenda { display: flex; flex-wrap: wrap; gap: .25rem 1rem; font-size: .8rem; margin-top: .35rem; }
 .leyenda.vertical { flex-direction: column; list-style: none; padding: 0; margin: 0; flex: 1 1 10rem; }
 .leyenda i { display: inline-block; width: .75rem; height: .75rem; border-radius: 2px; margin-right: .35rem; vertical-align: -1px; }
 .barras ul { list-style: none; padding: 0; margin: 0; }
-.barras li { display: grid; grid-template-columns: minmax(7rem, 11rem) 1fr auto; align-items: center; gap: .6rem; padding: .2rem 0; font-size: .85rem; }
-.barra-pista { background: var(--fondo-alt); border-radius: 3px; height: .85rem; display: block; } .barra { display: block; height: 100%; background: var(--naranja-osc); border-radius: 3px; } .barra.neg { background: var(--estado-peligro-tx); }
+.barras li { display: grid; grid-template-columns: minmax(7rem, 11rem) 1fr auto; align-items: center; gap: .6rem; padding: .3rem 0; font-size: .85rem; }
+.barra-pista { background: var(--fondo-alt); border-radius: 999px; height: .7rem; display: block; } .barra { display: block; height: 100%; background: var(--naranja-osc); border-radius: 999px; } .barra.neg { background: var(--estado-peligro-tx); }
+.barra-etiqueta { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .barra-valor { font-variant-numeric: tabular-nums; min-width: 6rem; text-align: right; }
 .datos summary { font-size: .8rem; cursor: pointer; color: var(--naranja-tx); margin-top: .35rem; }
 .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -53,3 +56,5 @@
 .hallazgo dt { color: var(--tx-suave); font-weight: 600; } .hallazgo dd { margin: 0; }
 .hallazgo details { margin-top: .5rem; } .hallazgo details form { display: grid; gap: .5rem; max-width: 40rem; margin-top: .5rem; }
 @media (max-width: 40rem) { .hallazgo dl { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: no-preference) { .widget { animation: widget-entra 200ms ease-out; } }
+@keyframes widget-entra { from { opacity: 0; } to { opacity: 1; } }

@@ -35,7 +35,7 @@
                 if (v == 0) continue;
                 var alto = (double)(v / maxTotal) * (H - MT - MB);
                 baseY -= alto;
-                <rect x="@F(x)" y="@F(baseY)" width="@F(ancho * 0.7)" height="@F(alto)" fill="@Paleta.De(s)">
+                <rect x="@F(x)" y="@F(baseY)" width="@F(ancho * 0.7)" height="@F(alto)" fill="@Paleta.De(s)" stroke="#fff" stroke-width="1">
                     <title>@etqCat[cats[i]] · @stacks[s].Etiqueta: @Formato.Valor(v, resultado.Unidad)</title>
                 </rect>
             }

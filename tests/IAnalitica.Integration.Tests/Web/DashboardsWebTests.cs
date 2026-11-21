@@ -105,6 +105,7 @@ public class DashboardsWebTests(BaseDeDatosFixture bd) : IAsyncLifetime
         Assert.Contains("<details class=\"datos\">", html);
         Assert.Contains("<th scope=\"row\">2026-01</th>", html);
         Assert.Contains("class=\"kpi-tendencia\"", html);   // UI-02: mini-tendencia del KPI
+        Assert.DoesNotContain("linearGradient", html);       // UI-04: con 3 series no hay área bajo la línea
         // marca del landing (UI-01)
         Assert.Matches(@"css/tokens(\.[A-Za-z0-9]+)?\.css", html);   // @Assets agrega huella al nombre
         Assert.Contains("class=\"navbar navbar-expand barra-app", html);
@@ -128,6 +129,17 @@ public class DashboardsWebTests(BaseDeDatosFixture bd) : IAsyncLifetime
         var (_, html, _) = await n.IrAsync("/d/financiero.gerencial?desde=2026-02&hasta=2026-02");
         Assert.Contains("+50 pts", html);           // margen: 50 % (enero) → 100 % (febrero)
         Assert.Contains("frente al periodo anterior (50,0 %)", html);
+    }
+
+    [Fact]
+    public async Task La_cascada_tiene_conectores_y_la_dona_su_rotulo_de_total()
+    {
+        var n = await ComoAsync(_admin!);
+        var (_, pyg, _) = await n.IrAsync("/d/financiero.pyg?desde=2026-01&hasta=2026-02");
+        Assert.Contains("class=\"conector\"", pyg);
+        Assert.Contains("linearGradient", pyg);   // «Utilidad por periodo»: una sola serie, con área
+        var (_, fe, _) = await n.IrAsync("/d/ciclo_ingreso.fe_rips?desde=2026-01&hasta=2026-02");
+        Assert.Contains("dona-rotulo", fe);
     }
 
     [Fact]
