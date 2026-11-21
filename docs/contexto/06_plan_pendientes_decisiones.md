@@ -32,7 +32,6 @@ Parte de `docs/CONTEXTO.md` (índice). La numeración §N es global y se conserv
 13. Landing (carpeta `landing/`): **LD-01 a LD-04 implementados el 2026-11-17** (PR 15 a 18). Quedan: LD-05 B (prueba social, tras los pilotos), probar Firefox y Safari, y resolver los 9 pendientes de `build.py --publicar` antes de publicar (7 avisos `data-provisional` por P5, P17/P11, P1, referencias normativas y caso SaludIPS; y `correoComercial`/`urlPortal` de `config.js`, por P8).
 
 ### Decisiones de diseño abiertas
-- **Render:** `InteractiveAuto` + MudBlazor (spec original) vs. SSR+SVG actual (F3). Decidir si se quiere interactividad (requiere proyecto `IAnalitica.Web.Client` no previsto en la estructura).
 - Usuarios únicos globales vs. sufijo por empresa.
 - Transacción única por carga vs. partir por día si la carga inicial de ~2 M líneas lo exige.
 - Dashboard gerencial propio vs. widgets de otros módulos (`ModulosAdicionales`).
@@ -131,6 +130,7 @@ Parte de `docs/CONTEXTO.md` (índice). La numeración §N es global y se conserv
 | D63 | Producción por profesional dentro de `AGENDA`; no se crea el módulo `PRODUCTIVIDAD` (PL-12, DP-12) |
 | D64 | El trabajo `ALERTAS` evalúa el último mes completo; KPI por corte, el último corte (PL-04, DP-13) |
 | D65 | `inventario` se recibe sin exigir el módulo `INVENTARIO` (alimenta el costeo); los tableros sí lo exigen (PL-10) |
+| D66 | Render de dashboards: SSR + estado en URL + SVG, con JS propio solo como mejora progresiva (tooltips); sin InteractiveAuto, MudBlazor ni librerías de gráficos. Se reabre si un piloto pide filtros cruzados sin recargar (UI-03, UI-05) |
 | Abiertas | D45 (motivo para ver facturación como superadmin), D49 (`fac.consultar` a FINANCIERO/TESORERO), D50 (excedente IA); ver `08`. D60 pendiente de precisar con DP-14 y DP-15 (§10) antes de implementar PL-15 |
 
 ## 13. Divergencias spec original ↔ implementación (la implementación manda)

@@ -12,7 +12,8 @@
     var stacks = filas.Select(f => f.Dimensiones[dimS]).DistinctBy(d => d.Clave).OrderBy(d => d.Clave, StringComparer.Ordinal).ToList();
     decimal Valor(string cat, string stack) => filas.Where(f => f.Dimensiones[dimX].Clave == cat && f.Dimensiones[dimS].Clave == stack).Sum(f => f.Valor!.Value);
     var (_, maxTotal, ticks) = Escala.Bonita(0m, cats.Count == 0 ? 1m : Math.Max(1m, cats.Max(c => stacks.Sum(s => Math.Max(0m, Valor(c, s.Clave))))));
-    const double W = 640, H = 240, ML = 64, MR = 14, MT = 14, MB = 30;
+    var W = (double)Math.Clamp(Columnas * 100, 480, 960);   // el texto conserva un tamaño legible según el ancho del widget
+    const double H = 240, ML = 64, MR = 14, MT = 14, MB = 30;
     var ancho = cats.Count == 0 ? 0 : (W - ML - MR) / cats.Count;
     string F(double d) => d.ToString("0.#", CultureInfo.InvariantCulture);
 }
@@ -72,4 +73,6 @@
 
 @code {
     [Parameter, EditorRequired] public DatosWidget Datos { get; set; } = default!;
+    /// <summary>Columnas de la grilla que ocupa el widget (define el ancho del viewBox).</summary>
+    [Parameter] public int Columnas { get; set; } = 6;
 }

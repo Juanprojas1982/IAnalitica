@@ -15,7 +15,8 @@
     }
     items.Add(("Resultado", 0m, corrida, true));
     var (min, max, ticks) = Escala.Bonita(Math.Min(0m, items.Min(i => Math.Min(i.Desde, i.Hasta))), Math.Max(1m, items.Max(i => Math.Max(i.Desde, i.Hasta))));
-    const double W = 640, H = 240, ML = 64, MR = 14, MT = 14, MB = 40;
+    var W = (double)Math.Clamp(Columnas * 100, 480, 960);   // el texto conserva un tamaño legible según el ancho del widget
+    const double H = 240, ML = 64, MR = 14, MT = 14, MB = 40;
     var ancho = (W - ML - MR) / items.Count;
     double Y(decimal v) => MT + (double)(max - v) / (double)(max - min) * (H - MT - MB);
     string F(double d) => d.ToString("0.#", CultureInfo.InvariantCulture);
@@ -49,4 +50,6 @@
 
 @code {
     [Parameter, EditorRequired] public DatosWidget Datos { get; set; } = default!;
+    /// <summary>Columnas de la grilla que ocupa el widget (define el ancho del viewBox).</summary>
+    [Parameter] public int Columnas { get; set; } = 6;
 }

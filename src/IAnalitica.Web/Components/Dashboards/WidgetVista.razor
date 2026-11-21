@@ -18,11 +18,11 @@ else
     switch (Datos.Tipo)
     {
         case TipoWidget.Kpi: <KpiVista Serie="Datos.Series[0]" MensajeSinDatos="@Mensaje" /> break;
-        case TipoWidget.Linea: <LineaVista Datos="Datos" /> break;
+        case TipoWidget.Linea: <LineaVista Datos="Datos" Columnas="Columnas" /> break;
         case TipoWidget.Barras: <BarrasVista Datos="Datos" Drill="Drill" /> break;
-        case TipoWidget.BarrasApiladas: <ApiladasVista Datos="Datos" /> break;
+        case TipoWidget.BarrasApiladas: <ApiladasVista Datos="Datos" Columnas="Columnas" /> break;
         case TipoWidget.Dona: <DonaVista Datos="Datos" /> break;
-        case TipoWidget.Cascada: <CascadaVista Datos="Datos" /> break;
+        case TipoWidget.Cascada: <CascadaVista Datos="Datos" Columnas="Columnas" /> break;
         default: <TablaVista Datos="Datos" Drill="Drill" /> break;
     }
     @if (Datos.FiltrosNoAplicados.Count > 0)
@@ -37,4 +37,6 @@ else
     /// <summary>Qué decir cuando no hay datos: el módulo existe pero el HIS no ha enviado lo que necesita.</summary>
     [Parameter] public string Mensaje { get; set; } = "Este módulo aún no tiene datos para el periodo y los filtros elegidos.";
     [Parameter] public Func<string, string, string>? Drill { get; set; }
+    /// <summary>Columnas del widget en la grilla; las vistas SVG (línea, cascada, apiladas) escalan su ancho con ello.</summary>
+    [Parameter] public int Columnas { get; set; } = 6;
 }

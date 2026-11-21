@@ -11,7 +11,8 @@
     var rellenaCeros = unidad is Unidades.Pesos or Unidades.Unidades_;
     var valores = series.Select(s => categorias.Select(c => s.Resultado.Filas.FirstOrDefault(f => f.Dimensiones[dim].Clave == c) is { } f ? f.Valor : (rellenaCeros ? 0m : (decimal?)null)).ToList()).ToList();
     var todos = valores.SelectMany(v => v).Where(v => v is not null).Select(v => v!.Value).ToList();
-    const double W = 640, H = 240, ML = 64, MR = 14, MT = 22, MB = 30;   // MT 22: deja sitio a la etiqueta del último valor
+    var W = (double)Math.Clamp(Columnas * 100, 480, 960);   // el texto conserva un tamaño legible según el ancho del widget
+    const double H = 240, ML = 64, MR = 14, MT = 22, MB = 30;   // MT 22: deja sitio a la etiqueta del último valor
     var (min, max, ticks) = Escala.Bonita(todos.Count == 0 ? 0m : Math.Min(0m, todos.Min()), todos.Count == 0 ? 1m : todos.Max());
     double X(int i) => categorias.Count == 1 ? ML + (W - ML - MR) / 2 : ML + i * (W - ML - MR) / (categorias.Count - 1);
     double Y(decimal v) => MT + (double)(max - v) / (double)(max - min) * (H - MT - MB);
@@ -107,4 +108,6 @@
 
 @code {
     [Parameter, EditorRequired] public DatosWidget Datos { get; set; } = default!;
+    /// <summary>Columnas de la grilla que ocupa el widget (define el ancho del viewBox).</summary>
+    [Parameter] public int Columnas { get; set; } = 6;
 }

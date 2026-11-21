@@ -50,7 +50,7 @@ else if (visible is not null && opciones is not null)
             <section class="widget widget-@w.Tipo.ToString().ToLowerInvariant()" style="--c:@(w.Columna + 1);--a:@w.Ancho;--f:@(w.Fila + 1);--h:@w.Alto" aria-labelledby="h-@w.Codigo">
                 <h2 id="h-@w.Codigo">@w.Titulo</h2>
                 <WidgetVista Datos="@(datos.GetValueOrDefault(w.Codigo))" Error="@(errores.GetValueOrDefault(w.Codigo))"
-                             Drill="@DrillDe(w)" />
+                             Drill="@DrillDe(w)" Columnas="@w.Ancho" />
                 @if (w.DrillDashboard is { } drill && Catalogo.Dashboards.TryGetValue(drill, out var destino))
                 {
                     <p class="widget-pie"><a href="@Enlace(drill)">Ver: @destino.Titulo →</a></p>
