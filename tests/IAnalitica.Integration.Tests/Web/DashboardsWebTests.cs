@@ -104,6 +104,10 @@ public class DashboardsWebTests(BaseDeDatosFixture bd) : IAsyncLifetime
         Assert.Contains("role=\"img\"", html);
         Assert.Contains("<details class=\"datos\">", html);
         Assert.Contains("<th scope=\"row\">2026-01</th>", html);
+        // marca del landing (UI-01)
+        Assert.Matches(@"css/tokens(\.[A-Za-z0-9]+)?\.css", html);   // @Assets agrega huella al nombre
+        Assert.Contains("class=\"navbar navbar-expand barra-app", html);
+        Assert.Contains("un producto de Procesos En Línea", html);
     }
 
     [Fact]
