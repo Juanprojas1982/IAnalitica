@@ -45,21 +45,70 @@ a:hover, .btn-link:hover {
 }
 
 .barra-app {
-    background: #fff;
-    border-bottom: 3px solid var(--naranja);
+    background: var(--naranja-osc);
+    border-bottom: 3px solid var(--naranja-hover);
+}
+
+.barra-app .navbar-brand, .barra-app .nav-link, .barra-app .navbar-text {
+    color: #fff;
 }
 
 .barra-app .navbar-brand {
-    color: var(--tx);
     font-weight: 700;
 }
 
-.barra-app .nav-link, .barra-app .navbar-text {
-    color: var(--tx);
+.barra-app .nav-link:hover, .barra-app .nav-link:focus-visible {
+    color: #fff;
+    background: var(--naranja-hover);
+    border-radius: var(--radio-btn);
 }
 
-.barra-app .nav-link:hover {
-    color: var(--naranja-tx);
+.barra-app a:focus-visible, .barra-app .btn:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+
+.barra-app .btn:focus, .barra-app .btn:active:focus {
+    box-shadow: none;
+}
+
+/* Menú plegable sin JS: un checkbox controla el panel en pantallas angostas (bootstrap.js no se carga). */
+.menu-app-toggle {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+}
+
+.menu-app-toggle:focus-visible + .menu-app-boton {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+
+@media (min-width: 1200px) {
+    .menu-app-boton { display: none; }
+    .menu-app { display: flex; flex: 1; align-items: center; }
+    .menu-app .navbar-nav { flex-direction: row; --bs-nav-link-padding-x: .6rem; }   /* lo que daba navbar-expand */
+}
+
+@media (max-width: 1199.98px) {
+    .barra-app { flex-wrap: wrap; }
+    .menu-app-boton {
+        display: inline-block;
+        margin-left: auto;
+        color: #fff;
+        cursor: pointer;
+        padding: .25rem .5rem;
+        border: 1px solid rgba(255, 255, 255, .6);
+        border-radius: var(--radio-btn);
+    }
+    .menu-app { display: none; width: 100%; flex-direction: column; align-items: flex-start; padding: .5rem 0; }
+    .menu-app-toggle:checked ~ .menu-app { display: flex; }
+}
+
+.barra-app .isotipo {
+    background: #fff;
+    color: var(--naranja-osc);
 }
 
 .pie-app {

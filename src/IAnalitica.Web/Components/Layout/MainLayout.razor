@@ -3,10 +3,13 @@
 @inject IAnalitica.Application.Reportes.INotificaciones Notificaciones
 @inject TimeProvider Reloj
 
-<header class="navbar navbar-expand barra-app px-3">
+<header class="navbar barra-app px-3">
     <a class="navbar-brand" href="/"><span class="isotipo" aria-hidden="true">IA</span>IAnalitica</a>
     <AuthorizeView>
         <Authorized>
+            <input type="checkbox" id="menu-app" class="menu-app-toggle" aria-label="Mostrar u ocultar el menú" />
+            <label for="menu-app" class="menu-app-boton" aria-hidden="true">Menú ☰</label>
+            <div class="menu-app">
             <ul class="navbar-nav me-auto">
                 <li class="nav-item"><a class="nav-link" href="/dashboards">Dashboards</a></li>
                 <AuthorizeView Policy="reportes.exportar" Context="exportador">
@@ -46,8 +49,9 @@
             <span class="navbar-text me-3">@context.User.Identity?.Name</span>
             <form method="post" action="/salir">
                 <AntiforgeryToken />
-                <button class="btn btn-outline-primary btn-sm" type="submit">Salir</button>
+                <button class="btn btn-outline-light btn-sm" type="submit">Salir</button>
             </form>
+            </div>
         </Authorized>
     </AuthorizeView>
 </header>

@@ -20,6 +20,7 @@ El portal no se parece a lo que vende el landing. `landing/dist/assets/dash-gere
 - **Embudo para «dinero detenido»:** la métrica no existe; es PL-03. El tipo de widget se diseña con PL-03.
 - **`MapaCalor`:** ningún dashboard lo usa (`grep TipoWidget.MapaCalor` en `Modulos.*` = 0).
 - **Modo oscuro y skeletons:** no hacen falta para el cliente objetivo. El tablero es SSR sin `[StreamRendering]` y sin `blazor.web.js`, así que la página llega completa y «Cargando…» nunca se ve.
+- **Render (D66, cerrado por el dueño el 2026-11-21):** SSR + estado en URL + SVG con JS propio solo como mejora progresiva (registrado en `06` §12).
 - **ECharts / `InteractiveAuto`:** se mantiene SSR+SVG. La interactividad entra como **mejora progresiva**: un JS propio externo que la CSP ya permite (`script-src 'self'`, mismo patrón que `js/copiar.js`). Sin JS el tablero funciona igual. Cerrado por el dueño el 2026-11-21 (**D66**, se registra en UI-05).
 
 ## Reglas que ningún plan rompe
@@ -36,6 +37,7 @@ El portal no se parece a lo que vende el landing. `landing/dist/assets/dash-gere
 | 2 | UI-02 KPI: puntos porcentuales y tendencia | `portal/ui-02-kpi` | UI-01 | Application + Web |
 | 3 | UI-04 Acabado de gráficos | `portal/ui-04-graficos` | UI-02 | Web |
 | 4 | UI-03 Tooltips y zonas de lectura | `portal/ui-03-tooltips` | UI-04 | Web (+ JS) |
+| 5 | UI-05 Barra naranja, menú móvil y texto de gráficos | `portal/ui-05-barra-graficos` | UI-03 | Web |
 | 5 | UI-05 Barra naranja, menú móvil y texto de gráficos | `portal/ui-05-barra-graficos` | UI-03 | Web |
 
 UI-01 a UI-04 están implementados (PR 20 a 23, 2026-11-21). UI-05 se diseñó después de revisar las capturas. Decisiones del dueño del mismo día: barra naranja (`#D34615`) y render cerrado con D66.

@@ -111,7 +111,10 @@ public class DashboardsWebTests(BaseDeDatosFixture bd) : IAsyncLifetime
         Assert.Contains("2026-01 · Ingresos: $ 1.000 · Costos y gastos: $ 500 · Utilidad del periodo: $ 500", html);   // zona: todas las series
         // marca del landing (UI-01)
         Assert.Matches(@"css/tokens(\.[A-Za-z0-9]+)?\.css", html);   // @Assets agrega huella al nombre
-        Assert.Contains("class=\"navbar navbar-expand barra-app", html);
+        Assert.Contains("class=\"navbar barra-app", html);
+        Assert.Contains("id=\"menu-app\"", html);              // UI-05: menú plegable sin JS
+        Assert.Contains("btn-outline-light", html);
+        Assert.Contains("viewBox=\"0 0 800 240\"", html);      // UI-05: línea de 8 columnas
         Assert.Contains("un producto de Procesos En Línea", html);
     }
 
@@ -140,6 +143,7 @@ public class DashboardsWebTests(BaseDeDatosFixture bd) : IAsyncLifetime
         var n = await ComoAsync(_admin!);
         var (_, pyg, _) = await n.IrAsync("/d/financiero.pyg?desde=2026-01&hasta=2026-02");
         Assert.Contains("class=\"conector\"", pyg);
+        Assert.Contains("viewBox=\"0 0 600 240\"", pyg);   // UI-05: cascada de 6 columnas
         Assert.Contains("linearGradient", pyg);   // «Utilidad por periodo»: una sola serie, con área
         var (_, fe, _) = await n.IrAsync("/d/ciclo_ingreso.fe_rips?desde=2026-01&hasta=2026-02");
         Assert.Contains("dona-rotulo", fe);
