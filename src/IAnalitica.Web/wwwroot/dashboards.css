@@ -13,6 +13,7 @@
 .kpi-valor { font-size: 2rem; font-weight: 700; margin: 0; line-height: 1.15; color: var(--tx); }
 .kpi-variacion { margin: .25rem 0 0; font-size: .8rem; color: var(--tx-suave); }
 .kpi-variacion.mejor { color: var(--estado-ok-tx); } .kpi-variacion.peor { color: var(--estado-peligro-tx); }
+.kpi-tendencia { width: 100%; height: 2rem; margin-top: .5rem; display: block; }
 .kpi-meta { margin: .25rem 0 0; font-size: .8rem; }
 .semaforo-verde strong { color: var(--estado-ok-tx); } .semaforo-amarillo strong { color: var(--estado-alerta-tx); } .semaforo-rojo strong { color: var(--estado-peligro-tx); }
 .grafico { margin: 0; } .grafico svg { width: 100%; height: auto; display: block; }

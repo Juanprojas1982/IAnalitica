@@ -135,6 +135,26 @@ public class DashboardsTests(BaseDeDatosFixture bd) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task El_kpi_trae_la_tendencia_por_periodo_en_orden_y_solo_con_rango_y_metrica_no_acumulada()
+    {
+        var kpi = (await DatosAsync("financiero.gerencial", "ingresos", EneFeb)).Series[0];
+        Assert.Equal(new[] { 202601, 202602 }, kpi.Tendencia.Select(p => p.Periodo).ToArray());
+        Assert.Equal(new decimal?[] { 1000m, 2000m }, kpi.Tendencia.Select(p => p.Valor).ToArray());
+
+        // un solo periodo: no hay tendencia
+        var uno = (await DatosAsync("financiero.gerencial", "ingresos", new FiltrosDashboard(202602, 202602))).Series[0];
+        Assert.Empty(uno.Tendencia);
+
+        // sin rango de periodos: no hay tendencia
+        var sinRango = (await DatosAsync("financiero.gerencial", "ingresos", new FiltrosDashboard(null, null))).Series[0];
+        Assert.Empty(sinRango.Tendencia);
+
+        // métrica acumulada (saldo): no hay tendencia
+        var acumulada = (await DatosAsync("financiero.balance", "capital_trabajo", EneFeb)).Series[0];
+        Assert.Empty(acumulada.Tendencia);
+    }
+
+    [Fact]
     public async Task El_resultado_por_grupo_y_la_cascada_dan_los_signos_correctos()
     {
         var grupos = PorClave(await DatosAsync("financiero.pyg", "grupos"));

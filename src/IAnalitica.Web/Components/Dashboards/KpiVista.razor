@@ -1,5 +1,6 @@
 @using IAnalitica.Application.Semantica
 @using IAnalitica.Domain.Modulos
+@using System.Globalization
 
 @if (Serie is null || Serie.Resultado.SinDatos)
 {
@@ -9,13 +10,34 @@ else
 {
     var r = Serie.Resultado;
     <p class="kpi-valor" aria-label="@r.Nombre: @Formato.Valor(r.Total, r.Unidad)">@Formato.Valor(r.Total, r.Unidad)</p>
-    @if (Serie.Variacion is { } v)
+    @* Unidad %: la variación se lee en puntos porcentuales (18,7 % → 17,5 % = -1,2 pts), no relativa. *@
+    var enPuntos = r.Unidad == Unidades.Porcentaje;
+    decimal? cambio = enPuntos ? Serie.Diferencia : Serie.Variacion;
+    @if (cambio is { } v)
     {
         var mejora = r.Sentido == SentidoMejora.Neutro ? (bool?)null : (v > 0) == (r.Sentido == SentidoMejora.MayorEsMejor);
         <p class="kpi-variacion @(mejora is null ? "" : mejora == true ? "mejor" : "peor")">
             <span aria-hidden="true">@(v > 0 ? "▲" : v < 0 ? "▼" : "■")</span>
-            @Formato.Variacion(v) frente al periodo anterior (@Formato.Valor(Serie.Anterior, r.Unidad))
+            @(enPuntos ? Formato.Puntos(v) : Formato.Variacion(v)) frente al periodo anterior (@Formato.Valor(Serie.Anterior, r.Unidad))
         </p>
+    }
+    @if (Serie.Tendencia.Where(p => p.Valor is not null).ToList() is { Count: >= 2 } puntos)
+    {
+        var vals = puntos.Select(p => p.Valor!.Value).ToList();
+        var min = vals.Min();
+        var max = vals.Max();
+        var n = Serie.Tendencia.Count;
+        double X(int i) => n <= 1 ? 0 : i * 120.0 / (n - 1);
+        double Y(decimal val) => max == min ? 16 : 29 - (double)((val - min) / (max - min)) * 26;
+        var xy = Serie.Tendencia.Select((p, i) => (p, i)).Where(t => t.p.Valor is not null).Select(t => (X: X(t.i), Y: Y(t.p.Valor!.Value))).ToList();
+        string F(double d) => d.ToString("0.##", CultureInfo.InvariantCulture);
+        var primero = puntos[0];
+        var ultimo = puntos[^1];
+        var texto = $"Tendencia de {n} meses: de {Formato.Valor(primero.Valor, r.Unidad)} ({Dimensiones.EtiquetaPeriodo(primero.Periodo)}) a {Formato.Valor(ultimo.Valor, r.Unidad)} ({Dimensiones.EtiquetaPeriodo(ultimo.Periodo)})";
+        <svg class="kpi-tendencia" viewBox="0 0 120 32" preserveAspectRatio="none" role="img" aria-label="@texto">
+            <polyline points="@string.Join(' ', xy.Select(t => F(t.X) + "," + F(t.Y)))" fill="none" stroke="var(--naranja-osc)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round" />
+            <circle cx="@F(xy[^1].X)" cy="@F(xy[^1].Y)" r="2.5" fill="var(--naranja-osc)" />
+        </svg>
     }
     @if (Serie.Semaforo != Semaforo.SinMeta && Serie.Meta is { } meta)
     {
