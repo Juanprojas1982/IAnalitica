@@ -1,9 +1,10 @@
 @inherits LayoutComponentBase
 @using IAnalitica.Infrastructure.Identity
 @inject IAnalitica.Application.Reportes.INotificaciones Notificaciones
+@inject TimeProvider Reloj
 
-<header class="navbar navbar-expand bg-dark navbar-dark px-3">
-    <a class="navbar-brand" href="/">IAnalitica</a>
+<header class="navbar navbar-expand barra-app px-3">
+    <a class="navbar-brand" href="/"><span class="isotipo" aria-hidden="true">IA</span>IAnalitica</a>
     <AuthorizeView>
         <Authorized>
             <ul class="navbar-nav me-auto">
@@ -45,7 +46,7 @@
             <span class="navbar-text me-3">@context.User.Identity?.Name</span>
             <form method="post" action="/salir">
                 <AntiforgeryToken />
-                <button class="btn btn-outline-light btn-sm" type="submit">Salir</button>
+                <button class="btn btn-outline-primary btn-sm" type="submit">Salir</button>
             </form>
         </Authorized>
     </AuthorizeView>
@@ -55,8 +56,11 @@
     @Body
 </main>
 
+<footer class="pie-app">© @anio IAnalitica · un producto de Procesos En Línea – Pasto</footer>
+
 @code {
     private int sinLeer;
+    private int anio => Reloj.GetUtcNow().UtcDateTime.AddHours(-5).Year;   // Colombia: UTC−5 todo el año
 
     protected override async Task OnInitializedAsync()
     {

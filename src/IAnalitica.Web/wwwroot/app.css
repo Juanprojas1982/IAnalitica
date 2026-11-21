@@ -1,19 +1,88 @@
 html, body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-family: var(--fuente);
+    color: var(--tx);
+}
+
+body {
+    background: var(--fondo-alt);
 }
 
 a, .btn-link {
-    color: #006bb7;
+    color: var(--naranja-tx);
+}
+
+a:hover, .btn-link:hover {
+    color: var(--naranja-hover);
 }
 
 .btn-primary {
     color: #fff;
-    background-color: #1b6ec2;
-    border-color: #1861ac;
+    background-color: var(--naranja-osc);
+    border-color: var(--naranja-osc);
+    border-radius: var(--radio-btn);
+}
+
+.btn-primary:hover, .btn-primary:active, .btn-primary:focus {
+    color: #fff;
+    background-color: var(--naranja-hover);
+    border-color: var(--naranja-hover);
+}
+
+.btn-outline-primary {
+    color: var(--naranja-tx);
+    border-color: var(--naranja-tx);
+    border-radius: var(--radio-btn);
+}
+
+.btn-outline-primary:hover, .btn-outline-primary:active {
+    color: #fff;
+    background-color: var(--naranja-osc);
+    border-color: var(--naranja-osc);
 }
 
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem var(--naranja);
+}
+
+.barra-app {
+    background: #fff;
+    border-bottom: 3px solid var(--naranja);
+}
+
+.barra-app .navbar-brand {
+    color: var(--tx);
+    font-weight: 700;
+}
+
+.barra-app .nav-link, .barra-app .navbar-text {
+    color: var(--tx);
+}
+
+.barra-app .nav-link:hover {
+    color: var(--naranja-tx);
+}
+
+.pie-app {
+    text-align: center;
+    font-size: .8rem;
+    color: var(--tx-suave);
+    padding: 1.5rem 1rem;
+    border-top: 1px solid var(--linea);
+    margin-top: 2rem;
+}
+
+.isotipo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    background: var(--naranja-osc);
+    color: #fff;
+    font-weight: 700;
+    font-size: .85rem;
+    border-radius: var(--radio-btn);
+    margin-right: .5rem;
 }
 
 .content {
