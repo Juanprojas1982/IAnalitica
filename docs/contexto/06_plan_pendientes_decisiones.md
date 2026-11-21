@@ -136,7 +136,7 @@ Parte de `docs/CONTEXTO.md` (índice). La numeración §N es global y se conserv
 ## 13. Divergencias spec original ↔ implementación (la implementación manda)
 | Spec original | Realidad |
 |---|---|
-| Dashboards con MudBlazor/ApexCharts, `InteractiveAuto` | SSR + estado en URL + SVG, sin JavaScript |
+| Dashboards con MudBlazor/ApexCharts, `InteractiveAuto` | SSR + estado en URL + SVG; JS propio solo para tooltips (`js/graficos.js`, sin librerías) |
 | Descarga de reportes por SAS de 15 min en Blob | Disco local, descarga por el portal con sesión |
 | Diez herramientas fijas del asistente | Dos herramientas genéricas sobre el catálogo semántico |
 | Dashboard `auditor_config` en la capa semántica | Página dedicada `/auditor` (permiso `dash.auditor_config` sí aplica) |

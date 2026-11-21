@@ -25,6 +25,14 @@
             <line x1="@F(ML)" x2="@F(W - MR)" y1="@F(y)" y2="@F(y)" class="eje" />
             @Svg.Texto(F(ML - 6), F(y + 4), "end", "etiqueta", Formato.Corto(v, resultado.Unidad))
         }
+        @* Zonas de lectura (debajo de los segmentos, que conservan su propio tooltip): total y desglose de la columna. *@
+        @for (var i = 0; i < cats.Count; i++)
+        {
+            var totalCol = stacks.Sum(st => Math.Max(0m, Valor(cats[i], st.Clave)));
+            <rect class="zona" x="@F(ML + i * ancho)" y="@F(MT)" width="@F(ancho)" height="@F(H - MT - MB)" fill="transparent">
+                <title>@etqCat[cats[i]] · Total: @Formato.Valor(totalCol, resultado.Unidad)@string.Concat(stacks.Select(st => " · " + st.Etiqueta + ": " + Formato.Valor(Math.Max(0m, Valor(cats[i], st.Clave)), resultado.Unidad)))</title>
+            </rect>
+        }
         @for (var i = 0; i < cats.Count; i++)
         {
             var baseY = H - MB;
