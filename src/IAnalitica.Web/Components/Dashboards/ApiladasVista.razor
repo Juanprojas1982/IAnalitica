@@ -12,14 +12,26 @@
     var stacks = filas.Select(f => f.Dimensiones[dimS]).DistinctBy(d => d.Clave).OrderBy(d => d.Clave, StringComparer.Ordinal).ToList();
     decimal Valor(string cat, string stack) => filas.Where(f => f.Dimensiones[dimX].Clave == cat && f.Dimensiones[dimS].Clave == stack).Sum(f => f.Valor!.Value);
     var (_, maxTotal, ticks) = Escala.Bonita(0m, cats.Count == 0 ? 1m : Math.Max(1m, cats.Max(c => stacks.Sum(s => Math.Max(0m, Valor(c, s.Clave))))));
-    var W = (double)Math.Clamp(Columnas * 100, 480, 960);   // el texto conserva un tamaño legible según el ancho del widget
-    const double H = 240, ML = 64, MR = 14, MT = 14, MB = 30;
-    var ancho = cats.Count == 0 ? 0 : (W - ML - MR) / cats.Count;
     string F(double d) => d.ToString("0.#", CultureInfo.InvariantCulture);
 }
 <figure class="grafico">
-    <svg viewBox="0 0 @W @H" role="img" aria-labelledby="t-@Datos.Widget">
-        <title id="t-@Datos.Widget">@Datos.Titulo</title>
+    @foreach (var compacto in new[] { false, true })
+    {
+    var clase = compacto ? "lienzo lienzo-compacto" : "lienzo lienzo-amplio";
+    var sfx = compacto ? "-m" : "";
+    var idT = $"t-{Datos.Widget}{sfx}";
+    var idD = $"d-{Datos.Widget}{sfx}";   // ids únicos: el lienzo compacto lleva el sufijo -m
+    var W = compacto ? 360.0 : (double)Math.Clamp(Columnas * 100, 480, 960);   // el amplio conserva un tamaño legible según el ancho del widget
+    var H = compacto ? 220.0 : 240.0;
+    var ML = compacto ? 46.0 : 64.0;
+    var MR = compacto ? 10.0 : 14.0;
+    const double MT = 14, MB = 30;
+    var ancho = cats.Count == 0 ? 0 : (W - ML - MR) / cats.Count;
+    var paso = compacto ? Math.Max(1, (int)Math.Ceiling(cats.Count / 4.0)) : 1;   // compacto: como máximo 4 etiquetas en el eje X
+    Func<int, bool> Muestra = i => paso == 1 || i % paso == 0 || i == cats.Count - 1 && cats.Count - 1 - (cats.Count - 1) / paso * paso >= paso / 2;
+    <div class="@clase">
+    <svg viewBox="0 0 @W @H" role="img" aria-labelledby="@idT">
+        <title id="@idT">@Datos.Titulo</title>
         @foreach (var v in ticks)
         {
             var y = MT + (double)(maxTotal - v) / (double)maxTotal * (H - MT - MB);
@@ -48,9 +60,14 @@
                     <title>@etqCat[cats[i]] · @stacks[s].Etiqueta: @Formato.Valor(v, resultado.Unidad)</title>
                 </rect>
             }
-            @Svg.Texto(F(ML + i * ancho + ancho / 2), F(H - 8), "middle", "etiqueta", etqCat[cats[i]])
+            if (Muestra(i))
+            {
+                @Svg.Texto(F(ML + i * ancho + ancho / 2), F(H - 8), "middle", "etiqueta", etqCat[cats[i]])
+            }
         }
     </svg>
+    </div>
+    }
     <figcaption class="leyenda">
         @for (var s = 0; s < stacks.Count; s++)
         {

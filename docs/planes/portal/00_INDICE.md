@@ -38,8 +38,10 @@ El portal no se parece a lo que vende el landing. `landing/dist/assets/dash-gere
 | 3 | UI-04 Acabado de gráficos | `portal/ui-04-graficos` | UI-02 | Web |
 | 4 | UI-03 Tooltips y zonas de lectura | `portal/ui-03-tooltips` | UI-04 | Web (+ JS) |
 | 5 | UI-05 Barra naranja, menú móvil y texto de gráficos | `portal/ui-05-barra-graficos` | UI-03 | Web |
+| 6 | UI-06 Gráficos legibles en el celular | `portal/ui-06-graficos-movil` | UI-05 | Web |
 | 6 | UI-06 Gráficos legibles en el celular (dos lienzos SSR) | `portal/ui-06-graficos-movil` | UI-05 | Web |
 | 5 | UI-05 Barra naranja, menú móvil y texto de gráficos | `portal/ui-05-barra-graficos` | UI-03 | Web |
+| 6 | UI-06 Gráficos legibles en el celular | `portal/ui-06-graficos-movil` | UI-05 | Web |
 | 6 | UI-06 Gráficos legibles en el celular (dos lienzos SSR) | `portal/ui-06-graficos-movil` | UI-05 | Web |
 
 UI-01 a UI-04 están implementados (PR 20 a 23, 2026-11-21). UI-05 se diseñó después de revisar las capturas. Decisiones del dueño del mismo día: barra naranja (`#D34615`) y render cerrado con D66.
