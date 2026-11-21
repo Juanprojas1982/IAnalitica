@@ -35,7 +35,7 @@
             if (!Muestra(i)) continue;
             @Svg.Texto(X(i).ToString("0.#", CultureInfo.InvariantCulture), (H - 8).ToString(CultureInfo.InvariantCulture), Escala.Ancla(i, categorias.Count), "etiqueta", etiquetas[categorias[i]])
         }
-        @if (min >= 0 && categorias.Count > 1 && valores[0].All(v => v is not null))
+        @if (series.Count == 1 && min >= 0 && categorias.Count > 1 && valores[0].All(v => v is not null))   // con varias series el área tiñe las otras líneas
         {
             var idGrad = $"g-{Datos.Dashboard}-{Datos.Widget}";
             var area = "M" + string.Join(" L", Enumerable.Range(0, categorias.Count).Select(i => $"{F(X(i))},{F(Y(valores[0][i]!.Value))}"))
